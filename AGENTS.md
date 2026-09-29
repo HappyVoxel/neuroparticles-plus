@@ -126,10 +126,14 @@ so moves within a step don't see each other.
   (Red eats Green, Green eats Blue, Blue eats Red).
 - HP per step: −`hpPenaltyFromSelfOrEnemy` if the cell has another of your kind or any enemy, +`hpRewardFromPrey` if it has prey, −`baseDecayPerStep` always. Dead at `hp <= 0`.
 - Disease (`disease.ts`): the circle of view size around a cell counts a crowded step while it holds
-  more than `diseaseCrowd` dots of one species, and resets otherwise. Past `diseaseAfterSteps` in a
-  row it becomes a `DiseaseArea` of the species with the most dots there. Every dot inside, of any
-  species, loses `diseaseHpAtCenter` HP per step on the center, falling linearly to `diseaseHpAtEdge`
-  at the edge. Overlaps never stack: a cell costs its worst area. An area clears after more than
+  more than `diseaseCrowd` dots of one species outside disease, and resets otherwise. Past
+  `diseaseAfterSteps` in a row it becomes a `DiseaseArea` of that species, born at view size. Dots
+  inside an area and cells inside one never count a crowd, so areas don't pile up. Each step an
+  area's `radius` moves at most one cell toward `targetRadius` of its own species' dots inside (the
+  size that keeps its birth density), between `diseaseMinRadius` and `diseaseMaxRadius`: it grows as
+  its dots walk in and shrinks as they leave or die. Every dot inside, of any species, loses
+  `diseaseHpAtCenter` HP per step on the center, falling linearly to `diseaseHpAtEdge` at the
+  area's own edge. Overlaps never stack: a cell costs its worst area. An area clears after more than
   `diseaseAfterSteps` steps with no dot inside. `draw` fills each area in its species' 300 shade at
   `diseaseOpacity`, one shape per species, under the dots.
 - A move into a wall costs `sim.wallPenalty` HP (`moveAgent` in `simulation.ts`); standing next to a

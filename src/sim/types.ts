@@ -36,10 +36,12 @@ export interface MutationParams {
 	genes: number;
 }
 
-/** A circle of view size, centered on a cell, that costs HP to stand in. */
+/** A circle centered on a cell that costs HP to stand in. */
 export interface DiseaseArea {
 	x: number;
 	y: number;
+	/** In cells; grows and shrinks with its own species' dots inside. */
+	radius: number;
 	/** Index in `Sim.species` of the species whose crowd started it; sets its color. */
 	species: number;
 	/** Steps in a row with no dot inside; the area clears after `diseaseAfterSteps`. */

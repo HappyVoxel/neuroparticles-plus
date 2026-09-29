@@ -94,13 +94,18 @@ export const baseDecayPerStep = 1;
 
 // Disease: a circle the size of the view (dx² + dy² <= visionRadiusSquared) where more than
 // `diseaseCrowd` dots of one species stood for more than `diseaseAfterSteps` steps in a row turns
-// into a disease area. It clears once no dot has been inside it for more than `diseaseAfterSteps`
-// steps. A dot inside loses `diseaseHpAtEdge` HP per step at the edge, rising to
-// `diseaseHpAtCenter` at the center. Overlapping areas don't add up: a cell costs its worst one.
+// into a disease area of that size. Each step its radius moves by at most one cell toward the size
+// that holds its own species' dots inside at the density it was born with (diseaseCrowd + 1 dots in
+// the view), between `diseaseMinRadius` and `diseaseMaxRadius` cells. It clears once no dot has been
+// inside it for more than `diseaseAfterSteps` steps. A dot inside loses `diseaseHpAtEdge` HP per
+// step at the edge, rising to `diseaseHpAtCenter` at the center. Overlapping areas don't add up: a
+// cell costs its worst one.
 export const diseaseCrowd = 13;
-export const diseaseAfterSteps = 100;
+export const diseaseAfterSteps = 20;
 export const diseaseHpAtEdge = 50;
 export const diseaseHpAtCenter = 100;
+export const diseaseMinRadius = 1;
+export const diseaseMaxRadius = 12;
 // An area is painted in the 300 shade (lightest) of the species that crowded it, at this opacity, no border.
 export const diseaseOpacity = 0.2;
 

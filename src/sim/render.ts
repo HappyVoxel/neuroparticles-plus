@@ -1,12 +1,10 @@
 import { hpOpacity, oklchCss, shadeAt } from "./color";
-import { cellPixels, diseaseOpacity, gridHeight, gridWidth, visionRadiusSquared } from "./config";
+import { cellPixels, diseaseOpacity, gridHeight, gridWidth } from "./config";
 import { slide } from "./movement";
 import type { DiseaseArea, Species } from "./types";
 
 // Ages are rounded to this many colors per species, so `fillStyle` repeats the same few strings.
 const ageSteps = 64;
-
-const diseaseRadius = Math.sqrt(visionRadiusSquared) * cellPixels;
 
 /**
  * Paints the disease areas, each in the 300 shade of the species that crowded it; one species'
@@ -29,12 +27,13 @@ export function draw(
 	ctx.globalAlpha = diseaseOpacity;
 	species.forEach(({ shades }, s) => {
 		ctx.beginPath();
-		for (const { x, y, species: owner } of diseaseAreas) {
+		for (const { x, y, radius, species: owner } of diseaseAreas) {
 			if (owner !== s) continue;
 			const cx = (x + 0.5) * cellPixels;
 			const cy = (y + 0.5) * cellPixels;
-			ctx.moveTo(cx + diseaseRadius, cy);
-			ctx.arc(cx, cy, diseaseRadius, 0, 2 * Math.PI);
+			const r = radius * cellPixels;
+			ctx.moveTo(cx + r, cy);
+			ctx.arc(cx, cy, r, 0, 2 * Math.PI);
 		}
 		ctx.fillStyle = oklchCss(shades[0]);
 		ctx.fill("nonzero");

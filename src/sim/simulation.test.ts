@@ -11,6 +11,7 @@ import {
 	speciesDefs,
 	startHp,
 } from "./config";
+import { diseaseBirthRadius } from "./disease";
 import { buildField } from "./field";
 import { hiddenWeightsFrom } from "./network";
 import { createSim, extinctSpecies, moveAgent, recreate, step } from "./simulation";
@@ -90,7 +91,8 @@ describe("simulation", () => {
 	it("charges last step's disease and rebuilds it after the moves", () => {
 		const sim = createSim(mutation);
 		const loner = { ...sim.species[0].agents[0], x: 50, y: 50, hp: startHp };
-		const disease = { ...sim.disease, areas: [{ x: 50, y: 50, species: 0, emptySteps: 0 }] };
+		const area = { x: 50, y: 50, radius: diseaseBirthRadius, species: 0, emptySteps: 0 };
+		const disease = { ...sim.disease, areas: [area] };
 		disease.cost = disease.cost.map((column) => column.slice());
 		disease.cost[50][50] = diseaseHpAtCenter;
 		const world = {
@@ -104,7 +106,8 @@ describe("simulation", () => {
 		const next = step(world);
 		const survivor = next.species[0].agents.find((a) => a.genome === loner.genome);
 		expect(survivor?.hp).toBe(startHp - diseaseHpAtCenter - baseDecayPerStep);
-		expect(next.disease.areas).toEqual([{ x: 50, y: 50, species: 0, emptySteps: 0 }]);
+		// One dot of its own inside, so it shrinks by a cell.
+		expect(next.disease.areas).toEqual([{ ...area, radius: diseaseBirthRadius - 1 }]);
 		expect(sim.disease.areas).toEqual([]);
 	});
 
