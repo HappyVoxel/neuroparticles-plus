@@ -8,7 +8,7 @@ were brave, but other dots were more brave.
 
 Three species, red, green and blue, share a 200×200 field in a rock-paper-scissors loop: red eats
 green, green eats blue, blue eats red. Every dot has its own small neural network, and a genetic
-algorithm breeds the longest-lived survivors. Nobody programs the behavior; it comes out of local
+algorithm breeds mature dots that stand near each other. Nobody programs the behavior; it comes out of local
 sensing and selection pressure.
 
 ## Controls
@@ -39,13 +39,14 @@ cell with its own kind or any predator, and gains 100 HP if it shares a cell wit
 a wall costs 100 HP; the Walls slider changes that cost while the sim runs. At 0 HP it dies.
 
 **Evolution.** A genome is the flat list of all the network's weights and biases. When a species drops
-below 199 dots, it refills with children bred from its longest-lived survivors:
+below 199 dots, it refills with children bred from mature dots that stand near each other:
 
-- **Selection:** parents are drawn at random from the top survivors by lifetime.
-- **Crossover:** uniform. Each gene comes from one parent, and the sibling gets the other's.
+- **Selection:** two dots can breed when both have lived 100 steps and each is inside the other's
+  11×11 view. Mature dots pair up in random order. A dot breeds once per step.
+- **Crossover:** uniform. Each gene of the child comes from one of the two parents.
 - **Mutation:** with the chosen chance, a newborn gets that many weights replaced by random values in
   `[-2, 2)`.
-- **Placement:** children appear at random cells with full HP.
+- **Placement:** the child appears halfway between its parents with full HP.
 
 **World.** The 200×200 grid has walls at the edges: a dot that steps into one bounces back, and
 dots see the walls inside their view. All dots move at the same time, each

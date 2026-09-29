@@ -14,7 +14,7 @@ export interface Agent {
 	/** Where the agent stood before its last move; the renderer slides from here. */
 	prevX: number;
 	prevY: number;
-	/** Steps survived; the fitness used to pick parents. */
+	/** Steps survived; an agent can breed from `matureAge` on. */
 	lifetime: number;
 }
 

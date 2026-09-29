@@ -3,8 +3,10 @@ import {
 	baseDecayPerStep,
 	hpPenaltyFromSelfOrEnemy,
 	hpRewardFromPrey,
+	matureAge,
 	populationSize,
 	startHp,
+	visionRadius,
 } from "./config";
 import { ageAndCull, breed, crossover, mutate, spawn } from "./evolution";
 import { buildField } from "./field";
@@ -87,9 +89,28 @@ describe("mutate", () => {
 	});
 });
 
+describe("spawn", () => {
+	it("puts the agent on the given cell with full HP", () => {
+		expect(spawn([], { x: 3, y: 7 })).toMatchObject({
+			x: 3,
+			y: 7,
+			prevX: 3,
+			prevY: 7,
+			hp: startHp,
+			lifetime: 0,
+		});
+	});
+});
+
 describe("breed", () => {
+	const best = new Array<number>(genomeSize).fill(1);
+	const parent = (x: number, y: number, lifetime = matureAge): Agent => ({
+		...agent(x, y, 1000, lifetime),
+		genome: best,
+	});
+
 	it("does nothing while the population is at least populationSize - 1", () => {
-		const survivors = Array.from({ length: populationSize - 1 }, () => spawn([]));
+		const survivors = Array.from({ length: populationSize - 1 }, () => parent(10, 10));
 		expect(breed(survivors, noMutation)).toEqual([]);
 	});
 
@@ -97,19 +118,51 @@ describe("breed", () => {
 		expect(breed([], noMutation)).toEqual([]);
 	});
 
-	it("refills with pairs of fresh children from the longest-lived survivors", () => {
-		const best = new Array<number>(genomeSize).fill(1);
-		const worst = new Array<number>(genomeSize).fill(-1);
-		const survivors = [
-			...Array.from({ length: populationSize - 40 }, () => ({ ...spawn(worst), lifetime: 1 })),
-			...Array.from({ length: 20 }, () => ({ ...spawn(best), lifetime: 99 })),
-		];
+	it("breeds nothing from a lone survivor", () => {
+		expect(breed([parent(10, 10)], noMutation)).toEqual([]);
+	});
+
+	it("breeds nothing from a pair outside each other's view", () => {
+		const farInX = [parent(10, 10), parent(10 + visionRadius + 1, 10)];
+		const farInY = [parent(10, 10), parent(10, 10 + visionRadius + 1)];
+		expect(breed(farInX, noMutation)).toEqual([]);
+		expect(breed(farInY, noMutation)).toEqual([]);
+	});
+
+	it("breeds nothing from an agent younger than matureAge", () => {
+		const survivors = [parent(10, 10), parent(12, 10, matureAge - 1)];
+		expect(breed(survivors, noMutation)).toEqual([]);
+	});
+
+	it("puts one fresh child halfway between two mature parents that see each other", () => {
+		const survivors = [parent(10, 20), parent(10 + visionRadius, 20 - visionRadius)];
 		const children = breed(survivors, noMutation);
 
-		expect(children).toHaveLength(20);
-		for (const child of children) {
-			expect(child).toMatchObject({ hp: startHp, lifetime: 0 });
-			expect(child.genome.every((g) => g === 1)).toBe(true);
-		}
+		expect(children).toHaveLength(1);
+		expect(children[0]).toMatchObject({
+			x: Math.floor((10 + 10 + visionRadius) / 2),
+			y: Math.floor((20 + 20 - visionRadius) / 2),
+			hp: startHp,
+			lifetime: 0,
+		});
+		expect(children[0].genome.every((g) => g === 1)).toBe(true);
+	});
+
+	it("lets each agent breed once per step", () => {
+		const survivors = [parent(10, 10), parent(11, 10), parent(12, 10)];
+		expect(breed(survivors, noMutation)).toHaveLength(1);
+	});
+
+	it("stops once the population is full again", () => {
+		const gap = 3;
+		const survivors = Array.from({ length: populationSize - gap }, (_, i) => parent(i % 4, 0));
+		expect(breed(survivors, noMutation)).toHaveLength(gap);
+	});
+
+	it("leaves the survivors alone", () => {
+		const survivors = [parent(10, 10), parent(12, 10)];
+		const before = structuredClone(survivors);
+		breed(survivors, noMutation);
+		expect(survivors).toEqual(before);
 	});
 });

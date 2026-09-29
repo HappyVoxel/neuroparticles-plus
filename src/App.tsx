@@ -30,7 +30,7 @@ export function App() {
 					<h1 className="text-2xl font-semibold tracking-tight">Neuroparticles</h1>
 					<p className="text-sm text-muted-foreground">
 						Each dot is a small neural net that sees the 11×11 cells around it and picks a move. Red
-						eats green, green eats blue, blue eats red. The longest-lived survivors breed.
+						eats green, green eats blue, blue eats red. Mature dots that see each other breed.
 					</p>
 				</div>
 				<div className="flex shrink-0 items-center gap-4">

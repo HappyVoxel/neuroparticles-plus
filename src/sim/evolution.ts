@@ -5,17 +5,34 @@ import {
 	gridWidth,
 	hpPenaltyFromSelfOrEnemy,
 	hpRewardFromPrey,
+	matureAge,
 	populationSize,
 	startHp,
+	visionRadius,
 } from "./config";
 import { genomeSize, randomGene } from "./network";
 import type { Agent, Genome, MutationParams, Species } from "./types";
 
-/** A fresh agent at a random cell with full HP. */
-export function spawn(genome: Genome): Agent {
-	const x = Math.floor(Math.random() * gridWidth);
-	const y = Math.floor(Math.random() * gridHeight);
+interface Cell {
+	x: number;
+	y: number;
+}
+
+function randomCell(): Cell {
+	return {
+		x: Math.floor(Math.random() * gridWidth),
+		y: Math.floor(Math.random() * gridHeight),
+	};
+}
+
+/** A fresh agent with full HP, at the given cell or a random one. */
+export function spawn(genome: Genome, { x, y }: Cell = randomCell()): Agent {
 	return { genome, hp: startHp, x, y, prevX: x, prevY: y, lifetime: 0 };
+}
+
+/** True when each agent stands inside the other's view window. */
+export function isNear(a: Cell, b: Cell): boolean {
+	return Math.abs(a.x - b.x) <= visionRadius && Math.abs(a.y - b.y) <= visionRadius;
 }
 
 /**
@@ -57,25 +74,39 @@ export function mutate(genome: Genome, { percent, genes }: MutationParams): Geno
 	return mutated;
 }
 
+function shuffled<T>(items: readonly T[]): T[] {
+	const result = [...items];
+	for (let i = result.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[result[i], result[j]] = [result[j], result[i]];
+	}
+	return result;
+}
+
 /**
- * Refills a species once it drops below `populationSize - 1`: pairs of children bred from
- * random parents among the top `2 × pairs` survivors by lifetime (with replacement).
- * A species with no survivors stays extinct.
+ * Refills a species once it drops below `populationSize - 1`. Agents that lived `matureAge`
+ * steps pair up in random order, each with a mature neighbor that is still free, and every
+ * pair gets one child on the cell halfway between them. An agent breeds at most once per step,
+ * so a species with no two mature agents in view of each other gets no children.
  */
 export function breed(survivors: readonly Agent[], mutation: MutationParams): Agent[] {
-	if (survivors.length === 0 || survivors.length >= populationSize - 1) return [];
+	if (survivors.length >= populationSize - 1) return [];
 
-	const pairs = Math.floor((populationSize - survivors.length) / 2);
-	const pool = [...survivors]
-		.sort((a, b) => b.lifetime - a.lifetime)
-		.slice(0, pairs * 2)
-		.map((agent) => agent.genome);
-	const pickParent = () => pool[Math.floor(Math.random() * pool.length)];
+	const gap = populationSize - survivors.length;
+	const mature = shuffled(survivors.filter((agent) => agent.lifetime >= matureAge));
+	const paired = new Set<Agent>();
 
 	const children: Agent[] = [];
-	for (let i = 0; i < pairs; i++) {
-		const [child1, child2] = crossover(pickParent(), pickParent());
-		children.push(spawn(mutate(child1, mutation)), spawn(mutate(child2, mutation)));
+	for (let i = 0; i < mature.length && children.length < gap; i++) {
+		const a = mature[i];
+		if (paired.has(a)) continue;
+		const b = mature.find((other, j) => j > i && !paired.has(other) && isNear(a, other));
+		if (!b) continue;
+		paired.add(a).add(b);
+
+		const [genome] = crossover(a.genome, b.genome);
+		const cell = { x: Math.floor((a.x + b.x) / 2), y: Math.floor((a.y + b.y) / 2) };
+		children.push(spawn(mutate(genome, mutation), cell));
 	}
 	return children;
 }

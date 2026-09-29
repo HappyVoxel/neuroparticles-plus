@@ -48,5 +48,7 @@ export const wallPenaltyStep = 100;
 export const baseDecayPerStep = 1;
 
 // Genetic algorithm
+// Steps an agent has to survive before it can breed.
+export const matureAge = 100;
 export const crossoverRate = 0.5;
 export const geneRange = 4; // genes are random in [-2, 2)

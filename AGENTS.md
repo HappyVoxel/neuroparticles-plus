@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Browser-only artificial life sim with three species (Red, Green, Blue) in a rock-paper-scissors
 predator/prey loop. Each dot is an agent with its own small neural net that looks at an 11×11 window
-around itself and picks a move. A genetic algorithm breeds the longest-lived survivors.
+around itself and picks a move. A genetic algorithm breeds
+mature dots that stand near each other.
 TypeScript + Vite + React 19 + shadcn/ui (Radix) + Tailwind CSS v4.
 
 ## Commands
@@ -32,7 +33,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
   - `movement.ts` — `Move` (0–8), `bounce`, `hitsWall`, `moveBy`, `slide`.
   - `field.ts` — `buildField`, `senseAt` (the network input window).
-  - `evolution.ts` — `spawn`, `ageAndCull`, `crossover`, `mutate`, `breed`.
+  - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `breed`.
   - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
     new values.
   - `render.ts` — canvas drawing.
@@ -105,9 +106,10 @@ All of it reads the fields from the previous step, so moves within a step don't 
 - A move into a wall costs `sim.wallPenalty` HP (`moveAgent` in `simulation.ts`); standing next to a
   wall or walking along it is free. The value starts at `hpPenaltyFromWall` and comes live from the
   Walls control (0 to `maxWallPenalty`). This is what makes evolution select against wall bumps.
-- Breeding runs only when a species drops below `populationSize - 1`. It adds pairs of children from
-  random parents (with replacement) among the top `2 × pairs` survivors by lifetime, at random cells
-  with full HP.
+- Breeding runs only when a species drops below `populationSize - 1`, and only fills the gap. Two
+  agents can breed when both have lived `matureAge` steps and each is inside the other's 11×11 view
+  (`isNear`). Mature agents pair up in random order; an agent breeds once per step. Each pair gets
+  one child with full HP on the cell halfway between them. No mature pair in view means no children.
 - Mutation: with `percent`% odds a child gets exactly `genes` random genes replaced by values in
   `[-2, 2)`. Both values come live from the Mutation controls.
 - Recreate gives every living agent a new random genome and keeps position, HP and lifetime.
