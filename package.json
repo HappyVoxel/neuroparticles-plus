@@ -1,0 +1,23 @@
+{
+	"name": "neuroparticles",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc --noEmit && vite build",
+		"preview": "vite preview",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome lint src",
+		"format": "prettier --write .",
+		"test": "vitest run"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.14",
+		"@tailwindcss/vite": "^4.3.3",
+		"prettier": "^3.9.9",
+		"tailwindcss": "^4.3.3",
+		"typescript": "^7.0.2",
+		"vite": "^8.3.1",
+		"vitest": "^5.0.2"
+	}
+}

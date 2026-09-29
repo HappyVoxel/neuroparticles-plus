@@ -1,15 +1,13 @@
 # Neuroparticles
 
-![Preview](images/11x11.gif)
+![Preview](images/neuroparticles_preview.png)
 
 Each teeny-weeny dot is a lil organism. It sees (using a neural network) what's around it and moves depending on what it sees. If it survives long enough - it produces offspring. If not - bb lil dot, you were brave, but other dots were more brave.
 
 **Neuroparticles** is a real-time artificial life simulation based on:
 
 - **Neural Networks** - Each agent uses a fully connected feedforward network:
-  - **Input Layer**:
-    - `11x11.js`: 121 inputs from a single-channel 11×11 window.
-    - `rgb.js`: 363 inputs from three 11×11 channels (Red, Green, Blue).
+  - **Input Layer**: 363 inputs from three 11×11 channels (Red, Green, Blue).
   - **Hidden Layer**: 25 neurons with sigmoid activation.
   - **Output Layer**: 9 outputs corresponding to 8 movement directions + stay.
   - **Bias terms** are included in the hidden layer.
@@ -26,22 +24,14 @@ Each teeny-weeny dot is a lil organism. It sees (using a neural network) what's 
 
 ---
 
-## ▶️ Demos
+## ▶️ Demo
 
-- [11x11 Mode](https://xcont.com/neuroparticles/11x11.html) - One population learning spacing behavior.
 - [RGB Mode](https://xcont.com/neuroparticles/rgb.html) - Three populations (Red, Green, Blue) in a predator-prey cycle.
 
 ---
 
-## Mode Overview
+## Overview
 
-### `11x11.js`
-- **Particles**: 2,000
-- **Input**: Single-channel local density
-- **Behavior**: Learn to avoid crowding and maximize HP by spacing out
-- **Bias**: Small stay-in-place reward (`stayBias = 100`)
-
-### `rgb.js`
 - **Particles**: 600 total (200 Red, 200 Green, 200 Blue)
 - **Input**: 3-channel input from Red, Green, and Blue fields
 - **Dynamic**:
@@ -54,7 +44,7 @@ Each teeny-weeny dot is a lil organism. It sees (using a neural network) what's 
 
 ## 🧠 Neural Network Architecture
 
-- **Input size**: `121` or `363`
+- **Input size**: `363`
 - **Hidden layer**: 25 sigmoid neurons
 - **Output size**: 9 (8 directions + stay)
 - **Activation**: `sigmoid(x) = 1 / (1 + e^(-x))`
@@ -69,6 +59,23 @@ Each teeny-weeny dot is a lil organism. It sees (using a neural network) what's 
 - **Mutation**: Random value replacement in `[-2, 2]`
 - **Selection**: Based on lifetime (survival time)
 - **Reproduction**: Best survivors create 2 children each generation
+
+---
+
+## 🛠 Development
+
+Written in TypeScript, bundled with Vite, styled with Tailwind CSS. Requires Node.js.
+
+```sh
+npm install
+npm run dev      # dev server at http://localhost:5173
+npm test         # unit tests
+npm run build    # static site in dist/
+```
+
+The code lives in `src/`, one module per concern: `network.ts` (the brain), `field.ts` (what an
+agent sees), `evolution.ts` (death and breeding), `simulation.ts` (one step), `render.ts` (canvas),
+and `main.ts` (page wiring). All tunable constants are in `src/config.ts`.
 
 ---
 
