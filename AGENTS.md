@@ -130,7 +130,7 @@ so moves within a step don't see each other.
   row it becomes a `DiseaseArea` of the species with the most dots there. Every dot inside, of any
   species, loses `diseaseHpAtCenter` HP per step on the center, falling linearly to `diseaseHpAtEdge`
   at the edge. Overlaps never stack: a cell costs its worst area. An area clears after more than
-  `diseaseAfterSteps` steps with no dot inside. `draw` fills each area in its species' 500 shade at
+  `diseaseAfterSteps` steps with no dot inside. `draw` fills each area in its species' 300 shade at
   `diseaseOpacity`, one shape per species, under the dots.
 - A move into a wall costs `sim.wallPenalty` HP (`moveAgent` in `simulation.ts`); standing next to a
   wall or walking along it is free. The value starts at `hpPenaltyFromWall` and comes live from the

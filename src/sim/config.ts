@@ -97,11 +97,11 @@ export const baseDecayPerStep = 1;
 // into a disease area. It clears once no dot has been inside it for more than `diseaseAfterSteps`
 // steps. A dot inside loses `diseaseHpAtEdge` HP per step at the edge, rising to
 // `diseaseHpAtCenter` at the center. Overlapping areas don't add up: a cell costs its worst one.
-export const diseaseCrowd = 10;
+export const diseaseCrowd = 13;
 export const diseaseAfterSteps = 100;
-export const diseaseHpAtEdge = 500;
-export const diseaseHpAtCenter = 1000;
-// An area is painted in the 500 shade of the species that crowded it, at this opacity, no border.
+export const diseaseHpAtEdge = 50;
+export const diseaseHpAtCenter = 100;
+// An area is painted in the 300 shade (lightest) of the species that crowded it, at this opacity, no border.
 export const diseaseOpacity = 0.2;
 
 // Genetic algorithm

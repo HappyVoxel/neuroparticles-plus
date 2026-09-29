@@ -9,7 +9,7 @@ const ageSteps = 64;
 const diseaseRadius = Math.sqrt(visionRadiusSquared) * cellPixels;
 
 /**
- * Paints the disease areas, each in the 500 shade of the species that crowded it; one species'
+ * Paints the disease areas, each in the 300 shade of the species that crowded it; one species'
  * areas are filled as one shape, so their overlaps don't darken. Then paints every agent
  * `t` (0–1) of the way through its last move. A dot's shade tracks its age, from the species'
  * lightest shade at birth to its darkest for the species' oldest living dot, and its opacity
@@ -36,7 +36,7 @@ export function draw(
 			ctx.moveTo(cx + diseaseRadius, cy);
 			ctx.arc(cx, cy, diseaseRadius, 0, 2 * Math.PI);
 		}
-		ctx.fillStyle = oklchCss(shadeAt(shades, 0.5));
+		ctx.fillStyle = oklchCss(shades[0]);
 		ctx.fill("nonzero");
 	});
 	ctx.globalAlpha = 1;
