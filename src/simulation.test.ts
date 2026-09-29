@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { populationSize, speciesDefs } from "./config";
-import { createSim, recreate, step } from "./simulation";
+import { createSim, extinctSpecies, recreate, step } from "./simulation";
 
 const mutation = { percent: 5, genes: 1 };
 
@@ -37,5 +37,25 @@ describe("simulation", () => {
 		const b = fresh.species[1].agents[3];
 		expect(b.genome).not.toBe(a.genome);
 		expect({ ...b, genome: null }).toEqual({ ...a, genome: null });
+	});
+
+	it("lists species with no agents left", () => {
+		const sim = createSim(mutation);
+		expect(extinctSpecies(sim)).toEqual([]);
+		const dead = {
+			...sim,
+			species: sim.species.map((s) => (s.id === "G" ? { ...s, agents: [] } : s)),
+		};
+		expect(extinctSpecies(dead)).toEqual(["G"]);
+	});
+
+	it("keeps stepping the others when one species is gone", () => {
+		const sim = createSim(mutation);
+		const dead = {
+			...sim,
+			species: sim.species.map((s) => (s.id === "G" ? { ...s, agents: [] } : s)),
+		};
+		const next = step(dead);
+		expect(extinctSpecies(next)).toEqual(["G"]);
 	});
 });

@@ -78,4 +78,5 @@ All of it reads the fields from the previous step, so moves within a step don't 
 - Mutation: with `percent`% odds a child gets exactly `genes` random genes replaced by values in
   `[-2, 2)`. Both values come live from the page inputs.
 - Recreate gives every living agent a new random genome and keeps position, HP and lifetime.
-- `breed` has no guard for a species dying out in one step (empty parent pool); that case throws.
+- A species that dies out stays extinct (`breed` returns nothing for zero survivors), and `main.ts`
+  stops the timer as soon as `extinctSpecies` is non-empty. Start/One do nothing after that.

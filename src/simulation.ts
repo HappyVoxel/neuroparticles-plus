@@ -38,6 +38,11 @@ export function step(sim: Sim): Sim {
 	return { ...sim, species: next, step: sim.step + 1 };
 }
 
+/** Ids of species with no agents left; the sim stops once this is non-empty. */
+export function extinctSpecies(sim: Sim): Species["id"][] {
+	return sim.species.filter((s) => s.agents.length === 0).map((s) => s.id);
+}
+
 /** Gives every living agent a new random brain; positions, HP and lifetimes stay. */
 export function recreate(sim: Sim): Sim {
 	const species = sim.species.map((s) => ({

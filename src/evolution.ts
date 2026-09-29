@@ -64,9 +64,10 @@ export function mutate(genome: Genome, { percent, genes }: MutationParams): Geno
 /**
  * Refills a species once it drops below `populationSize - 1`: pairs of children bred from
  * random parents among the top `2 × pairs` survivors by lifetime (with replacement).
+ * A species with no survivors stays extinct.
  */
 export function breed(survivors: readonly Agent[], mutation: MutationParams): Agent[] {
-	if (survivors.length >= populationSize - 1) return [];
+	if (survivors.length === 0 || survivors.length >= populationSize - 1) return [];
 
 	const pairs = Math.floor((populationSize - survivors.length) / 2);
 	const pool = [...survivors]

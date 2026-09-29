@@ -1,6 +1,6 @@
 import { cellPixels, gridHeight, gridWidth } from "./config";
 import { draw } from "./render";
-import { createSim, recreate, step } from "./simulation";
+import { createSim, extinctSpecies, recreate, step } from "./simulation";
 import type { MutationParams } from "./types";
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
@@ -35,7 +35,14 @@ let sim = createSim(readMutation());
 let timer: number | undefined;
 draw(ctx, sim.species);
 
+function stop(): void {
+	window.clearInterval(timer);
+	timer = undefined;
+}
+
 function tick(): void {
+	if (extinctSpecies(sim).length > 0) return stop();
+
 	sim = step(sim);
 	draw(ctx, sim.species);
 	stepOut.textContent = String(sim.step);
@@ -43,6 +50,12 @@ function tick(): void {
 	lifetimeOut.textContent = sim.species
 		.map((s) => Math.max(0, ...s.agents.map((a) => a.lifetime)))
 		.join(", ");
+
+	const extinct = extinctSpecies(sim);
+	if (extinct.length > 0) {
+		stop();
+		stepOut.textContent += ` (${extinct.join(", ")} died out, sim stopped)`;
+	}
 }
 
 function syncParams(): void {
@@ -53,10 +66,7 @@ function syncParams(): void {
 byId("start", HTMLButtonElement).addEventListener("click", () => {
 	timer ??= window.setInterval(tick, 1);
 });
-byId("stop", HTMLButtonElement).addEventListener("click", () => {
-	window.clearInterval(timer);
-	timer = undefined;
-});
+byId("stop", HTMLButtonElement).addEventListener("click", stop);
 byId("one", HTMLButtonElement).addEventListener("click", tick);
 byId("recreate", HTMLButtonElement).addEventListener("click", () => {
 	sim = recreate(sim);

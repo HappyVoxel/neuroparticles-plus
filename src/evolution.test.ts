@@ -90,6 +90,10 @@ describe("breed", () => {
 		expect(breed(survivors, noMutation)).toEqual([]);
 	});
 
+	it("breeds nothing once every agent has died", () => {
+		expect(breed([], noMutation)).toEqual([]);
+	});
+
 	it("refills with pairs of fresh children from the longest-lived survivors", () => {
 		const best = new Array<number>(genomeSize).fill(1);
 		const worst = new Array<number>(genomeSize).fill(-1);
