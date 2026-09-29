@@ -44,6 +44,24 @@ describe("evaluate", () => {
 		expect(evaluate(input, genome)[2]).toBeCloseTo(1);
 	});
 
+	it("gives the same scores as summing every input, zeros included", () => {
+		const genome = randomGenome();
+		const input = new Array<number>(inputSize).fill(0);
+		for (const k of [0, 7, 181, 362]) input[k] = 1 + (k % 3);
+
+		const expected = new Array<number>(outputSize).fill(0);
+		for (let j = 0; j < hiddenSize; j++) {
+			let sum = 0;
+			for (let k = 0; k < inputSize; k++) sum += input[k] * genome[j * inputSize + k];
+			const hidden = 1 / (1 + Math.exp(-(sum + genome[biasFrom + j])));
+			for (let o = 0; o < outputSize; o++) {
+				expected[o] += hidden * genome[hiddenWeightsFrom + o * hiddenSize + j];
+			}
+		}
+
+		expect(evaluate(input, genome)).toEqual(expected);
+	});
+
 	it("adds the hidden bias before the sigmoid", () => {
 		const genome = new Array<number>(genomeSize).fill(0);
 		genome[biasFrom + 0] = 100;

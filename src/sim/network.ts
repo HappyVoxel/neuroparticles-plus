@@ -20,12 +20,21 @@ export function randomGenome(): Genome {
 
 const sigmoid = (x: number): number => 1 / (1 + Math.exp(-x));
 
-/** Forward pass. Returns one raw score per move. */
+/**
+ * Forward pass. Returns one raw score per move.
+ * Most of the window is empty, so the hidden layer only sums the non-zero inputs.
+ */
 export function evaluate(input: readonly number[], genome: Readonly<Genome>): number[] {
+	const seen: number[] = [];
+	for (let k = 0; k < inputSize; k++) {
+		if (input[k] !== 0) seen.push(k);
+	}
+
 	const hidden = new Array<number>(hiddenSize);
 	for (let j = 0; j < hiddenSize; j++) {
 		let sum = 0;
-		for (let k = 0; k < inputSize; k++) {
+		for (let n = 0; n < seen.length; n++) {
+			const k = seen[n];
 			sum += input[k] * genome[j * inputSize + k];
 		}
 		sum += genome[biasFrom + j];
