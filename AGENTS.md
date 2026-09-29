@@ -30,10 +30,11 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `config.ts` — every tunable constant and the species list (`speciesDefs`: id, name, color).
   - `types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Sim`.
   - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
-  - `movement.ts` — `Move` (0–8), `bounce`, `moveBy`, `slide`.
+  - `movement.ts` — `Move` (0–8), `bounce`, `hitsWall`, `moveBy`, `slide`.
   - `field.ts` — `buildField`, `senseAt` (the network input window).
   - `evolution.ts` — `spawn`, `ageAndCull`, `crossover`, `mutate`, `breed`.
-  - `simulation.ts` — `createSim`, `step`, `recreate`, `extinctSpecies`; pure, return a new `Sim`.
+  - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
+    new values.
   - `render.ts` — canvas drawing.
   - `*.test.ts` — Vitest unit tests next to each module.
 - `src/hooks/use-simulation.ts` — owns the sim in a ref and runs one `requestAnimationFrame` loop:
@@ -77,7 +78,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - **Network:** 363 inputs → 25 sigmoid hidden → 9 linear outputs. Output index is the move:
   `0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW, 7 S, 8 SE`. `stayBias` is added to "stay" before argmax.
 - **Input:** the 11×11 window row by row, with species counts interleaved per cell `[R,G,B, R,G,B, ...]`.
-  Cells outside the grid read `wallSense` (−1) on all three channels.
+  Cells outside the grid read `wallSense` (−1) on the first channel and 0 on the other two.
 
 ## Step loop (`simulation.step`)
 
@@ -98,6 +99,8 @@ All of it reads the fields from the previous step, so moves within a step don't 
 - For species `i`, enemies are `species[(i-1) mod 3]` and prey is `species[(i+1) mod 3]`
   (Red eats Green, Green eats Blue, Blue eats Red).
 - HP per step: −`hpPenaltyFromSelfOrEnemy` if the cell has another of your kind or any enemy, +`hpRewardFromPrey` if it has prey, −`baseDecayPerStep` always. Dead at `hp <= 0`.
+- A move into a wall costs `hpPenaltyFromWall` (`moveAgent` in `simulation.ts`); standing next to a
+  wall or walking along it is free. This is what makes evolution select against wall bumps.
 - Breeding runs only when a species drops below `populationSize - 1`. It adds pairs of children from
   random parents (with replacement) among the top `2 × pairs` survivors by lifetime, at random cells
   with full HP.

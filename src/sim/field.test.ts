@@ -41,20 +41,13 @@ describe("senseAt", () => {
 		expect(input.reduce((a, b) => a + b, 0)).toBe(3);
 	});
 
-	it("reads cells outside the grid as walls on every species channel", () => {
+	it("reads cells outside the grid as a wall on the first channel only", () => {
 		const red = buildField([at(gridWidth - 1, 0)]);
 		const empty = buildField([]);
 		const input = senseAt([red, empty, empty], 0, 0);
-		expect(input.slice(cell(-1, 0) * 3, cell(-1, 0) * 3 + 3)).toEqual([
-			wallSense,
-			wallSense,
-			wallSense,
-		]);
-		expect(input.slice(cell(0, -1) * 3, cell(0, -1) * 3 + 3)).toEqual([
-			wallSense,
-			wallSense,
-			wallSense,
-		]);
+		expect(input.slice(cell(-1, 0) * 3, cell(-1, 0) * 3 + 3)).toEqual([wallSense, 0, 0]);
+		expect(input.slice(cell(0, -1) * 3, cell(0, -1) * 3 + 3)).toEqual([wallSense, 0, 0]);
 		expect(input[cell(1, 1) * 3]).toBe(0);
+		expect(input).toHaveLength(inputSize);
 	});
 });

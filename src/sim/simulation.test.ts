@@ -1,8 +1,43 @@
 import { describe, expect, it } from "vitest";
-import { populationSize, speciesDefs } from "./config";
-import { createSim, extinctSpecies, recreate, step } from "./simulation";
+import { gridWidth, hpPenaltyFromWall, populationSize, speciesDefs, startHp } from "./config";
+import { createSim, extinctSpecies, moveAgent, recreate, step } from "./simulation";
+import type { Agent } from "./types";
 
 const mutation = { percent: 5, genes: 1 };
+
+describe("moveAgent", () => {
+	const at = (x: number, y: number): Agent => ({
+		genome: [],
+		hp: startHp,
+		x,
+		y,
+		prevX: x,
+		prevY: y,
+		lifetime: 0,
+	});
+
+	it("moves without HP cost on open ground", () => {
+		expect(moveAgent(at(10, 10), 5)).toMatchObject({
+			x: 11,
+			y: 10,
+			prevX: 10,
+			prevY: 10,
+			hp: startHp,
+		});
+	});
+
+	it("bounces off a wall and pays for the bump", () => {
+		const agent = at(gridWidth - 1, 10);
+		const moved = moveAgent(agent, 5);
+		expect(moved).toMatchObject({ x: gridWidth - 2, y: 10, hp: startHp - hpPenaltyFromWall });
+		expect(agent.hp).toBe(startHp);
+	});
+
+	it("costs nothing to stand next to a wall or walk along it", () => {
+		expect(moveAgent(at(0, 10), 4).hp).toBe(startHp);
+		expect(moveAgent(at(0, 10), 7).hp).toBe(startHp);
+	});
+});
 
 describe("simulation", () => {
 	it("starts with a full population per species and a matching field", () => {

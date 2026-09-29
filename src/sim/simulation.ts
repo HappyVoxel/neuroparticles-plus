@@ -1,7 +1,7 @@
-import { populationSize, speciesDefs } from "./config";
+import { hpPenaltyFromWall, populationSize, speciesDefs } from "./config";
 import { ageAndCull, breed, spawn } from "./evolution";
 import { buildField, senseAt } from "./field";
-import { moveBy } from "./movement";
+import { hitsWall, type Move, moveBy } from "./movement";
 import { evaluate, pickMove, randomGenome } from "./network";
 import type { Agent, Field, MutationParams, Sim, Species } from "./types";
 
@@ -13,9 +13,15 @@ export function createSim(mutation: MutationParams): Sim {
 	return { species, step: 0, mutation };
 }
 
+/** Applies a move. Bumping into a wall bounces the agent back and costs `hpPenaltyFromWall`. */
+export function moveAgent(agent: Agent, move: Move): Agent {
+	const { x, y } = agent;
+	const hp = hitsWall(x, y, move) ? agent.hp - hpPenaltyFromWall : agent.hp;
+	return { ...agent, hp, prevX: x, prevY: y, ...moveBy(x, y, move) };
+}
+
 function think(agent: Agent, fields: readonly Field[]): Agent {
-	const move = pickMove(evaluate(senseAt(fields, agent.x, agent.y), agent.genome));
-	return { ...agent, prevX: agent.x, prevY: agent.y, ...moveBy(agent.x, agent.y, move) };
+	return moveAgent(agent, pickMove(evaluate(senseAt(fields, agent.x, agent.y), agent.genome)));
 }
 
 /**

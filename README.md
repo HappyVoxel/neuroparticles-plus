@@ -35,7 +35,8 @@ the run stops.
 per move (8 directions or stay). The highest output wins, with a small bonus for staying put.
 
 **Health.** Every dot starts with 10,000 HP. Each step it loses 1 HP, loses 100 HP if it shares a
-cell with its own kind or any predator, and gains 100 HP if it shares a cell with prey. At 0 HP it dies.
+cell with its own kind or any predator, and gains 100 HP if it shares a cell with prey. Bumping into
+a wall costs 100 HP. At 0 HP it dies.
 
 **Evolution.** A genome is the flat list of all the network's weights and biases. When a species drops
 below 199 dots, it refills with children bred from its longest-lived survivors:

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { gridHeight, gridWidth } from "./config";
-import { bounce, moveBy, slide } from "./movement";
+import { bounce, hitsWall, moveBy, slide } from "./movement";
 
 describe("bounce", () => {
 	it("reflects a step past either wall back inside", () => {
@@ -40,6 +40,22 @@ describe("moveBy", () => {
 		expect(moveBy(gridWidth - 1, 10, 2)).toEqual({ x: gridWidth - 2, y: 9 });
 		// S against the south wall turns into N.
 		expect(moveBy(10, gridHeight - 1, 7)).toEqual({ x: 10, y: gridHeight - 2 });
+	});
+});
+
+describe("hitsWall", () => {
+	it("is true when the move steps past an edge", () => {
+		expect(hitsWall(0, 10, 3)).toBe(true); // W at the west wall
+		expect(hitsWall(gridWidth - 1, 10, 2)).toBe(true); // NE at the east wall
+		expect(hitsWall(10, 0, 1)).toBe(true); // N at the north wall
+		expect(hitsWall(10, gridHeight - 1, 7)).toBe(true); // S at the south wall
+	});
+
+	it("is false for moves that stay on the grid", () => {
+		expect(hitsWall(0, 10, 5)).toBe(false); // E, away from the west wall
+		expect(hitsWall(0, 10, 1)).toBe(false); // N, along the west wall
+		expect(hitsWall(0, 0, 4)).toBe(false); // stay in the corner
+		expect(hitsWall(10, 10, 0)).toBe(false);
 	});
 });
 

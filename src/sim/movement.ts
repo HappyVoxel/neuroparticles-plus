@@ -24,6 +24,12 @@ export function bounce(v: number, size: number): number {
 	return v;
 }
 
+/** True when the move steps past an edge of the grid, so `moveBy` bounces it back. */
+export function hitsWall(x: number, y: number, move: Move): boolean {
+	const [dx, dy] = offsets[move];
+	return x + dx < 0 || x + dx >= gridWidth || y + dy < 0 || y + dy >= gridHeight;
+}
+
 export function moveBy(x: number, y: number, move: Move): { x: number; y: number } {
 	const [dx, dy] = offsets[move];
 	return { x: bounce(x + dx, gridWidth), y: bounce(y + dy, gridHeight) };
