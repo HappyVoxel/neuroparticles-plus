@@ -1,9 +1,11 @@
 import { FoodCycle } from "@/components/food-cycle";
+import { InfoPopover } from "@/components/info-popover";
 import { MutationControls } from "@/components/mutation-controls";
 import { RunControls } from "@/components/run-controls";
 import { SimCanvas } from "@/components/sim-canvas";
 import { SpeciesStats } from "@/components/species-stats";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { WallControls } from "@/components/wall-controls";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -92,10 +94,29 @@ export function App() {
 					{/* Pinned to the bottom so the sidebar lines up with the canvas caption. */}
 					<Separator className="lg:mt-auto" />
 
+					<section aria-labelledby="walls-heading" className="flex flex-col gap-3">
+						<div className="flex items-center justify-between gap-3">
+							<h2 id="walls-heading" className="text-sm font-medium">
+								Walls
+							</h2>
+							<InfoPopover topic="walls">
+								HP a dot loses each time it moves into a wall. Behavior shifts as new dots are born.
+							</InfoPopover>
+						</div>
+						<WallControls wallPenalty={sim.wallPenalty} onChange={sim.setWallPenalty} />
+					</section>
+
+					<Separator />
+
 					<section aria-labelledby="mutation-heading" className="flex flex-col gap-3">
-						<h2 id="mutation-heading" className="text-sm font-medium">
-							Mutation
-						</h2>
+						<div className="flex items-center justify-between gap-3">
+							<h2 id="mutation-heading" className="text-sm font-medium">
+								Mutation
+							</h2>
+							<InfoPopover topic="mutation">
+								How often a newborn gets random weights, and how many.
+							</InfoPopover>
+						</div>
 						<MutationControls mutation={sim.mutation} onChange={sim.setMutation} />
 					</section>
 				</aside>

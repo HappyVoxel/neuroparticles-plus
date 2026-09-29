@@ -10,18 +10,19 @@ export function createSim(mutation: MutationParams): Sim {
 		const agents = Array.from({ length: populationSize }, () => spawn(randomGenome()));
 		return { ...def, agents, field: buildField(agents) };
 	});
-	return { species, step: 0, mutation };
+	return { species, step: 0, mutation, wallPenalty: hpPenaltyFromWall };
 }
 
-/** Applies a move. Bumping into a wall bounces the agent back and costs `hpPenaltyFromWall`. */
-export function moveAgent(agent: Agent, move: Move): Agent {
+/** Applies a move. Bumping into a wall bounces the agent back and costs `wallPenalty` HP. */
+export function moveAgent(agent: Agent, move: Move, wallPenalty: number): Agent {
 	const { x, y } = agent;
-	const hp = hitsWall(x, y, move) ? agent.hp - hpPenaltyFromWall : agent.hp;
+	const hp = hitsWall(x, y, move) ? agent.hp - wallPenalty : agent.hp;
 	return { ...agent, hp, prevX: x, prevY: y, ...moveBy(x, y, move) };
 }
 
-function think(agent: Agent, fields: readonly Field[]): Agent {
-	return moveAgent(agent, pickMove(evaluate(senseAt(fields, agent.x, agent.y), agent.genome)));
+function think(agent: Agent, fields: readonly Field[], wallPenalty: number): Agent {
+	const move = pickMove(evaluate(senseAt(fields, agent.x, agent.y), agent.genome));
+	return moveAgent(agent, move, wallPenalty);
 }
 
 /**
@@ -29,7 +30,7 @@ function think(agent: Agent, fields: readonly Field[]): Agent {
  * rebuilt. All of it reads the fields from the previous tick, so moves don't see each other.
  */
 export function step(sim: Sim): Sim {
-	const { species, mutation } = sim;
+	const { species, mutation, wallPenalty } = sim;
 	const n = species.length;
 	const fields = species.map((s) => s.field);
 
@@ -37,7 +38,9 @@ export function step(sim: Sim): Sim {
 		const enemies = species[(i + n - 1) % n];
 		const prey = species[(i + 1) % n];
 		const survivors = ageAndCull(self, enemies, prey);
-		const agents = [...survivors, ...breed(survivors, mutation)].map((a) => think(a, fields));
+		const agents = [...survivors, ...breed(survivors, mutation)].map((a) =>
+			think(a, fields, wallPenalty),
+		);
 		return { ...self, agents, field: buildField(agents) };
 	});
 

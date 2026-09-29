@@ -51,10 +51,6 @@ export function MutationControls({ mutation, onChange }: MutationControlsProps) 
 					className="h-8 w-16 text-right tabular-nums"
 				/>
 			</div>
-
-			<p className="text-xs text-muted-foreground">
-				How often a newborn gets random weights, and how many.
-			</p>
 		</div>
 	);
 }

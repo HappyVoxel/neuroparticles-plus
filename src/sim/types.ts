@@ -38,4 +38,6 @@ export interface Sim {
 	species: Species[];
 	step: number;
 	mutation: MutationParams;
+	/** HP a move into a wall costs; comes live from the Walls control. */
+	wallPenalty: number;
 }

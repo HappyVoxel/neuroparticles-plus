@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { gridWidth, hpPenaltyFromWall, populationSize, speciesDefs, startHp } from "./config";
+import {
+	baseDecayPerStep,
+	gridWidth,
+	hiddenSize,
+	hpPenaltyFromWall,
+	populationSize,
+	speciesDefs,
+	startHp,
+} from "./config";
+import { buildField } from "./field";
+import { hiddenWeightsFrom } from "./network";
 import { createSim, extinctSpecies, moveAgent, recreate, step } from "./simulation";
 import type { Agent } from "./types";
 
@@ -17,7 +27,7 @@ describe("moveAgent", () => {
 	});
 
 	it("moves without HP cost on open ground", () => {
-		expect(moveAgent(at(10, 10), 5)).toMatchObject({
+		expect(moveAgent(at(10, 10), 5, hpPenaltyFromWall)).toMatchObject({
 			x: 11,
 			y: 10,
 			prevX: 10,
@@ -28,14 +38,14 @@ describe("moveAgent", () => {
 
 	it("bounces off a wall and pays for the bump", () => {
 		const agent = at(gridWidth - 1, 10);
-		const moved = moveAgent(agent, 5);
-		expect(moved).toMatchObject({ x: gridWidth - 2, y: 10, hp: startHp - hpPenaltyFromWall });
+		const moved = moveAgent(agent, 5, 250);
+		expect(moved).toMatchObject({ x: gridWidth - 2, y: 10, hp: startHp - 250 });
 		expect(agent.hp).toBe(startHp);
 	});
 
 	it("costs nothing to stand next to a wall or walk along it", () => {
-		expect(moveAgent(at(0, 10), 4).hp).toBe(startHp);
-		expect(moveAgent(at(0, 10), 7).hp).toBe(startHp);
+		expect(moveAgent(at(0, 10), 4, hpPenaltyFromWall).hp).toBe(startHp);
+		expect(moveAgent(at(0, 10), 7, hpPenaltyFromWall).hp).toBe(startHp);
 	});
 });
 
@@ -48,6 +58,30 @@ describe("simulation", () => {
 			const total = s.field.reduce((sum, col) => sum + col.reduce((a, b) => a + b, 0), 0);
 			expect(total).toBe(populationSize);
 		}
+	});
+
+	it("starts with the default wall penalty and keeps a changed one across steps", () => {
+		const sim = createSim(mutation);
+		expect(sim.wallPenalty).toBe(hpPenaltyFromWall);
+		expect(step({ ...sim, wallPenalty: 700 }).wallPenalty).toBe(700);
+	});
+
+	it("charges the sim's wall penalty for a bump", () => {
+		const sim = createSim(mutation);
+		// One agent alone in the world, at the west wall, with a brain that always picks W.
+		const goWest = sim.species[0].agents[0].genome.map(() => 0);
+		for (let k = 0; k < hiddenSize; k++) goWest[hiddenWeightsFrom + 3 * hiddenSize + k] = 2;
+		const loner = { ...sim.species[0].agents[0], genome: goWest, x: 0, y: 50, hp: startHp };
+		const world = {
+			...sim,
+			wallPenalty: 700,
+			species: sim.species.map((s, i) => {
+				const agents = i === 0 ? [loner] : [];
+				return { ...s, agents, field: buildField(agents) };
+			}),
+		};
+		const bumped = step(world).species[0].agents.find((a) => a.genome === goWest);
+		expect(bumped).toMatchObject({ x: 1, y: 50, hp: startHp - baseDecayPerStep - 700 });
 	});
 
 	it("steps without mutating the previous state", () => {

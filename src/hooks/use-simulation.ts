@@ -52,6 +52,7 @@ export function useSimulation(initialMutation: MutationParams) {
 	const [snap, setSnap] = useState(() => snapshot(initialSim));
 	const [status, setStatus] = useState<RunStatus>("paused");
 	const [mutation, setMutationState] = useState(initialMutation);
+	const [wallPenalty, setWallPenaltyState] = useState(initialSim.wallPenalty);
 	const [stepsPerSecond, setStepsPerSecond] = useState(defaultStepsPerSecond);
 
 	const paint = useCallback((t: number) => {
@@ -134,6 +135,11 @@ export function useSimulation(initialMutation: MutationParams) {
 		setMutationState(next);
 	}, []);
 
+	const setWallPenalty = useCallback((next: number) => {
+		simRef.current = { ...simRef.current, wallPenalty: next };
+		setWallPenaltyState(next);
+	}, []);
+
 	useEffect(() => {
 		paint(1);
 		return cancelFrame;
@@ -144,6 +150,7 @@ export function useSimulation(initialMutation: MutationParams) {
 		snap,
 		status,
 		mutation,
+		wallPenalty,
 		stepsPerSecond,
 		run,
 		pause,
@@ -151,5 +158,6 @@ export function useSimulation(initialMutation: MutationParams) {
 		setSpeed,
 		randomizeBrains,
 		setMutation,
+		setWallPenalty,
 	};
 }
