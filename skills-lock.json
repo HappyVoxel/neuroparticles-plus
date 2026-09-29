@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-based-modeling": {
+      "source": "omer-metin/skills-for-antigravity",
+      "sourceType": "github",
+      "skillPath": "skills/agent-based-modeling/SKILL.md",
+      "computedHash": "36d260ad5cc04f02c7afea8435642d4e1fe9f3db9bf769258896f74ccd644cf9"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "89496d5dd00f4810205f351759594fc2742bf8eea85a2f2b2d1de59f4bd91576"
+    }
+  }
+}
