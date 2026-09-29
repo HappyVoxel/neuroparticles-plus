@@ -9,7 +9,7 @@ import {
 	matureAge,
 	populationSize,
 	startHp,
-	visionRadius,
+	visionRadiusSquared,
 } from "./config";
 import { type Move, moveBy, stayMove } from "./movement";
 import { genomeSize, randomGene } from "./network";
@@ -32,9 +32,11 @@ export function spawn(genome: Genome, { x, y }: Cell = randomCell()): Agent {
 	return { genome, hp: startHp, x, y, prevX: x, prevY: y, lifetime: 0 };
 }
 
-/** True when each agent stands inside the other's view window. */
+/** True when each agent stands inside the other's view. */
 export function isNear(a: Cell, b: Cell): boolean {
-	return Math.abs(a.x - b.x) <= visionRadius && Math.abs(a.y - b.y) <= visionRadius;
+	const dx = a.x - b.x;
+	const dy = a.y - b.y;
+	return dx * dx + dy * dy <= visionRadiusSquared;
 }
 
 /**

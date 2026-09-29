@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 Browser-only artificial life sim with three species (Red, Green, Blue) in a rock-paper-scissors
-predator/prey loop. Each dot is an agent with its own small neural net that looks at an 11×11 window
-around itself and picks a move. A genetic algorithm breeds
+predator/prey loop. Each dot is an agent with its own small neural net that looks at a round view of
+121 cells around itself and picks a move. A genetic algorithm breeds
 mature dots that stand near each other.
 TypeScript + Vite + React 19 + shadcn/ui (Radix) + Tailwind CSS v4.
 
@@ -33,7 +33,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
   - `movement.ts` — `Move` (0–8), `bounce`, `hitsWall`, `moveBy`, `slide`.
   - `color.ts` — `shadeAt` (age → shade), `hpOpacity`, `oklchCss`.
-  - `field.ts` — `buildField`, `senseAt` (the network input window).
+  - `field.ts` — `buildField`, `senseAt` (the network input).
   - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
   - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
     new values.
@@ -85,7 +85,9 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   Steps to a neighbor: `0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW, 7 S, 8 SE`. Knight jumps
   (±1,±2)/(±2,±1) to the in-between directions: `9 NNW, 10 NNE, 11 WNW, 12 ENE, 13 WSW, 14 ESE`,
   `15 SSW, 16 SSE`. `stayBias` is added to "stay" before argmax.
-- **Input:** the 11×11 window row by row, with species counts interleaved per cell `[R,G,B, R,G,B, ...]`.
+- **View:** `visionCells`, every cell with dx² + dy² ≤ `visionRadiusSquared` (37): 121 cells in a
+  circle, 6 cells straight out and 4 along a diagonal.
+- **Input:** the view row by row, with species counts interleaved per cell `[R,G,B, R,G,B, ...]`.
   Cells outside the grid read `wallSense` (−1) on the first channel and 0 on the other two.
 
 ## Step loop (`simulation.step`)
@@ -113,7 +115,7 @@ All of it reads the fields from the previous step, so moves within a step don't 
   wall or walking along it is free. The value starts at `hpPenaltyFromWall` and comes live from the
   Walls control (0 to `maxWallPenalty`). This is what makes evolution select against wall bumps.
 - Breeding runs only when a species drops below `populationSize - 1`, and only fills the gap. Two
-  agents can breed when both have lived `matureAge` steps and each is inside the other's 11×11 view
+  agents can breed when both have lived `matureAge` steps and each is inside the other's view
   (`isNear`). Mature agents pair up in random order; an agent breeds once per step. No mature pair
   in view means no children.
 - A pair gets a litter sized by `litterOdds`: 2 children 90% of the time, 1 child 9%, 3 children 1%

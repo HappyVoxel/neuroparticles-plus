@@ -22,7 +22,7 @@ const sigmoid = (x: number): number => 1 / (1 + Math.exp(-x));
 
 /**
  * Forward pass. Returns one raw score per move.
- * Most of the window is empty, so the hidden layer only sums the non-zero inputs.
+ * Most of the view is empty, so the hidden layer only sums the non-zero inputs.
  */
 export function evaluate(input: readonly number[], genome: Readonly<Genome>): number[] {
 	const seen: number[] = [];

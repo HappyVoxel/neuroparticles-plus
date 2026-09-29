@@ -9,7 +9,7 @@ import {
 	matureAge,
 	populationSize,
 	startHp,
-	visionRadius,
+	visionRadiusSquared,
 } from "./config";
 import { ageAndCull, breed, crossover, litterSize, mutate, siblingMoves, spawn } from "./evolution";
 import { buildField } from "./field";
@@ -133,6 +133,9 @@ describe("breed", () => {
 	const single = 0.95;
 	const triplets = 0.995;
 	const cells = (children: readonly Agent[]) => children.map(({ x, y }) => ({ x, y }));
+	// How far a dot sees straight out and along a diagonal, in cells.
+	const reach = Math.floor(Math.sqrt(visionRadiusSquared));
+	const diagonalReach = Math.floor(Math.sqrt(visionRadiusSquared / 2));
 
 	afterEach(() => {
 		vi.restoreAllMocks();
@@ -152,10 +155,18 @@ describe("breed", () => {
 	});
 
 	it("breeds nothing from a pair outside each other's view", () => {
-		const farInX = [parent(10, 10), parent(10 + visionRadius + 1, 10)];
-		const farInY = [parent(10, 10), parent(10, 10 + visionRadius + 1)];
+		const farInX = [parent(10, 10), parent(10 + reach + 1, 10)];
+		const farInY = [parent(10, 10), parent(10, 10 + reach + 1)];
+		const farCorner = [parent(10, 10), parent(10 + diagonalReach + 1, 10 + diagonalReach + 1)];
 		expect(breed(farInX, noMutation)).toEqual([]);
 		expect(breed(farInY, noMutation)).toEqual([]);
+		expect(breed(farCorner, noMutation)).toEqual([]);
+	});
+
+	it("breeds a pair at the edge of the round view", () => {
+		roll(single);
+		expect(breed([parent(10, 10), parent(10 + reach, 10)], noMutation)).toHaveLength(1);
+		expect(breed([parent(10, 10), parent(10, 10 - reach)], noMutation)).toHaveLength(1);
 	});
 
 	it("breeds nothing from an agent younger than matureAge", () => {
@@ -165,13 +176,13 @@ describe("breed", () => {
 
 	it("puts one fresh child halfway between two mature parents that see each other", () => {
 		roll(single);
-		const survivors = [parent(10, 20), parent(10 + visionRadius, 20 - visionRadius)];
+		const survivors = [parent(10, 20), parent(10 + diagonalReach, 20 - diagonalReach)];
 		const children = breed(survivors, noMutation);
 
 		expect(children).toHaveLength(1);
 		expect(children[0]).toMatchObject({
-			x: Math.floor((10 + 10 + visionRadius) / 2),
-			y: Math.floor((20 + 20 - visionRadius) / 2),
+			x: Math.floor((10 + 10 + diagonalReach) / 2),
+			y: Math.floor((20 + 20 - diagonalReach) / 2),
 			hp: startHp,
 			lifetime: 0,
 		});

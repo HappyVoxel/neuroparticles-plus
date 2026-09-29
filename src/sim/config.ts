@@ -14,8 +14,20 @@ export const maxSlidingStepsPerSecond = 60;
 // Longest the sim may run inside one animation frame before it has to draw.
 export const stepBudgetMs = 8;
 
-// Each agent sees a (2r+1)×(2r+1) window around itself, one channel per species.
-export const visionRadius = 5;
+// Each agent sees every cell with dx² + dy² <= visionRadiusSquared around itself, one channel per
+// species. 37 makes a round view of 121 cells: 6 cells straight out, 4 along a diagonal.
+export const visionRadiusSquared = 37;
+// The cells in view as offsets from the agent, row by row. The network input follows this order.
+export const visionCells: readonly (readonly [dx: number, dy: number])[] = (() => {
+	const reach = Math.floor(Math.sqrt(visionRadiusSquared));
+	const cells: [dx: number, dy: number][] = [];
+	for (let dy = -reach; dy <= reach; dy++) {
+		for (let dx = -reach; dx <= reach; dx++) {
+			if (dx * dx + dy * dy <= visionRadiusSquared) cells.push([dx, dy]);
+		}
+	}
+	return cells;
+})();
 // What a cell outside the grid reads on its first channel (the others read 0). Real counts are
 // never negative, so the network can tell a wall from an empty cell.
 export const wallSense = -1;
@@ -63,7 +75,7 @@ export const speciesDefs: readonly Pick<Species, "id" | "name" | "shades">[] = [
 export const speciesCount = speciesDefs.length;
 
 // Network: input → hidden (sigmoid) → output (linear), one output per move.
-export const inputSize = (2 * visionRadius + 1) ** 2 * speciesCount;
+export const inputSize = visionCells.length * speciesCount;
 export const hiddenSize = 25;
 export const outputSize = 17;
 export const stayBias = 1;

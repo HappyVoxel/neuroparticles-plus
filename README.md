@@ -28,8 +28,8 @@ the run stops.
 
 ## How it works
 
-**Perception.** Each dot sees the 11×11 cells around it, counting red, green and blue dots separately:
-363 numbers in all.
+**Perception.** Each dot sees a circle of 121 cells around it, 6 cells straight out and 4 along a
+diagonal, counting red, green and blue dots separately: 363 numbers in all.
 
 **Brain.** A fully connected network: 363 inputs → 25 sigmoid neurons (with biases) → 17 outputs, one
 per move (16 directions or stay). The 8 main directions step to a neighboring cell; the 8 in-between
@@ -45,7 +45,7 @@ dies.
 below 199 dots, it refills with children bred from mature dots that stand near each other:
 
 - **Selection:** two dots can breed when both have lived 100 steps and each is inside the other's
-  11×11 view. Mature dots pair up in random order. A dot breeds once per step.
+  view. Mature dots pair up in random order. A dot breeds once per step.
 - **Litter:** a pair gets 2 children 90% of the time, 1 child 9% and 3 children 1%, never more than
   the species has room for.
 - **Crossover:** uniform. Each gene of a child comes from one of the two parents. Twins split the

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gridHeight, gridWidth, inputSize, visionRadius, wallSense } from "./config";
+import { gridHeight, gridWidth, inputSize, visionCells, wallSense } from "./config";
 import { buildField, senseAt } from "./field";
 import type { Agent } from "./types";
 
@@ -25,10 +25,9 @@ describe("buildField", () => {
 });
 
 describe("senseAt", () => {
-	const side = 2 * visionRadius + 1;
-	const cell = (dx: number, dy: number) => (dy + visionRadius) * side + (dx + visionRadius);
+	const cell = (dx: number, dy: number) => visionCells.findIndex(([x, y]) => x === dx && y === dy);
 
-	it("returns the window row by row with species interleaved per cell", () => {
+	it("returns the view row by row with species interleaved per cell", () => {
 		const red = buildField([at(50, 50)]);
 		const green = buildField([at(51, 50)]); // one to the east
 		const blue = buildField([at(50, 49)]); // one to the north
@@ -38,6 +37,19 @@ describe("senseAt", () => {
 		expect(input[cell(0, 0) * 3 + 0]).toBe(1);
 		expect(input[cell(1, 0) * 3 + 1]).toBe(1);
 		expect(input[cell(0, -1) * 3 + 2]).toBe(1);
+		expect(input.reduce((a, b) => a + b, 0)).toBe(3);
+	});
+
+	it("sees a round view of 121 cells, without the corners of the square around it", () => {
+		const red = buildField([at(56, 50), at(50, 44), at(54, 54)]); // 6 E, 6 N, 4 SE
+		const green = buildField([at(57, 50), at(55, 55), at(55, 54)]); // all out of view
+		const input = senseAt([red, green, buildField([])], 50, 50);
+
+		expect(visionCells).toHaveLength(121);
+		expect(input).toHaveLength(inputSize);
+		expect(input[cell(6, 0) * 3]).toBe(1);
+		expect(input[cell(0, -6) * 3]).toBe(1);
+		expect(input[cell(4, 4) * 3]).toBe(1);
 		expect(input.reduce((a, b) => a + b, 0)).toBe(3);
 	});
 
