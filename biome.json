@@ -1,6 +1,18 @@
 {
 	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-	"formatter": { "enabled": false },
-	"assist": { "enabled": false },
-	"linter": { "enabled": true, "rules": { "recommended": true } }
+	"formatter": {
+		"enabled": false
+	},
+	"assist": {
+		"enabled": false
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true
+		}
+	},
+	"files": {
+		"includes": ["**", "!src/components/ui"]
+	}
 }

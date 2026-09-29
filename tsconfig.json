@@ -10,7 +10,12 @@
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
-		"noEmit": true
+		"noEmit": true,
+		"jsx": "react-jsx",
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"types": ["vite/client"]
 	},
 	"include": ["src", "vite.config.ts"]
 }
