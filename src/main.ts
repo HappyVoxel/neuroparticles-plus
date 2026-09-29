@@ -1,7 +1,7 @@
-import { cellPixels, gridHeight, gridWidth } from "./config";
-import { draw } from "./render";
-import { createSim, extinctSpecies, recreate, step } from "./simulation";
-import type { MutationParams } from "./types";
+import { cellPixels, gridHeight, gridWidth } from "./sim/config";
+import { draw } from "./sim/render";
+import { createSim, extinctSpecies, recreate, step } from "./sim/simulation";
+import type { MutationParams } from "./sim/types";
 
 function byId<T extends HTMLElement>(id: string, type: new () => T): T {
 	const el = document.getElementById(id);

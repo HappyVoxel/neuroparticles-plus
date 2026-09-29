@@ -27,17 +27,17 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 ## Layout
 
 - `index.html` — markup with Tailwind classes; buttons are wired in `main.ts`, not inline handlers.
-- `src/config.ts` — every tunable constant and the species list (`speciesDefs`).
-- `src/types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Sim`.
-- `src/network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
-- `src/movement.ts` — `Move` (0–8), `wrap`, `moveBy`.
-- `src/field.ts` — `buildField`, `senseAt` (the network input window).
-- `src/evolution.ts` — `spawn`, `ageAndCull`, `crossover`, `mutate`, `breed`.
-- `src/simulation.ts` — `createSim`, `step`, `recreate`; pure functions that return a new `Sim`.
-- `src/render.ts` — canvas drawing.
+- `src/sim/config.ts` — every tunable constant and the species list (`speciesDefs`).
+- `src/sim/types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Sim`.
+- `src/sim/network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
+- `src/sim/movement.ts` — `Move` (0–8), `wrap`, `moveBy`.
+- `src/sim/field.ts` — `buildField`, `senseAt` (the network input window).
+- `src/sim/evolution.ts` — `spawn`, `ageAndCull`, `crossover`, `mutate`, `breed`.
+- `src/sim/simulation.ts` — `createSim`, `step`, `recreate`; pure functions that return a new `Sim`.
+- `src/sim/render.ts` — canvas drawing.
 - `src/main.ts` — DOM wiring, stats, Start/Stop/One timer.
 - `src/style.css` — only `@import "tailwindcss";`.
-- `src/*.test.ts` — Vitest unit tests next to each module.
+- `src/sim/*.test.ts` — Vitest unit tests next to each module.
 
 ## Conventions
 

@@ -67,9 +67,9 @@ npm test         # unit tests
 npm run build    # static site in dist/
 ```
 
-The code lives in `src/`, one module per concern: `network.ts` (the brain), `field.ts` (what an
+The simulation lives in `src/sim/`, one module per concern: `network.ts` (the brain), `field.ts` (what an
 agent sees), `evolution.ts` (death and breeding), `simulation.ts` (one step), `render.ts` (canvas),
-and `main.ts` (page wiring). All tunable constants are in `src/config.ts`.
+and `main.ts` (page wiring). All tunable constants are in `src/sim/config.ts`.
 
 ---
 
