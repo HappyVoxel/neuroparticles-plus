@@ -1,4 +1,4 @@
-import { PauseIcon, PlayIcon, ShuffleIcon, StepForwardIcon } from "lucide-react";
+import { PauseIcon, PlayIcon, RotateCcwIcon, ShuffleIcon, StepForwardIcon } from "lucide-react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -25,6 +25,7 @@ interface RunControlsProps {
 	onPause: () => void;
 	onStep: () => void;
 	onRandomize: () => void;
+	onReset: () => void;
 }
 
 export function RunControls({
@@ -35,6 +36,7 @@ export function RunControls({
 	onPause,
 	onStep,
 	onRandomize,
+	onReset,
 }: RunControlsProps) {
 	const running = status === "running";
 	const stopped = status === "stopped";
@@ -90,6 +92,33 @@ export function RunControls({
 							<AlertDialogCancel>Cancel</AlertDialogCancel>
 							<AlertDialogAction variant="destructive" onClick={onRandomize}>
 								Randomize brains
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
+
+				<AlertDialog>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<AlertDialogTrigger asChild>
+								<Button variant="outline" size="icon-sm" aria-label="Reset">
+									<RotateCcwIcon />
+								</Button>
+							</AlertDialogTrigger>
+						</TooltipTrigger>
+						<TooltipContent>Reset</TooltipContent>
+					</Tooltip>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Start a new run?</AlertDialogTitle>
+							<AlertDialogDescription>
+								All dots and the step count are replaced. Walls, mutation and speed stay as set.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogAction variant="destructive" onClick={onReset}>
+								Reset
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</AlertDialogContent>

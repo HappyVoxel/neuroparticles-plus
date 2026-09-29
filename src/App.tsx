@@ -58,7 +58,7 @@ export function App() {
 								<AlertTitle>
 									{snap.extinct.join(" and ")} died out at step {formatCount(snap.step)}.
 								</AlertTitle>
-								<AlertDescription>Reload the page to start a new run.</AlertDescription>
+								<AlertDescription>Press Reset to start a new run.</AlertDescription>
 							</Alert>
 						)}
 					</div>
@@ -79,6 +79,7 @@ export function App() {
 						onPause={sim.pause}
 						onStep={sim.stepOnce}
 						onRandomize={sim.randomizeBrains}
+						onReset={sim.reset}
 					/>
 
 					<Separator />

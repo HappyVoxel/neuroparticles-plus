@@ -132,6 +132,17 @@ export function useSimulation(initialMutation: MutationParams) {
 		simRef.current = recreate(simRef.current);
 	}, []);
 
+	/** Starts a new run at step 0 with fresh random dots; keeps the mutation and wall settings. */
+	const reset = useCallback(() => {
+		cancelFrame();
+		const { mutation, wallPenalty } = simRef.current;
+		simRef.current = { ...createSim(mutation), wallPenalty };
+		dueRef.current = 0;
+		paint(1);
+		setSnap(snapshot(simRef.current));
+		setStatus("paused");
+	}, [cancelFrame, paint]);
+
 	const setMutation = useCallback((next: MutationParams) => {
 		simRef.current = { ...simRef.current, mutation: next };
 		setMutationState(next);
@@ -159,6 +170,7 @@ export function useSimulation(initialMutation: MutationParams) {
 		stepOnce,
 		setSpeed,
 		randomizeBrains,
+		reset,
 		setMutation,
 		setWallPenalty,
 	};

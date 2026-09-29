@@ -124,5 +124,8 @@ All of it reads the fields from the previous step, so moves within a step don't 
 - Mutation: with `percent`% odds a child gets exactly `genes` random genes replaced by values in
   `[-2, 2)`. Both values come live from the Mutation controls.
 - Recreate gives every living agent a new random genome and keeps position, HP and lifetime.
+- Reset (`reset` in the hook) builds a new sim at step 0 with fresh random dots and pauses; it keeps
+  the Walls, Mutation and Speed settings.
 - A species that dies out stays extinct (`breed` returns nothing for zero survivors). The hook stops
-  the frame loop once `extinctSpecies` is non-empty; the page shows an Alert and disables Run and Step.
+  the frame loop once `extinctSpecies` is non-empty; the page shows an Alert and disables Run, Step
+  and Randomize. Reset stays enabled and starts a new run.
