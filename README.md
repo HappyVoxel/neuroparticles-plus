@@ -1,85 +1,85 @@
 # Neuroparticles
 
-![Preview](images/neuroparticles_preview.png)
+![Neuroparticles after 623 steps: the field on the left, controls and species stats on the right](images/preview.png)
 
-Each teeny-weeny dot is a lil organism. It sees (using a neural network) what's around it and moves depending on what it sees. If it survives long enough - it produces offspring. If not - bb lil dot, you were brave, but other dots were more brave.
+Each teeny-weeny dot is a lil organism. It sees (using a neural network) what's around it and moves
+depending on what it sees. If it survives long enough, it produces offspring. If not, bb lil dot, you
+were brave, but other dots were more brave.
 
-**Neuroparticles** is a real-time artificial life simulation based on:
+Three species, red, green and blue, share a 200×200 field in a rock-paper-scissors loop: red eats
+green, green eats blue, blue eats red. Every dot has its own small neural network, and a genetic
+algorithm breeds the longest-lived survivors. Nobody programs the behavior; it comes out of local
+sensing and selection pressure.
 
-- **Neural Networks** - Each agent uses a fully connected feedforward network:
-  - **Input Layer**: 363 inputs from three 11×11 channels (Red, Green, Blue).
-  - **Hidden Layer**: 25 neurons with sigmoid activation.
-  - **Output Layer**: 9 outputs corresponding to 8 movement directions + stay.
-  - **Bias terms** are included in the hidden layer.
+## Controls
 
-- **Genetic Algorithm**:
-  - The **genome** is a flat array of all network weights and biases.
-  - **Fitness** is measured by lifetime (survival time).
-  - **Crossover**: uniform crossover between random survivors.
-  - **Mutation**: replaces random weights with new random values.
+| Control          | What it does                                                    |
+| ---------------- | --------------------------------------------------------------- |
+| Run / Pause      | Starts or pauses the simulation                                 |
+| Step             | Advances one step while paused                                  |
+| Randomize brains | Gives every dot a new random brain, after you confirm           |
+| Chance per child | How likely a newborn is to mutate (0–100%)                      |
+| Genes changed    | How many weights a mutation replaces                            |
+| Theme toggle     | Switches light and dark; follows your system setting by default |
 
-- **Toroidal Grid**: 200×200 field with wraparound edges (toroidal topology).
-- **Local Perception**: Each agent only sees a limited 11×11 area centered on itself.
-- **Self-organization**: No global rules. All behavior emerges from local sensing and reproduction pressure.
+The sidebar shows the food cycle live: each species' dot grows and shrinks with its population, and
+the rows under it show how many are alive and how long the oldest has survived. If a species dies out,
+the run stops.
 
----
+## How it works
 
-## Overview
+**Perception.** Each dot sees the 11×11 cells around it, counting red, green and blue dots separately:
+363 numbers in all.
 
-- **Particles**: 600 total (200 Red, 200 Green, 200 Blue)
-- **Input**: 3-channel input from Red, Green, and Blue fields
-- **Dynamic**:
-  - Red gains HP from Green, loses from Blue
-  - Green gains from Blue, loses from Red
-  - Blue gains from Red, loses from Green
-- **Behavior**: Evolving predator-prey arms race
+**Brain.** A fully connected network: 363 inputs → 25 sigmoid neurons (with biases) → 9 outputs, one
+per move (8 directions or stay). The highest output wins, with a small bonus for staying put.
 
----
+**Health.** Every dot starts with 10,000 HP. Each step it loses 1 HP, loses 100 HP if it shares a
+cell with its own kind or any predator, and gains 100 HP if it shares a cell with prey. At 0 HP it dies.
 
-## 🧠 Neural Network Architecture
+**Evolution.** A genome is the flat list of all the network's weights and biases. When a species drops
+below 199 dots, it refills with children bred from its longest-lived survivors:
 
-- **Input size**: `363`
-- **Hidden layer**: 25 sigmoid neurons
-- **Output size**: 9 (8 directions + stay)
-- **Activation**: `sigmoid(x) = 1 / (1 + e^(-x))`
-- **Decision**: Max output determines movement
+- **Selection:** parents are drawn at random from the top survivors by lifetime.
+- **Crossover:** uniform. Each gene comes from one parent, and the sibling gets the other's.
+- **Mutation:** with the chosen chance, a newborn gets that many weights replaced by random values in
+  `[-2, 2)`.
+- **Placement:** children appear at random cells with full HP.
 
----
+**World.** The 200×200 grid wraps around at the edges (a torus). All dots move at the same time, each
+reacting to where everyone was at the end of the previous step.
 
-## ⚙️ Evolution Parameters
+## Development
 
-- **Genotype**: Raw neural weights + biases
-- **Crossover**: Uniform (per-gene random split)
-- **Mutation**: Random value replacement in `[-2, 2]`
-- **Selection**: Based on lifetime (survival time)
-- **Reproduction**: Best survivors create 2 children each generation
-
----
-
-## 🛠 Development
-
-Written in TypeScript with React, shadcn/ui and Tailwind CSS, bundled with Vite. Requires Node.js.
+Requires Node.js. Built with TypeScript, React, [shadcn/ui](https://ui.shadcn.com) and Tailwind CSS,
+bundled with Vite.
 
 ```sh
 npm install
 npm run dev      # dev server at http://localhost:5173
-npm test         # unit tests
-npm run build    # static site in dist/
+npm test         # unit tests (Vitest)
+npm run build    # typecheck, then a static site in dist/
 ```
 
-The simulation lives in `src/sim/`, one plain TypeScript module per concern: `network.ts` (the
-brain), `field.ts` (what an agent sees), `evolution.ts` (death and breeding), `simulation.ts` (one
-step) and `render.ts` (canvas). The page around it is React in `src/App.tsx` and `src/components/`.
-All tunable constants are in `src/sim/config.ts`.
+`dist/` uses relative paths, so it can be hosted from any folder. Open it through a server
+(`npm run preview` works); browsers block ES modules on `file://`.
 
----
+| Path                | What's there                                                             |
+| ------------------- | ------------------------------------------------------------------------ |
+| `src/sim/`          | The simulation in plain TypeScript: network, perception, evolution, step |
+| `src/sim/config.ts` | Every tunable constant: grid size, population, HP rules, mutation range  |
+| `src/hooks/`        | `useSimulation` (runs the sim outside React) and `useTheme`              |
+| `src/components/`   | The page: canvas, controls, food cycle, species stats, mutation          |
 
-## 📜 License
+## Credits
 
-MIT License
+Neuroparticles was created by **Serhii Herasymov** ([xcontcom](https://github.com/xcontcom)). The
+simulation, the neural network and genetic algorithm design, and the RGB predator-prey mode all come
+from the [original project](https://github.com/xcontcom/neuroparticles).
 
----
+This fork keeps that simulation and rebuilds everything around it: TypeScript modules with unit tests,
+a React and shadcn/ui interface, and a stop when a species dies out.
 
-## 👤 Author
+## License
 
-Serhii Herasymov
+MIT. The original copyright notice is kept in [LICENSE](LICENSE).
