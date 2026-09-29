@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { gridHeight, gridWidth } from "./config";
-import { bounce, hitsWall, moveBy, slide } from "./movement";
+import { gridHeight, gridWidth, matureAge, oldAge } from "./config";
+import { bounce, hitsWall, type Move, moveBy, moveCount, slide, stepMoves } from "./movement";
 
 describe("bounce", () => {
 	it("reflects a step past either wall back inside", () => {
@@ -95,5 +95,23 @@ describe("slide", () => {
 
 	it("stays put when the agent did not move", () => {
 		expect(slide(10, 10, 0.5)).toBe(10);
+	});
+});
+
+describe("moveCount", () => {
+	it("gives young and old agents only the one-cell moves, and adults all of them", () => {
+		expect(moveCount(0)).toBe(stepMoves);
+		expect(moveCount(matureAge - 1)).toBe(stepMoves);
+		expect(moveCount(matureAge)).toBe(17);
+		expect(moveCount(oldAge - 1)).toBe(17);
+		expect(moveCount(oldAge)).toBe(stepMoves);
+	});
+
+	it("counts the moves that go at most one cell, all before the knight jumps", () => {
+		for (let move = 0; move < 17; move++) {
+			const { x, y } = moveBy(50, 50, move as Move);
+			const oneCell = Math.abs(x - 50) <= 1 && Math.abs(y - 50) <= 1;
+			expect(oneCell).toBe(move < stepMoves);
+		}
 	});
 });

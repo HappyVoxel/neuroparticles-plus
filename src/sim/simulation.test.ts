@@ -4,6 +4,8 @@ import {
 	gridWidth,
 	hiddenSize,
 	hpPenaltyFromWall,
+	matureAge,
+	oldAge,
 	populationSize,
 	speciesDefs,
 	startHp,
@@ -82,6 +84,35 @@ describe("simulation", () => {
 		};
 		const bumped = step(world).species[0].agents.find((a) => a.genome === goWest);
 		expect(bumped).toMatchObject({ x: 1, y: 50, hp: startHp - baseDecayPerStep - 700 });
+	});
+
+	it("lets only adults knight-jump", () => {
+		const sim = createSim(mutation);
+		// A brain that always wants move 16, a knight jump to SSE.
+		const jumper = sim.species[0].agents[0].genome.map(() => 0);
+		for (let k = 0; k < hiddenSize; k++) jumper[hiddenWeightsFrom + 16 * hiddenSize + k] = 2;
+		const at = (x: number, lifetime: number) => ({
+			...sim.species[0].agents[0],
+			genome: jumper,
+			x,
+			y: 50,
+			hp: startHp,
+			lifetime,
+		});
+		const agents = [at(20, 0), at(40, matureAge), at(60, oldAge)];
+		const world = {
+			...sim,
+			species: sim.species.map((s, i) => {
+				const own = i === 0 ? agents : [];
+				return { ...s, agents: own, field: buildField(own) };
+			}),
+		};
+		const moved = step(world).species[0].agents.map(({ x, y }) => ({ x, y }));
+		expect(moved).toEqual([
+			{ x: 20, y: 50 },
+			{ x: 41, y: 52 },
+			{ x: 60, y: 50 },
+		]);
 	});
 
 	it("steps without mutating the previous state", () => {

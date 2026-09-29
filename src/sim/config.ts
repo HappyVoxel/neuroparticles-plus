@@ -94,6 +94,9 @@ export const baseDecayPerStep = 1;
 // Genetic algorithm
 // Steps an agent has to survive before it can breed.
 export const matureAge = 100;
+// Young agents (below `matureAge`) and old ones (from `oldAge` on) only get the one-cell moves;
+// adults in between can also knight-jump. Old is the last 20% of a life without food.
+export const oldAge = Math.round(0.8 * (startHp / baseDecayPerStep));
 export const crossoverRate = 0.5;
 // Children per breeding pair. The percents add up to 100.
 export const litterOdds: readonly { children: number; percent: number }[] = [

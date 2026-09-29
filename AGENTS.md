@@ -31,7 +31,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `config.ts` — every tunable constant and the species list (`speciesDefs`: id, name, shades).
   - `types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Sim`.
   - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
-  - `movement.ts` — `Move` (0–8), `bounce`, `hitsWall`, `moveBy`, `slide`.
+  - `movement.ts` — `Move` (0–16), `stepMoves`, `bounce`, `hitsWall`, `moveBy`, `moveCount`, `slide`.
   - `color.ts` — `shadeAt` (age → shade), `hpOpacity`, `oklchCss`.
   - `field.ts` — `buildField`, `senseAt` (the network input).
   - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
@@ -84,7 +84,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - **Network:** 363 inputs → 25 sigmoid hidden → 17 linear outputs. Output index is the move.
   Steps to a neighbor: `0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW, 7 S, 8 SE`. Knight jumps
   (±1,±2)/(±2,±1) to the in-between directions: `9 NNW, 10 NNE, 11 WNW, 12 ENE, 13 WSW, 14 ESE`,
-  `15 SSW, 16 SSE`. `stayBias` is added to "stay" before argmax.
+  `15 SSW, 16 SSE`. `stayBias` is added to "stay" before argmax, taken over the first
+  `moveCount(lifetime)` outputs only.
 - **View:** `visionCells`, every cell with dx² + dy² ≤ `visionRadiusSquared` (37): 121 cells in a
   circle, 6 cells straight out and 4 along a diagonal.
 - **Input:** the view row by row, with species counts interleaved per cell `[R,G,B, R,G,B, ...]`.
@@ -123,6 +124,10 @@ All of it reads the fields from the previous step, so moves within a step don't 
   cell halfway between the parents, the second one cell E, the third one cell S (`siblingMoves`),
   so siblings don't pay the crowding penalty. Twins get the two halves of one `crossover`; a third
   child gets its own.
+- Speed depends on age (`moveCount`): agents younger than `matureAge` or at least `oldAge`
+  (0.8 × `startHp` ÷ `baseDecayPerStep`, the last 20% of a life without food) pick only from the
+  one-cell moves 0–8 (`stepMoves`); adults in between can also knight-jump. The net still scores
+  all 17 moves.
 - Mutation: with `percent`% odds a child gets exactly `genes` random genes replaced by values in
   `[-2, 2)`. Both values come live from the Mutation controls.
 - Recreate gives every living agent a new random genome and keeps position, HP and lifetime.

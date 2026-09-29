@@ -1,7 +1,7 @@
 import { hpPenaltyFromWall, populationSize, speciesDefs } from "./config";
 import { ageAndCull, breed, spawn } from "./evolution";
 import { buildField, senseAt } from "./field";
-import { hitsWall, type Move, moveBy } from "./movement";
+import { hitsWall, type Move, moveBy, moveCount } from "./movement";
 import { evaluate, pickMove, randomGenome } from "./network";
 import type { Agent, Field, MutationParams, Sim, Species } from "./types";
 
@@ -21,7 +21,8 @@ export function moveAgent(agent: Agent, move: Move, wallPenalty: number): Agent 
 }
 
 function think(agent: Agent, fields: readonly Field[], wallPenalty: number): Agent {
-	const move = pickMove(evaluate(senseAt(fields, agent.x, agent.y), agent.genome));
+	const output = evaluate(senseAt(fields, agent.x, agent.y), agent.genome);
+	const move = pickMove(output, moveCount(agent.lifetime));
 	return moveAgent(agent, move, wallPenalty);
 }
 

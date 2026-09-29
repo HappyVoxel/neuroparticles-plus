@@ -52,11 +52,14 @@ export function evaluate(input: readonly number[], genome: Readonly<Genome>): nu
 	return output;
 }
 
-/** Highest score wins, with `stayBias` added to "stay". Ties go to the lowest index. */
-export function pickMove(output: readonly number[]): Move {
+/**
+ * Highest score among the first `count` moves wins, with `stayBias` added to "stay". Ties go to
+ * the lowest index.
+ */
+export function pickMove(output: readonly number[], count = output.length): Move {
 	let best: Move = 0;
 	let bestScore = Number.NEGATIVE_INFINITY;
-	for (let j = 0; j < output.length; j++) {
+	for (let j = 0; j < count; j++) {
 		const score = output[j] + (j === stayMove ? stayBias : 0);
 		if (score > bestScore) {
 			bestScore = score;

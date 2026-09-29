@@ -36,6 +36,10 @@ per move (16 directions or stay). The 8 main directions step to a neighboring ce
 ones (NNE, ENE, …) are knight jumps, one cell along one axis and two along the other. The highest
 output wins, with a small bonus for staying put.
 
+**Speed.** Young dots (under 100 steps) and old ones (the last 20% of a life without food: 8,000
+steps and up) only step to a neighboring cell. Adults in between can also knight-jump, so they are
+the fastest.
+
 **Health.** Every dot starts with 10,000 HP. Each step it loses 1 HP, loses 100 HP if it shares a
 cell with its own kind or any predator, and gains 100 HP if it shares a cell with prey. Bumping into
 a wall costs 500 HP; the Walls slider changes that cost (0 to 1,000) while the sim runs. At 0 HP it

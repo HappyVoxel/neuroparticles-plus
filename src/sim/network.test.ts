@@ -86,6 +86,14 @@ describe("pickMove", () => {
 		expect(pickMove([0, 0, stayBias + 0.1, 0, 0, 0, 0, 0, 0])).toBe(2);
 	});
 
+	it("only compares the first count moves", () => {
+		const output = new Array<number>(outputSize).fill(0);
+		output[2] = 5;
+		output[outputSize - 1] = 9;
+		expect(pickMove(output, 9)).toBe(2);
+		expect(pickMove(output)).toBe(16);
+	});
+
 	it("breaks ties toward the lowest index", () => {
 		expect(pickMove([3, 3, 0, 0, 0, 0, 0, 0, 0])).toBe(0);
 	});

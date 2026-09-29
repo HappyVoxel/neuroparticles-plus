@@ -1,4 +1,4 @@
-import { gridHeight, gridWidth } from "./config";
+import { gridHeight, gridWidth, matureAge, oldAge } from "./config";
 
 /**
  * Network output index → move. 0–8 step to a neighbor: 0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW,
@@ -8,6 +8,9 @@ import { gridHeight, gridWidth } from "./config";
 export type Move = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16;
 
 export const stayMove: Move = 4;
+
+/** Moves 0 to `stepMoves - 1` go at most one cell; the rest are knight jumps. */
+export const stepMoves = 9;
 
 const offsets: readonly (readonly [dx: number, dy: number])[] = [
 	[-1, -1],
@@ -43,6 +46,11 @@ export function bounce(v: number, size: number): number {
 export function hitsWall(x: number, y: number, move: Move): boolean {
 	const [dx, dy] = offsets[move];
 	return x + dx < 0 || x + dx >= gridWidth || y + dy < 0 || y + dy >= gridHeight;
+}
+
+/** How many moves, from 0, an agent this old may pick: young and old ones can't knight-jump. */
+export function moveCount(lifetime: number): number {
+	return lifetime < matureAge || lifetime >= oldAge ? stepMoves : offsets.length;
 }
 
 export function moveBy(x: number, y: number, move: Move): { x: number; y: number } {
