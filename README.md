@@ -46,7 +46,8 @@ below 199 dots, it refills with children bred from its longest-lived survivors:
   `[-2, 2)`.
 - **Placement:** children appear at random cells with full HP.
 
-**World.** The 200×200 grid wraps around at the edges (a torus). All dots move at the same time, each
+**World.** The 200×200 grid has walls at the edges: a dot that steps into one bounces back, and
+dots see the walls inside their view. All dots move at the same time, each
 reacting to where everyone was at the end of the previous step.
 
 ## Development

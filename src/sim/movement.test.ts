@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { gridHeight, gridWidth } from "./config";
-import { moveBy, slide, wrap } from "./movement";
+import { bounce, moveBy, slide } from "./movement";
 
-describe("wrap", () => {
-	it("wraps both edges of the torus", () => {
-		expect(wrap(-1, 200)).toBe(199);
-		expect(wrap(200, 200)).toBe(0);
-		expect(wrap(57, 200)).toBe(57);
+describe("bounce", () => {
+	it("reflects a step past either wall back inside", () => {
+		expect(bounce(-1, 200)).toBe(1);
+		expect(bounce(200, 200)).toBe(198);
+		expect(bounce(57, 200)).toBe(57);
+		expect(bounce(0, 200)).toBe(0);
+		expect(bounce(199, 200)).toBe(199);
 	});
 });
 
@@ -25,9 +27,19 @@ describe("moveBy", () => {
 		expect(moveBy(10, 10, move)).toEqual({ x: 10 + dx, y: 10 + dy });
 	});
 
-	it("wraps across the corner", () => {
-		expect(moveBy(0, 0, 0)).toEqual({ x: gridWidth - 1, y: gridHeight - 1 });
-		expect(moveBy(gridWidth - 1, gridHeight - 1, 8)).toEqual({ x: 0, y: 0 });
+	it("bounces off a corner on both axes", () => {
+		expect(moveBy(0, 0, 0)).toEqual({ x: 1, y: 1 });
+		expect(moveBy(gridWidth - 1, gridHeight - 1, 8)).toEqual({
+			x: gridWidth - 2,
+			y: gridHeight - 2,
+		});
+	});
+
+	it("bounces only the axis that hits the wall", () => {
+		// NE against the east wall turns into NW.
+		expect(moveBy(gridWidth - 1, 10, 2)).toEqual({ x: gridWidth - 2, y: 9 });
+		// S against the south wall turns into N.
+		expect(moveBy(10, gridHeight - 1, 7)).toEqual({ x: 10, y: gridHeight - 2 });
 	});
 });
 
@@ -41,10 +53,5 @@ describe("slide", () => {
 
 	it("stays put when the agent did not move", () => {
 		expect(slide(10, 10, 0.5)).toBe(10);
-	});
-
-	it("snaps to the current cell over the wrapped edge", () => {
-		expect(slide(gridWidth - 1, 0, 0.5)).toBe(0);
-		expect(slide(0, gridWidth - 1, 0.5)).toBe(gridWidth - 1);
 	});
 });

@@ -30,7 +30,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `config.ts` — every tunable constant and the species list (`speciesDefs`: id, name, color).
   - `types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Sim`.
   - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
-  - `movement.ts` — `Move` (0–8), `wrap`, `moveBy`.
+  - `movement.ts` — `Move` (0–8), `bounce`, `moveBy`, `slide`.
   - `field.ts` — `buildField`, `senseAt` (the network input window).
   - `evolution.ts` — `spawn`, `ageAndCull`, `crossover`, `mutate`, `breed`.
   - `simulation.ts` — `createSim`, `step`, `recreate`, `extinctSpecies`; pure, return a new `Sim`.
@@ -68,7 +68,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - **Agent:** `{ genome, hp, x, y, prevX, prevY, lifetime }`. Genome and position live on the same
   object; `prevX`/`prevY` is the cell before the last move, used only for drawing.
 - **Field:** `field[x][y]` is an `Int8Array` count of one species' agents per cell, rebuilt every step.
-- **Grid:** 200×200, toroidal; every coordinate goes through `wrap`.
+- **Grid:** 200×200 with walls; every move goes through `bounce`, which reflects a step past a wall
+  back inside (E at the east wall lands one cell W; only the axis that hits the wall reflects).
 - **Genome:** flat `number[]` of length `genomeSize` (9325):
   - `[0, hiddenWeightsFrom)` — input→hidden weights, index `j * inputSize + k`
   - `[hiddenWeightsFrom, biasFrom)` — hidden→output weights, index `hiddenWeightsFrom + j * hiddenSize + k`
@@ -76,6 +77,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - **Network:** 363 inputs → 25 sigmoid hidden → 9 linear outputs. Output index is the move:
   `0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW, 7 S, 8 SE`. `stayBias` is added to "stay" before argmax.
 - **Input:** the 11×11 window row by row, with species counts interleaved per cell `[R,G,B, R,G,B, ...]`.
+  Cells outside the grid read `wallSense` (−1) on all three channels.
 
 ## Step loop (`simulation.step`)
 
@@ -88,8 +90,7 @@ All of it reads the fields from the previous step, so moves within a step don't 
 - Steps in one frame stop after `stepBudgetMs`; steps still owed are dropped, so a slow machine slows
   the sim and keeps the frame rate.
 - Up to `maxSlidingStepsPerSecond`, `draw` slides each dot from its previous cell to its current one
-  (`slide` in `movement.ts`); above it, dots are drawn at their cell. A move over the wrapped edge
-  snaps.
+  (`slide` in `movement.ts`); above it, dots are drawn at their cell.
 - `draw` paints per agent with additive blending, so overlapping species mix colors (R+G is yellow).
 
 ## Rules that are easy to miss

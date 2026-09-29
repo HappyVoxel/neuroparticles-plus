@@ -1,5 +1,4 @@
-import { gridHeight, gridWidth, visionRadius } from "./config";
-import { wrap } from "./movement";
+import { gridHeight, gridWidth, visionRadius, wallSense } from "./config";
 import type { Agent, Field } from "./types";
 
 export function buildField(agents: readonly Agent[]): Field {
@@ -13,14 +12,20 @@ export function buildField(agents: readonly Agent[]): Field {
 /**
  * The network input for an agent at (x, y): the window around it, row by row,
  * with the species counts interleaved per cell — [R, G, B, R, G, B, ...].
+ * Cells outside the grid read `wallSense` on every species channel.
  */
 export function senseAt(fields: readonly Field[], x: number, y: number): number[] {
 	const input: number[] = [];
 	for (let dy = -visionRadius; dy <= visionRadius; dy++) {
-		const yy = wrap(y + dy, gridHeight);
+		const yy = y + dy;
+		const rowOutside = yy < 0 || yy >= gridHeight;
 		for (let dx = -visionRadius; dx <= visionRadius; dx++) {
-			const xx = wrap(x + dx, gridWidth);
-			for (const field of fields) input.push(field[xx][yy]);
+			const xx = x + dx;
+			if (rowOutside || xx < 0 || xx >= gridWidth) {
+				for (let s = 0; s < fields.length; s++) input.push(wallSense);
+			} else {
+				for (const field of fields) input.push(field[xx][yy]);
+			}
 		}
 	}
 	return input;

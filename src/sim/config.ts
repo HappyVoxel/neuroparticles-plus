@@ -16,6 +16,9 @@ export const stepBudgetMs = 8;
 
 // Each agent sees a (2r+1)×(2r+1) window around itself, one channel per species.
 export const visionRadius = 5;
+// What a cell outside the grid reads on every species channel. Real counts are never negative,
+// so the network can tell a wall from an empty cell.
+export const wallSense = -1;
 
 // Rock-paper-scissors: each species gains HP from the next one and loses it to the previous one
 // (Red eats Green, Green eats Blue, Blue eats Red).

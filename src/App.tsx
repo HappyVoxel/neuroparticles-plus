@@ -63,7 +63,7 @@ export function App() {
 					<div className="flex justify-between gap-4 text-sm text-muted-foreground tabular-nums">
 						<span>Step {formatCount(snap.step)}</span>
 						<span>
-							{gridWidth} × {gridHeight} grid, edges wrap around
+							{gridWidth} × {gridHeight} grid, walled edges
 						</span>
 					</div>
 				</section>
