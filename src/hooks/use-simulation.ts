@@ -84,7 +84,7 @@ export function useSimulation(initialMutation: MutationParams) {
 
 	const paint = useCallback((t: number) => {
 		const ctx = canvasRef.current?.getContext("2d");
-		if (ctx) draw(ctx, simRef.current.species, t);
+		if (ctx) draw(ctx, simRef.current.species, simRef.current.disease.areas, t);
 	}, []);
 
 	const cancelFrame = useCallback(() => {

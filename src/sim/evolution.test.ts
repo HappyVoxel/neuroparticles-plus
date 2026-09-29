@@ -11,6 +11,7 @@ import {
 	startHp,
 	visionRadiusSquared,
 } from "./config";
+import { emptyDisease } from "./disease";
 import { ageAndCull, breed, crossover, litterSize, mutate, siblingMoves, spawn } from "./evolution";
 import { buildField } from "./field";
 import { genomeSize } from "./network";
@@ -35,32 +36,45 @@ const species = (agents: Agent[]): Species => ({
 });
 
 const noMutation = { percent: 0, genes: 1 };
+const noDisease = emptyDisease().cost;
 
 describe("ageAndCull", () => {
 	it("only decays a lone agent and adds a step of lifetime", () => {
-		const [a] = ageAndCull(species([agent(1, 1)]), species([]), species([]));
+		const [a] = ageAndCull(species([agent(1, 1)]), species([]), species([]), noDisease);
 		expect(a).toMatchObject({ hp: 1000 - baseDecayPerStep, lifetime: 1 });
 	});
 
 	it("charges for sharing a cell with your own kind", () => {
-		const [a] = ageAndCull(species([agent(1, 1), agent(1, 1)]), species([]), species([]));
+		const [a] = ageAndCull(
+			species([agent(1, 1), agent(1, 1)]),
+			species([]),
+			species([]),
+			noDisease,
+		);
 		expect(a.hp).toBe(1000 - hpPenaltyFromSelfOrEnemy - baseDecayPerStep);
 	});
 
 	it("charges for meeting an enemy and pays for meeting prey", () => {
 		const me = species([agent(1, 1)]);
 		const there = species([agent(1, 1)]);
-		expect(ageAndCull(me, there, species([]))[0].hp).toBe(
+		expect(ageAndCull(me, there, species([]), noDisease)[0].hp).toBe(
 			1000 - hpPenaltyFromSelfOrEnemy - baseDecayPerStep,
 		);
-		expect(ageAndCull(me, species([]), there)[0].hp).toBe(
+		expect(ageAndCull(me, species([]), there, noDisease)[0].hp).toBe(
 			1000 + hpRewardFromPrey - baseDecayPerStep,
 		);
 	});
 
+	it("charges the disease cost of the agent's cell", () => {
+		const cost = emptyDisease().cost;
+		cost[1][1] = 750;
+		const [a] = ageAndCull(species([agent(1, 1)]), species([]), species([]), cost);
+		expect(a.hp).toBe(1000 - 750 - baseDecayPerStep);
+	});
+
 	it("drops agents whose HP hits zero and leaves the input alone", () => {
 		const self = species([agent(1, 1, baseDecayPerStep), agent(2, 2)]);
-		const survivors = ageAndCull(self, species([]), species([]));
+		const survivors = ageAndCull(self, species([]), species([]), noDisease);
 		expect(survivors).toHaveLength(1);
 		expect(self.agents[1].hp).toBe(1000);
 	});

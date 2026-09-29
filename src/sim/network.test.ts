@@ -10,11 +10,11 @@ import {
 } from "./network";
 
 describe("genome layout", () => {
-	it("sizes the three blocks for 363 inputs, 25 hidden, 9 outputs", () => {
-		expect(inputSize).toBe(363);
-		expect(hiddenWeightsFrom).toBe(363 * 25);
-		expect(biasFrom).toBe(363 * 25 + 25 * 17);
-		expect(genomeSize).toBe(9525);
+	it("sizes the three blocks for 484 inputs, 25 hidden, 17 outputs", () => {
+		expect(inputSize).toBe(484);
+		expect(hiddenWeightsFrom).toBe(484 * 25);
+		expect(biasFrom).toBe(484 * 25 + 25 * 17);
+		expect(genomeSize).toBe(12550);
 	});
 
 	it("draws random genes in [-2, 2)", () => {

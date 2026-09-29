@@ -41,16 +41,21 @@ export function isNear(a: Cell, b: Cell): boolean {
 
 /**
  * Applies one step of HP change from the cell each agent stands on and drops the dead.
- * Crowding your own kind or meeting an enemy costs HP; meeting prey gives HP.
+ * Crowding your own kind, meeting an enemy or standing in disease costs HP; meeting prey gives HP.
  */
-export function ageAndCull(self: Species, enemies: Species, prey: Species): Agent[] {
+export function ageAndCull(
+	self: Species,
+	enemies: Species,
+	prey: Species,
+	diseaseCost: readonly Float32Array[],
+): Agent[] {
 	const survivors: Agent[] = [];
 	for (const agent of self.agents) {
 		const { x, y } = agent;
 		let hp = agent.hp;
 		if (self.field[x][y] > 1 || enemies.field[x][y] > 0) hp -= hpPenaltyFromSelfOrEnemy;
 		if (prey.field[x][y] > 0) hp += hpRewardFromPrey;
-		hp -= baseDecayPerStep;
+		hp -= diseaseCost[x][y] + baseDecayPerStep;
 		if (hp > 0) survivors.push({ ...agent, hp, lifetime: agent.lifetime + 1 });
 	}
 	return survivors;

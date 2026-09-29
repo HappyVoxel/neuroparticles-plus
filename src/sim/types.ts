@@ -36,10 +36,29 @@ export interface MutationParams {
 	genes: number;
 }
 
+/** A circle of view size, centered on a cell, that costs HP to stand in. */
+export interface DiseaseArea {
+	x: number;
+	y: number;
+	/** Index in `Sim.species` of the species whose crowd started it; sets its color. */
+	species: number;
+	/** Steps in a row with no dot inside; the area clears after `diseaseAfterSteps`. */
+	emptySteps: number;
+}
+
+export interface Disease {
+	areas: DiseaseArea[];
+	/** Steps in a row the circle around each cell held a crowd of one species, `x * gridHeight + y`. */
+	crowdedSteps: Uint16Array;
+	/** HP a dot on each cell loses per step, `[x][y]`; 0 outside every area. */
+	cost: Float32Array[];
+}
+
 export interface Sim {
 	species: Species[];
 	step: number;
 	mutation: MutationParams;
 	/** HP a move into a wall costs; comes live from the Walls control. */
 	wallPenalty: number;
+	disease: Disease;
 }

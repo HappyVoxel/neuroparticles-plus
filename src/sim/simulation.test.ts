@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	baseDecayPerStep,
+	diseaseHpAtCenter,
 	gridWidth,
 	hiddenSize,
 	hpPenaltyFromWall,
@@ -84,6 +85,27 @@ describe("simulation", () => {
 		};
 		const bumped = step(world).species[0].agents.find((a) => a.genome === goWest);
 		expect(bumped).toMatchObject({ x: 1, y: 50, hp: startHp - baseDecayPerStep - 700 });
+	});
+
+	it("charges last step's disease and rebuilds it after the moves", () => {
+		const sim = createSim(mutation);
+		const loner = { ...sim.species[0].agents[0], x: 50, y: 50, hp: startHp };
+		const disease = { ...sim.disease, areas: [{ x: 50, y: 50, species: 0, emptySteps: 0 }] };
+		disease.cost = disease.cost.map((column) => column.slice());
+		disease.cost[50][50] = diseaseHpAtCenter;
+		const world = {
+			...sim,
+			disease,
+			species: sim.species.map((s, i) => {
+				const agents = i === 0 ? [loner] : [];
+				return { ...s, agents, field: buildField(agents) };
+			}),
+		};
+		const next = step(world);
+		const survivor = next.species[0].agents.find((a) => a.genome === loner.genome);
+		expect(survivor?.hp).toBe(startHp - diseaseHpAtCenter - baseDecayPerStep);
+		expect(next.disease.areas).toEqual([{ x: 50, y: 50, species: 0, emptySteps: 0 }]);
+		expect(sim.disease.areas).toEqual([]);
 	});
 
 	it("lets only adults knight-jump", () => {

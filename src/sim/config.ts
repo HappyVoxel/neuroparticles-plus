@@ -74,8 +74,9 @@ export const speciesDefs: readonly Pick<Species, "id" | "name" | "shades">[] = [
 ];
 export const speciesCount = speciesDefs.length;
 
-// Network: input → hidden (sigmoid) → output (linear), one output per move.
-export const inputSize = visionCells.length * speciesCount;
+// Network: input → hidden (sigmoid) → output (linear), one output per move. Each cell in view reads
+// one channel per species plus one for disease.
+export const inputSize = visionCells.length * (speciesCount + 1);
 export const hiddenSize = 25;
 export const outputSize = 17;
 export const stayBias = 1;
@@ -90,6 +91,18 @@ export const hpPenaltyFromWall = 500;
 export const maxWallPenalty = 1000;
 export const wallPenaltyStep = 100;
 export const baseDecayPerStep = 1;
+
+// Disease: a circle the size of the view (dx² + dy² <= visionRadiusSquared) where more than
+// `diseaseCrowd` dots of one species stood for more than `diseaseAfterSteps` steps in a row turns
+// into a disease area. It clears once no dot has been inside it for more than `diseaseAfterSteps`
+// steps. A dot inside loses `diseaseHpAtEdge` HP per step at the edge, rising to
+// `diseaseHpAtCenter` at the center. Overlapping areas don't add up: a cell costs its worst one.
+export const diseaseCrowd = 10;
+export const diseaseAfterSteps = 100;
+export const diseaseHpAtEdge = 500;
+export const diseaseHpAtCenter = 1000;
+// An area is painted in the 500 shade of the species that crowded it, at this opacity, no border.
+export const diseaseOpacity = 0.2;
 
 // Genetic algorithm
 // Steps an agent has to survive before it can breed.

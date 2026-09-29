@@ -29,12 +29,13 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 - `src/sim/` — the simulation, framework-free plain TypeScript (no React imports):
   - `config.ts` — every tunable constant and the species list (`speciesDefs`: id, name, shades).
-  - `types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Sim`.
+  - `types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Disease`, `Sim`.
   - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
   - `movement.ts` — `Move` (0–16), `stepMoves`, `bounce`, `hitsWall`, `moveBy`, `moveCount`, `slide`.
   - `color.ts` — `shadeAt` (age → shade), `hpOpacity`, `oklchCss`.
   - `field.ts` — `buildField`, `senseAt` (the network input).
   - `area.ts` — `Area` (a box of cells), `areaFromCorners`, `agentsIn`.
+  - `disease.ts` — `emptyDisease`, `spreadDisease` (one step of disease), `diseaseCostAt`, `circleCounts`.
   - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
   - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
     new values.
@@ -62,8 +63,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   sidebar width; change them together with those classes and re-measure the gaps in the browser.
 - Explanations of a sidebar section sit behind `InfoPopover` at the end of its title, not as text
   under the controls, so the sidebar stays short.
-- The only colors beyond the neutral theme are the species colors, used for data, never for text,
-  and the thin `yellow-400` frame of the inspected area.
+- The only colors beyond the neutral theme are the species colors, used for data and disease areas,
+  never for text, and the thin `yellow-400` frame of the inspected area.
 - Simulation functions don't mutate their inputs; `step` and `recreate` return a new `Sim`, and the
   hook reassigns its ref. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.
 - Constants live in `sim/config.ts`; nothing else hardcodes a size or rate.
@@ -79,24 +80,26 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - **Grid:** 200×200 with walls; every move goes through `bounce`, which reflects a step past a wall
   back inside (E at the east wall lands one cell W, a 2-cell jump lands two cells W; only the axis
   that hits the wall reflects).
-- **Genome:** flat `number[]` of length `genomeSize` (9525):
+- **Genome:** flat `number[]` of length `genomeSize` (12550):
   - `[0, hiddenWeightsFrom)` — input→hidden weights, index `j * inputSize + k`
   - `[hiddenWeightsFrom, biasFrom)` — hidden→output weights, index `hiddenWeightsFrom + j * hiddenSize + k`
   - `[biasFrom, genomeSize)` — hidden biases
-- **Network:** 363 inputs → 25 sigmoid hidden → 17 linear outputs. Output index is the move.
+- **Network:** 484 inputs → 25 sigmoid hidden → 17 linear outputs. Output index is the move.
   Steps to a neighbor: `0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW, 7 S, 8 SE`. Knight jumps
   (±1,±2)/(±2,±1) to the in-between directions: `9 NNW, 10 NNE, 11 WNW, 12 ENE, 13 WSW, 14 ESE`,
   `15 SSW, 16 SSE`. `stayBias` is added to "stay" before argmax, taken over the first
   `moveCount(lifetime)` outputs only.
 - **View:** `visionCells`, every cell with dx² + dy² ≤ `visionRadiusSquared` (37): 121 cells in a
   circle, 6 cells straight out and 4 along a diagonal.
-- **Input:** the view row by row, with species counts interleaved per cell `[R,G,B, R,G,B, ...]`.
-  Cells outside the grid read `wallSense` (−1) on the first channel and 0 on the other two.
+- **Input:** the view row by row, 4 channels per cell `[R,G,B,D, R,G,B,D, ...]`: species counts, then
+  the cell's disease cost ÷ `diseaseHpAtCenter` (0 outside disease, 1 at an area's center).
+  Cells outside the grid read `wallSense` (−1) on the first channel and 0 on the other three.
 
 ## Step loop (`simulation.step`)
 
-For each species: `ageAndCull` → `breed` → every agent `evaluate`s and moves → `buildField`.
-All of it reads the fields from the previous step, so moves within a step don't see each other.
+For each species: `ageAndCull` → `breed` → every agent `evaluate`s and moves → `buildField`. Then
+`spreadDisease` reads the new fields. All of it reads the fields and disease from the previous step,
+so moves within a step don't see each other.
 
 ## Playback (`use-simulation.ts`, `render.ts`)
 
@@ -122,6 +125,13 @@ All of it reads the fields from the previous step, so moves within a step don't 
 - For species `i`, enemies are `species[(i-1) mod 3]` and prey is `species[(i+1) mod 3]`
   (Red eats Green, Green eats Blue, Blue eats Red).
 - HP per step: −`hpPenaltyFromSelfOrEnemy` if the cell has another of your kind or any enemy, +`hpRewardFromPrey` if it has prey, −`baseDecayPerStep` always. Dead at `hp <= 0`.
+- Disease (`disease.ts`): the circle of view size around a cell counts a crowded step while it holds
+  more than `diseaseCrowd` dots of one species, and resets otherwise. Past `diseaseAfterSteps` in a
+  row it becomes a `DiseaseArea` of the species with the most dots there. Every dot inside, of any
+  species, loses `diseaseHpAtCenter` HP per step on the center, falling linearly to `diseaseHpAtEdge`
+  at the edge. Overlaps never stack: a cell costs its worst area. An area clears after more than
+  `diseaseAfterSteps` steps with no dot inside. `draw` fills each area in its species' 500 shade at
+  `diseaseOpacity`, one shape per species, under the dots.
 - A move into a wall costs `sim.wallPenalty` HP (`moveAgent` in `simulation.ts`); standing next to a
   wall or walking along it is free. The value starts at `hpPenaltyFromWall` and comes live from the
   Walls control (0 to `maxWallPenalty`). This is what makes evolution select against wall bumps.

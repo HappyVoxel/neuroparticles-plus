@@ -29,9 +29,10 @@ the run stops.
 ## How it works
 
 **Perception.** Each dot sees a circle of 121 cells around it, 6 cells straight out and 4 along a
-diagonal, counting red, green and blue dots separately: 363 numbers in all.
+diagonal, counting red, green and blue dots separately and reading how much disease each cell costs:
+484 numbers in all.
 
-**Brain.** A fully connected network: 363 inputs → 25 sigmoid neurons (with biases) → 17 outputs, one
+**Brain.** A fully connected network: 484 inputs → 25 sigmoid neurons (with biases) → 17 outputs, one
 per move (16 directions or stay). The 8 main directions step to a neighboring cell; the 8 in-between
 ones (NNE, ENE, …) are knight jumps, one cell along one axis and two along the other. The highest
 output wins, with a small bonus for staying put.
@@ -44,6 +45,11 @@ the fastest.
 cell with its own kind or any predator, and gains 100 HP if it shares a cell with prey. Bumping into
 a wall costs 500 HP; the Walls slider changes that cost (0 to 1,000) while the sim runs. At 0 HP it
 dies.
+
+**Disease.** When more than 10 dots of one species stay in the same view-sized circle (121 cells) for
+over 100 steps in a row, that circle becomes a disease area, tinted in that species' color. Every dot
+inside, whatever its species, loses 500 HP per step at the edge, up to 1,000 HP at the center.
+Overlapping areas don't add up. An area clears once no dot has been inside it for 100 steps.
 
 **Evolution.** A genome is the flat list of all the network's weights and biases. When a species drops
 below 199 dots, it refills with children bred from mature dots that stand near each other:
