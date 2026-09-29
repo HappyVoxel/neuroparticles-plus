@@ -22,7 +22,7 @@ export function App() {
 	const { snap, status } = sim;
 
 	return (
-		<div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:w-fit">
+		<div className="mx-auto flex min-h-svh w-full flex-col gap-2 p-4 lg:w-fit lg:justify-center">
 			<header className="flex items-start justify-between gap-6">
 				<div className="flex max-w-prose flex-col gap-2">
 					<h1 className="text-2xl font-semibold tracking-tight">Neuroparticles</h1>
@@ -39,27 +39,33 @@ export function App() {
 				</div>
 			</header>
 
-			<main className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-12">
-				{/* On wide screens the canvas takes whatever height is left under the header, so nothing scrolls. */}
+			<main className="flex flex-col gap-6 lg:flex-row lg:gap-12">
+				{/*
+				 * On wide screens the canvas fills the height left over by the rest of the page:
+				 * 9.5rem = p-4 top + bottom (2rem), header (5rem), gap-2 (0.5rem), caption + gap-3 (2rem).
+				 * 25rem = aside (20rem) + gap-12 (3rem) + p-4 left + right (2rem). Update both if those change.
+				 */}
 				<section
 					aria-label="Field"
-					className="flex w-full max-w-2xl flex-col gap-3 lg:w-[clamp(20rem,min(calc(100svh-11.5rem),calc(100vw-26rem)),42rem)] lg:shrink-0"
+					className="flex w-full flex-col gap-3 lg:w-[max(20rem,min(calc(100svh-9.5rem),calc(100vw-25rem)))] lg:shrink-0"
 				>
-					<SimCanvas canvasRef={sim.canvasRef} />
+					<div className="relative">
+						<SimCanvas canvasRef={sim.canvasRef} />
+						{snap.extinct.length > 0 && (
+							<Alert variant="destructive" className="absolute inset-x-3 bottom-3 w-auto">
+								<AlertTitle>
+									{snap.extinct.join(" and ")} died out at step {formatCount(snap.step)}.
+								</AlertTitle>
+								<AlertDescription>Reload the page to start a new run.</AlertDescription>
+							</Alert>
+						)}
+					</div>
 					<div className="flex justify-between gap-4 text-sm text-muted-foreground tabular-nums">
 						<span>Step {formatCount(snap.step)}</span>
 						<span>
 							{gridWidth} × {gridHeight} grid, edges wrap around
 						</span>
 					</div>
-					{snap.extinct.length > 0 && (
-						<Alert variant="destructive">
-							<AlertTitle>
-								{snap.extinct.join(" and ")} died out at step {formatCount(snap.step)}.
-							</AlertTitle>
-							<AlertDescription>Reload the page to start a new run.</AlertDescription>
-						</Alert>
-					)}
 				</section>
 
 				<aside className="flex w-full flex-col gap-4 lg:w-80 lg:shrink-0">
@@ -81,7 +87,8 @@ export function App() {
 						<SpeciesStats species={snap.species} />
 					</section>
 
-					<Separator />
+					{/* Pinned to the bottom so the sidebar lines up with the canvas caption. */}
+					<Separator className="lg:mt-auto" />
 
 					<section aria-labelledby="mutation-heading" className="flex flex-col gap-3">
 						<h2 id="mutation-heading" className="text-sm font-medium">

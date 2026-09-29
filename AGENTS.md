@@ -51,8 +51,10 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 - All UI uses shadcn/ui components (Button, Slider, Input, Label, Tooltip, AlertDialog, Alert,
   Progress, Separator, Badge); no hand-styled native form controls.
-- On desktop (`lg`, windows 720px tall and up) the page fits the window with no vertical scroll: the
-  canvas is sized from the window height, and sidebar changes must keep the sidebar that short.
+- On desktop (`lg`, windows 720px tall and up) the page fills the window exactly, with `p-4` on every
+  side and no scroll: the canvas side is `100svh - 9.5rem` (capped by width), and the sidebar stretches
+  to the canvas height. The `9.5rem`/`25rem` constants in `App.tsx` add up the padding, header, gaps and
+  sidebar width; change them together with those classes and re-measure the gaps in the browser.
 - The only colors beyond the neutral theme are the species colors, used for data, never for text.
 - Simulation functions don't mutate their inputs; `step` and `recreate` return a new `Sim`, and the
   hook reassigns its ref. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.
