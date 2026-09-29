@@ -65,6 +65,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - Constants live in `sim/config.ts`; nothing else hardcodes a size or rate.
 - `tsconfig` is `strict` without `noUncheckedIndexedAccess`, so grid and genome indexing stays readable.
 - Browser checks use the Playwright MCP (Firefox) against `npm run build && npm run preview`.
+- Work and commit directly on `master`; this repo has no `sang-dev` branch.
 
 ## Core data model
 
