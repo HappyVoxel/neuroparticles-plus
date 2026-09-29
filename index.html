@@ -4,49 +4,17 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>Neuroparticles</title>
-		<link rel="stylesheet" href="/src/style.css" />
+		<script>
+			// Apply the saved or system theme before first paint; use-theme.ts owns it after that.
+			try {
+				const t = localStorage.getItem("theme");
+				if (t === "dark" || (!t && matchMedia("(prefers-color-scheme: dark)").matches))
+					document.documentElement.classList.add("dark");
+			} catch {}
+		</script>
 	</head>
-	<body class="m-2 bg-neutral-200 font-serif text-neutral-700">
-		<div class="m-1 flex bg-white p-1">
-			<button id="start" class="m-1 border border-neutral-500 bg-white p-1 font-sans text-sm">
-				Start
-			</button>
-			<button id="stop" class="m-1 border border-neutral-500 bg-white p-1 font-sans text-sm">
-				Stop
-			</button>
-			<button id="one" class="m-1 border border-neutral-500 bg-white p-1 font-sans text-sm">
-				One
-			</button>
-		</div>
-		<div class="m-1 p-1"><canvas id="world"></canvas></div>
-		<div class="m-1 bg-white p-1">
-			<div>
-				Mutations
-				<input
-					type="text"
-					id="mutatepercent"
-					value="5"
-					class="m-1 w-8 border border-neutral-500 bg-white p-1 font-sans text-sm"
-				/>
-				%
-			</div>
-			<div>
-				Gens
-				<input
-					type="text"
-					id="mutategen"
-					value="1"
-					class="m-1 w-8 border border-neutral-500 bg-white p-1 font-sans text-sm"
-				/>
-			</div>
-			<button id="recreate" class="m-1 border border-neutral-500 bg-white p-1 font-sans text-sm">
-				Recreate
-			</button>
-		</div>
-		<div id="step" class="m-1 bg-white p-1"></div>
-		<div id="population" class="m-1 bg-white p-1"></div>
-		<div id="max-lifetime" class="m-1 bg-white p-1"></div>
-		<div id="params" class="m-1 bg-white p-1"></div>
-		<script type="module" src="/src/main.ts"></script>
+	<body>
+		<div id="root"></div>
+		<script type="module" src="/src/main.tsx"></script>
 	</body>
 </html>

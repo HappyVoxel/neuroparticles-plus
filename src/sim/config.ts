@@ -10,10 +10,10 @@ export const visionRadius = 5;
 
 // Rock-paper-scissors: each species gains HP from the next one and loses it to the previous one
 // (Red eats Green, Green eats Blue, Blue eats Red).
-export const speciesDefs: readonly Pick<Species, "id" | "color">[] = [
-	{ id: "R", color: [255, 0, 0] },
-	{ id: "G", color: [0, 255, 0] },
-	{ id: "B", color: [0, 0, 255] },
+export const speciesDefs: readonly Pick<Species, "id" | "name" | "color">[] = [
+	{ id: "R", name: "Red", color: [255, 0, 0] },
+	{ id: "G", name: "Green", color: [0, 255, 0] },
+	{ id: "B", name: "Blue", color: [0, 0, 255] },
 ];
 export const speciesCount = speciesDefs.length;
 

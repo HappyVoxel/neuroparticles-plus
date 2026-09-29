@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Browser-only artificial life sim with three species (Red, Green, Blue) in a rock-paper-scissors
 predator/prey loop. Each dot is an agent with its own small neural net that looks at an 11×11 window
 around itself and picks a move. A genetic algorithm breeds the longest-lived survivors.
-TypeScript + Vite + Tailwind CSS v4, no runtime dependencies.
+TypeScript + Vite + React 19 + shadcn/ui (Radix) + Tailwind CSS v4.
 
 ## Commands
 
@@ -26,27 +26,39 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 ## Layout
 
-- `index.html` — markup with Tailwind classes; buttons are wired in `main.ts`, not inline handlers.
-- `src/sim/config.ts` — every tunable constant and the species list (`speciesDefs`).
-- `src/sim/types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Sim`.
-- `src/sim/network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
-- `src/sim/movement.ts` — `Move` (0–8), `wrap`, `moveBy`.
-- `src/sim/field.ts` — `buildField`, `senseAt` (the network input window).
-- `src/sim/evolution.ts` — `spawn`, `ageAndCull`, `crossover`, `mutate`, `breed`.
-- `src/sim/simulation.ts` — `createSim`, `step`, `recreate`; pure functions that return a new `Sim`.
-- `src/sim/render.ts` — canvas drawing.
-- `src/main.ts` — DOM wiring, stats, Start/Stop/One timer.
-- `src/style.css` — only `@import "tailwindcss";`.
-- `src/sim/*.test.ts` — Vitest unit tests next to each module.
+- `src/sim/` — the simulation, framework-free plain TypeScript (no React imports):
+  - `config.ts` — every tunable constant and the species list (`speciesDefs`: id, name, color).
+  - `types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Sim`.
+  - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
+  - `movement.ts` — `Move` (0–8), `wrap`, `moveBy`.
+  - `field.ts` — `buildField`, `senseAt` (the network input window).
+  - `evolution.ts` — `spawn`, `ageAndCull`, `crossover`, `mutate`, `breed`.
+  - `simulation.ts` — `createSim`, `step`, `recreate`, `extinctSpecies`; pure, return a new `Sim`.
+  - `render.ts` — canvas drawing.
+  - `*.test.ts` — Vitest unit tests next to each module.
+- `src/hooks/use-simulation.ts` — owns the sim in a ref, runs `step` on `setInterval(..., 1)`, draws
+  straight to the canvas, and pushes a stats snapshot to React at most once per animation frame.
+- `src/hooks/use-theme.ts` — light/dark, from `localStorage` key `theme` or the system setting.
+  `index.html` has an inline script that applies the same key before first paint.
+- `src/components/` — app components: `sim-canvas`, `run-controls`, `food-cycle`, `species-stats`,
+  `mutation-controls`, `theme-toggle`. `src/App.tsx` lays them out; `src/main.tsx` mounts it.
+- `src/components/ui/` — vendored shadcn/ui components. Add with `npx shadcn@latest add <name>`;
+  don't hand-edit them. Biome and Prettier skip this folder.
+- `src/style.css` — Tailwind + shadcn theme tokens (preset `b1oVxsfY`: radix-sera, neutral, Inter,
+  lucide).
 
 ## Conventions
 
-- Styling uses Tailwind utility classes from the default scale only: no arbitrary values (`w-[20px]`),
-  no custom theme values, no hand-written CSS.
-- Simulation functions don't mutate their inputs; `step` and `recreate` return a new `Sim`, and
-  `main.ts` reassigns it. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.
-- Constants live in `config.ts`; nothing else hardcodes a size or rate.
+- All UI uses shadcn/ui components (Button, Slider, Input, Label, Tooltip, AlertDialog, Alert,
+  Progress, Separator, Badge); no hand-styled native form controls.
+- On desktop (`lg`, windows 720px tall and up) the page fits the window with no vertical scroll: the
+  canvas is sized from the window height, and sidebar changes must keep the sidebar that short.
+- The only colors beyond the neutral theme are the species colors, used for data, never for text.
+- Simulation functions don't mutate their inputs; `step` and `recreate` return a new `Sim`, and the
+  hook reassigns its ref. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.
+- Constants live in `sim/config.ts`; nothing else hardcodes a size or rate.
 - `tsconfig` is `strict` without `noUncheckedIndexedAccess`, so grid and genome indexing stays readable.
+- Browser checks use the Playwright MCP (Firefox) against `npm run build && npm run preview`.
 
 ## Core data model
 
@@ -65,7 +77,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 For each species: `ageAndCull` → `breed` → every agent `evaluate`s and moves → `buildField`.
 All of it reads the fields from the previous step, so moves within a step don't see each other.
-`main.ts` runs `step` on `setInterval(..., 1)` and redraws every step.
+`use-simulation.ts` runs `step` on `setInterval(..., 1)` and redraws the canvas every step.
 
 ## Rules that are easy to miss
 
@@ -76,7 +88,7 @@ All of it reads the fields from the previous step, so moves within a step don't 
   random parents (with replacement) among the top `2 × pairs` survivors by lifetime, at random cells
   with full HP.
 - Mutation: with `percent`% odds a child gets exactly `genes` random genes replaced by values in
-  `[-2, 2)`. Both values come live from the page inputs.
+  `[-2, 2)`. Both values come live from the Mutation controls.
 - Recreate gives every living agent a new random genome and keeps position, HP and lifetime.
-- A species that dies out stays extinct (`breed` returns nothing for zero survivors), and `main.ts`
-  stops the timer as soon as `extinctSpecies` is non-empty. Start/One do nothing after that.
+- A species that dies out stays extinct (`breed` returns nothing for zero survivors). The hook stops
+  the timer once `extinctSpecies` is non-empty; the page shows an Alert and disables Run and Step.

@@ -14,5 +14,10 @@
 	},
 	"files": {
 		"includes": ["**", "!src/components/ui"]
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
 	}
 }

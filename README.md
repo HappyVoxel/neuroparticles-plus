@@ -58,7 +58,7 @@ Each teeny-weeny dot is a lil organism. It sees (using a neural network) what's 
 
 ## 🛠 Development
 
-Written in TypeScript, bundled with Vite, styled with Tailwind CSS. Requires Node.js.
+Written in TypeScript with React, shadcn/ui and Tailwind CSS, bundled with Vite. Requires Node.js.
 
 ```sh
 npm install
@@ -67,9 +67,10 @@ npm test         # unit tests
 npm run build    # static site in dist/
 ```
 
-The simulation lives in `src/sim/`, one module per concern: `network.ts` (the brain), `field.ts` (what an
-agent sees), `evolution.ts` (death and breeding), `simulation.ts` (one step), `render.ts` (canvas),
-and `main.ts` (page wiring). All tunable constants are in `src/sim/config.ts`.
+The simulation lives in `src/sim/`, one plain TypeScript module per concern: `network.ts` (the
+brain), `field.ts` (what an agent sees), `evolution.ts` (death and breeding), `simulation.ts` (one
+step) and `render.ts` (canvas). The page around it is React in `src/App.tsx` and `src/components/`.
+All tunable constants are in `src/sim/config.ts`.
 
 ---
 

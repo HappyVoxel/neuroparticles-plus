@@ -17,6 +17,7 @@ export interface Agent {
 
 export interface Species {
 	id: "R" | "G" | "B";
+	name: string;
 	color: Rgb;
 	agents: Agent[];
 	/** Built at the end of the previous step; everyone reads the same snapshot. */
