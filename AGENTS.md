@@ -33,7 +33,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
   - `movement.ts` — `Move` (0–8), `bounce`, `hitsWall`, `moveBy`, `slide`.
   - `field.ts` — `buildField`, `senseAt` (the network input window).
-  - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `breed`.
+  - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
   - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
     new values.
   - `render.ts` — canvas drawing.
@@ -108,8 +108,13 @@ All of it reads the fields from the previous step, so moves within a step don't 
   Walls control (0 to `maxWallPenalty`). This is what makes evolution select against wall bumps.
 - Breeding runs only when a species drops below `populationSize - 1`, and only fills the gap. Two
   agents can breed when both have lived `matureAge` steps and each is inside the other's 11×11 view
-  (`isNear`). Mature agents pair up in random order; an agent breeds once per step. Each pair gets
-  one child with full HP on the cell halfway between them. No mature pair in view means no children.
+  (`isNear`). Mature agents pair up in random order; an agent breeds once per step. No mature pair
+  in view means no children.
+- A pair gets a litter sized by `litterOdds`: 2 children 90% of the time, 1 child 9%, 3 children 1%
+  (`litterSize`), cut to the slots still open. Children start with full HP. The first lands on the
+  cell halfway between the parents, the second one cell E, the third one cell S (`siblingMoves`),
+  so siblings don't pay the crowding penalty. Twins get the two halves of one `crossover`; a third
+  child gets its own.
 - Mutation: with `percent`% odds a child gets exactly `genes` random genes replaced by values in
   `[-2, 2)`. Both values come live from the Mutation controls.
 - Recreate gives every living agent a new random genome and keeps position, HP and lifetime.

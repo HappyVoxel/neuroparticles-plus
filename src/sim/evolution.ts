@@ -5,11 +5,13 @@ import {
 	gridWidth,
 	hpPenaltyFromSelfOrEnemy,
 	hpRewardFromPrey,
+	litterOdds,
 	matureAge,
 	populationSize,
 	startHp,
 	visionRadius,
 } from "./config";
+import { type Move, moveBy, stayMove } from "./movement";
 import { genomeSize, randomGene } from "./network";
 import type { Agent, Genome, MutationParams, Species } from "./types";
 
@@ -83,11 +85,36 @@ function shuffled<T>(items: readonly T[]): T[] {
 	return result;
 }
 
+/** How many children a pair gets: a roll in [0, 1) against `litterOdds`. */
+export function litterSize(roll: number = Math.random()): number {
+	let threshold = 0;
+	for (const { children, percent } of litterOdds) {
+		threshold += percent;
+		if (roll * 100 < threshold) return children;
+	}
+	return litterOdds[litterOdds.length - 1].children;
+}
+
+/**
+ * Where each child of a litter lands, seen from the cell halfway between its parents: on it,
+ * one cell E, one cell S. Siblings on one cell would pay the crowding penalty every step. E and
+ * S shift different axes, so the cells stay apart after a bounce off a wall.
+ */
+export const siblingMoves: readonly Move[] = [stayMove, 5, 7];
+
+/** Genomes for one litter. Twins get the two halves of one crossover. */
+function litterGenomes(a: Readonly<Genome>, b: Readonly<Genome>, size: number): Genome[] {
+	const genomes: Genome[] = [];
+	while (genomes.length < size) genomes.push(...crossover(a, b));
+	return genomes.slice(0, size);
+}
+
 /**
  * Refills a species once it drops below `populationSize - 1`. Agents that lived `matureAge`
  * steps pair up in random order, each with a mature neighbor that is still free, and every
- * pair gets one child on the cell halfway between them. An agent breeds at most once per step,
- * so a species with no two mature agents in view of each other gets no children.
+ * pair gets a litter of `litterSize` children, cut to the slots still open. An agent breeds at
+ * most once per step, so a species with no two mature agents in view of each other gets no
+ * children.
  */
 export function breed(survivors: readonly Agent[], mutation: MutationParams): Agent[] {
 	if (survivors.length >= populationSize - 1) return [];
@@ -104,9 +131,12 @@ export function breed(survivors: readonly Agent[], mutation: MutationParams): Ag
 		if (!b) continue;
 		paired.add(a).add(b);
 
-		const [genome] = crossover(a.genome, b.genome);
-		const cell = { x: Math.floor((a.x + b.x) / 2), y: Math.floor((a.y + b.y) / 2) };
-		children.push(spawn(mutate(genome, mutation), cell));
+		const size = Math.min(litterSize(), gap - children.length);
+		const x = Math.floor((a.x + b.x) / 2);
+		const y = Math.floor((a.y + b.y) / 2);
+		litterGenomes(a.genome, b.genome, size).forEach((genome, k) => {
+			children.push(spawn(mutate(genome, mutation), moveBy(x, y, siblingMoves[k])));
+		});
 	}
 	return children;
 }

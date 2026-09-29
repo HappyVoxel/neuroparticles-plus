@@ -50,4 +50,10 @@ export const baseDecayPerStep = 1;
 // Steps an agent has to survive before it can breed.
 export const matureAge = 100;
 export const crossoverRate = 0.5;
+// Children per breeding pair. The percents add up to 100.
+export const litterOdds: readonly { children: number; percent: number }[] = [
+	{ children: 2, percent: 90 },
+	{ children: 1, percent: 9 },
+	{ children: 3, percent: 1 },
+];
 export const geneRange = 4; // genes are random in [-2, 2)

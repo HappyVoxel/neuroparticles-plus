@@ -1,14 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	baseDecayPerStep,
+	gridHeight,
+	gridWidth,
 	hpPenaltyFromSelfOrEnemy,
 	hpRewardFromPrey,
+	litterOdds,
 	matureAge,
 	populationSize,
 	startHp,
 	visionRadius,
 } from "./config";
-import { ageAndCull, breed, crossover, mutate, spawn } from "./evolution";
+import { ageAndCull, breed, crossover, litterSize, mutate, siblingMoves, spawn } from "./evolution";
 import { buildField } from "./field";
 import { genomeSize } from "./network";
 import type { Agent, Species } from "./types";
@@ -102,11 +105,37 @@ describe("spawn", () => {
 	});
 });
 
+describe("litterSize", () => {
+	it("gives twins 90% of the time, one child 9% and triplets 1%", () => {
+		expect(litterSize(0)).toBe(2);
+		expect(litterSize(0.899)).toBe(2);
+		expect(litterSize(0.9)).toBe(1);
+		expect(litterSize(0.989)).toBe(1);
+		expect(litterSize(0.99)).toBe(3);
+		expect(litterSize(0.999)).toBe(3);
+	});
+
+	it("has odds that add up to 100% and a cell for every child of the biggest litter", () => {
+		expect(litterOdds.reduce((sum, o) => sum + o.percent, 0)).toBe(100);
+		expect(Math.max(...litterOdds.map((o) => o.children))).toBeLessThanOrEqual(siblingMoves.length);
+	});
+});
+
 describe("breed", () => {
 	const best = new Array<number>(genomeSize).fill(1);
 	const parent = (x: number, y: number, lifetime = matureAge): Agent => ({
 		...agent(x, y, 1000, lifetime),
 		genome: best,
+	});
+	// Pins every random roll, so the litter size is known: 0 twins, 0.95 one child, 0.995 triplets.
+	const roll = (value: number) => vi.spyOn(Math, "random").mockReturnValue(value);
+	const twins = 0;
+	const single = 0.95;
+	const triplets = 0.995;
+	const cells = (children: readonly Agent[]) => children.map(({ x, y }) => ({ x, y }));
+
+	afterEach(() => {
+		vi.restoreAllMocks();
 	});
 
 	it("does nothing while the population is at least populationSize - 1", () => {
@@ -135,6 +164,7 @@ describe("breed", () => {
 	});
 
 	it("puts one fresh child halfway between two mature parents that see each other", () => {
+		roll(single);
 		const survivors = [parent(10, 20), parent(10 + visionRadius, 20 - visionRadius)];
 		const children = breed(survivors, noMutation);
 
@@ -148,9 +178,58 @@ describe("breed", () => {
 		expect(children[0].genome.every((g) => g === 1)).toBe(true);
 	});
 
+	it("gives twins the two halves of one crossover, on the midpoint and the cell east of it", () => {
+		roll(twins);
+		const survivors = [
+			{ ...parent(10, 10), genome: new Array<number>(genomeSize).fill(1) },
+			{ ...parent(14, 10), genome: new Array<number>(genomeSize).fill(2) },
+		];
+		const children = breed(survivors, noMutation);
+
+		expect(cells(children)).toEqual([
+			{ x: 12, y: 10 },
+			{ x: 13, y: 10 },
+		]);
+		expect(children.map((c) => c.genome[0]).sort()).toEqual([1, 2]);
+		for (const child of children) {
+			expect(child.genome.every((g) => g === child.genome[0])).toBe(true);
+			expect(child).toMatchObject({ hp: startHp, lifetime: 0 });
+		}
+	});
+
+	it("puts triplets on the midpoint, the cell east and the cell south of it", () => {
+		roll(triplets);
+		const children = breed([parent(10, 10), parent(14, 10)], noMutation);
+		expect(cells(children)).toEqual([
+			{ x: 12, y: 10 },
+			{ x: 13, y: 10 },
+			{ x: 12, y: 11 },
+		]);
+	});
+
+	it("keeps a litter in a corner inside the walls and on different cells", () => {
+		roll(triplets);
+		const x = gridWidth - 1;
+		const y = gridHeight - 1;
+		const children = breed([parent(x, y), parent(x, y)], noMutation);
+		expect(cells(children)).toEqual([
+			{ x, y },
+			{ x: x - 1, y },
+			{ x, y: y - 1 },
+		]);
+	});
+
 	it("lets each agent breed once per step", () => {
+		roll(single);
 		const survivors = [parent(10, 10), parent(11, 10), parent(12, 10)];
 		expect(breed(survivors, noMutation)).toHaveLength(1);
+	});
+
+	it("cuts a litter to the open slots", () => {
+		roll(triplets);
+		const gap = 2;
+		const survivors = Array.from({ length: populationSize - gap }, () => parent(10, 10));
+		expect(breed(survivors, noMutation)).toHaveLength(gap);
 	});
 
 	it("stops once the population is full again", () => {
