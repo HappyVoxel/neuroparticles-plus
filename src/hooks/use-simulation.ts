@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { defaultStepsPerSecond, maxSlidingStepsPerSecond, stepBudgetMs } from "@/sim/config";
+import { oklchCss, shadeAt } from "@/sim/color";
 import { draw } from "@/sim/render";
 import { createSim, extinctSpecies, recreate, step } from "@/sim/simulation";
-import type { MutationParams, Rgb, Sim, Species } from "@/sim/types";
+import type { MutationParams, Sim, Species } from "@/sim/types";
 
 export type RunStatus = "paused" | "running" | "stopped";
 
 export interface SpeciesStats {
 	id: Species["id"];
 	name: string;
-	color: Rgb;
+	/** CSS color for the sidebar: the middle of the species' shades. */
+	color: string;
 	population: number;
 	/** Longest lifetime among living agents, in steps. */
 	oldest: number;
@@ -24,10 +26,10 @@ export interface SimSnapshot {
 function snapshot(sim: Sim): SimSnapshot {
 	return {
 		step: sim.step,
-		species: sim.species.map(({ id, name, color, agents }) => ({
+		species: sim.species.map(({ id, name, shades, agents }) => ({
 			id,
 			name,
-			color,
+			color: oklchCss(shadeAt(shades, 0.5)),
 			population: agents.length,
 			oldest: Math.max(0, ...agents.map((a) => a.lifetime)),
 		})),

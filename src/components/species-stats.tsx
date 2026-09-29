@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { Progress } from "@/components/ui/progress";
 import type { SpeciesStats as Stats } from "@/hooks/use-simulation";
-import { formatCount, rgbCss } from "@/lib/format";
+import { formatCount } from "@/lib/format";
 import { populationSize } from "@/sim/config";
 
 interface SpeciesStatsProps {
@@ -15,11 +15,7 @@ export function SpeciesStats({ species }: SpeciesStatsProps) {
 				<li key={s.id} className="flex flex-col gap-1.5">
 					<div className="flex items-baseline gap-3 text-sm tabular-nums">
 						<span className="flex w-14 items-center gap-2 font-medium">
-							<span
-								aria-hidden
-								className="size-2 shrink-0"
-								style={{ backgroundColor: rgbCss(s.color) }}
-							/>
+							<span aria-hidden className="size-2 shrink-0" style={{ backgroundColor: s.color }} />
 							{s.name}
 						</span>
 						<span>
@@ -34,7 +30,7 @@ export function SpeciesStats({ species }: SpeciesStatsProps) {
 						value={(s.population / populationSize) * 100}
 						aria-label={`${s.name} population`}
 						// The indicator paints with --primary; point it at this species' color.
-						style={{ "--primary": rgbCss(s.color) } as CSSProperties}
+						style={{ "--primary": s.color } as CSSProperties}
 						className="h-1"
 					/>
 				</li>

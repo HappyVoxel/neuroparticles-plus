@@ -22,10 +22,43 @@ export const wallSense = -1;
 
 // Rock-paper-scissors: each species gains HP from the next one and loses it to the previous one
 // (Red eats Green, Green eats Blue, Blue eats Red).
-export const speciesDefs: readonly Pick<Species, "id" | "name" | "color">[] = [
-	{ id: "R", name: "Red", color: [255, 0, 0] },
-	{ id: "G", name: "Green", color: [0, 255, 0] },
-	{ id: "B", name: "Blue", color: [0, 0, 255] },
+// Shades are Tailwind v4's 300, 400, 500, 600 and 700 (tailwindcss/theme.css). The sidebar uses
+// the middle one, 500.
+export const speciesDefs: readonly Pick<Species, "id" | "name" | "shades">[] = [
+	{
+		id: "R",
+		name: "Red",
+		shades: [
+			[0.808, 0.114, 19.571],
+			[0.704, 0.191, 22.216],
+			[0.637, 0.237, 25.331],
+			[0.577, 0.245, 27.325],
+			[0.505, 0.213, 27.518],
+		],
+	},
+	{
+		id: "G",
+		name: "Green",
+		shades: [
+			[0.871, 0.15, 154.449],
+			[0.792, 0.209, 151.711],
+			[0.723, 0.219, 149.579],
+			[0.627, 0.194, 149.214],
+			[0.527, 0.154, 150.069],
+		],
+	},
+	{
+		id: "B",
+		name: "Blue",
+		shades: [
+			[0.809, 0.105, 251.813],
+			// biome-ignore lint/suspicious/noApproximativeNumericConstant: Tailwind's 70.7%, not √½.
+			[0.707, 0.165, 254.624],
+			[0.623, 0.214, 259.815],
+			[0.546, 0.245, 262.881],
+			[0.488, 0.243, 264.376],
+		],
+	},
 ];
 export const speciesCount = speciesDefs.length;
 

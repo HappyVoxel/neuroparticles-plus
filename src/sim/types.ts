@@ -4,7 +4,8 @@ export type Genome = number[];
 /** Agent count per cell, indexed `field[x][y]`. */
 export type Field = Int8Array[];
 
-export type Rgb = readonly [number, number, number];
+/** A color in OKLCH: lightness (0–1), chroma, hue in degrees. */
+export type Oklch = readonly [l: number, c: number, h: number];
 
 export interface Agent {
 	genome: Genome;
@@ -21,7 +22,8 @@ export interface Agent {
 export interface Species {
 	id: "R" | "G" | "B";
 	name: string;
-	color: Rgb;
+	/** Young to old; a dot darkens through them as it ages. */
+	shades: readonly Oklch[];
 	agents: Agent[];
 	/** Built at the end of the previous step; everyone reads the same snapshot. */
 	field: Field;

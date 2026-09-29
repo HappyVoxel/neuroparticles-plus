@@ -29,7 +29,7 @@ const agent = (x: number, y: number, hp = 1000, lifetime = 0): Agent => ({
 const species = (agents: Agent[]): Species => ({
 	id: "R",
 	name: "Red",
-	color: [255, 0, 0],
+	shades: [],
 	agents,
 	field: buildField(agents),
 });

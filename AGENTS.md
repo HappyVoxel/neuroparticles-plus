@@ -28,10 +28,11 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 ## Layout
 
 - `src/sim/` — the simulation, framework-free plain TypeScript (no React imports):
-  - `config.ts` — every tunable constant and the species list (`speciesDefs`: id, name, color).
+  - `config.ts` — every tunable constant and the species list (`speciesDefs`: id, name, shades).
   - `types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Sim`.
   - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
   - `movement.ts` — `Move` (0–8), `bounce`, `hitsWall`, `moveBy`, `slide`.
+  - `color.ts` — `shadeAt` (age → shade), `hpOpacity`, `oklchCss`.
   - `field.ts` — `buildField`, `senseAt` (the network input window).
   - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
   - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
@@ -96,7 +97,9 @@ All of it reads the fields from the previous step, so moves within a step don't 
   the sim and keeps the frame rate.
 - Up to `maxSlidingStepsPerSecond`, `draw` slides each dot from its previous cell to its current one
   (`slide` in `movement.ts`); above it, dots are drawn at their cell.
-- `draw` paints per agent with additive blending, so overlapping species mix colors (R+G is yellow).
+- `draw` paints each dot in its species' Tailwind shades 300 → 700 by age (lightest at birth,
+  darkest for the species' oldest living dot) and at HP ÷ `startHp` opacity (capped at 100%). It
+  blends additively, so overlapping dots show as brighter, whiter spots. The sidebar uses shade 500.
 
 ## Rules that are easy to miss
 

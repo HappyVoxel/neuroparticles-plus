@@ -1,5 +1,4 @@
 import type { SpeciesStats } from "@/hooks/use-simulation";
-import { rgbCss } from "@/lib/format";
 import { populationSize } from "@/sim/config";
 
 interface FoodCycleProps {
@@ -86,7 +85,7 @@ export function FoodCycle({ species }: FoodCycleProps) {
 							cx={x}
 							cy={y}
 							r={extinct ? minRadius : nodeRadius(s.population)}
-							fill={extinct ? "none" : rgbCss(s.color)}
+							fill={extinct ? "none" : s.color}
 							stroke={extinct ? "currentColor" : "none"}
 							strokeWidth="1.25"
 							className="transition-[r] duration-150 motion-reduce:transition-none"
