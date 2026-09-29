@@ -24,12 +24,6 @@ Each teeny-weeny dot is a lil organism. It sees (using a neural network) what's 
 
 ---
 
-## ▶️ Demo
-
-- [RGB Mode](https://xcont.com/neuroparticles/rgb.html) - Three populations (Red, Green, Blue) in a predator-prey cycle.
-
----
-
 ## Overview
 
 - **Particles**: 600 total (200 Red, 200 Green, 200 Blue)
@@ -88,5 +82,3 @@ MIT License
 ## 👤 Author
 
 Serhii Herasymov
-
-[GitHub](https://github.com/xcontcom)
