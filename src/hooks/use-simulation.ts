@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { type Area, agentsIn } from "@/sim/area";
 import { defaultStepsPerSecond, maxSlidingStepsPerSecond, stepBudgetMs } from "@/sim/config";
 import { oklchCss, shadeAt } from "@/sim/color";
 import { draw } from "@/sim/render";
 import { createSim, extinctSpecies, recreate, step } from "@/sim/simulation";
-import type { MutationParams, Sim, Species } from "@/sim/types";
+import type { Agent, MutationParams, Sim, Species } from "@/sim/types";
 
 export type RunStatus = "paused" | "running" | "stopped";
 
@@ -15,24 +16,46 @@ export interface SpeciesStats {
 	population: number;
 	/** Longest lifetime among living agents, in steps. */
 	oldest: number;
+	/** Mean lifetime in steps; 0 with no agents. */
+	averageAge: number;
+	/** Mean HP; 0 with no agents. */
+	averageHp: number;
 }
 
 export interface SimSnapshot {
 	step: number;
 	species: SpeciesStats[];
+	/** The same stats for the agents inside the inspected area, or null with no area. */
+	areaSpecies: SpeciesStats[] | null;
 	extinct: Species["name"][];
 }
 
-function snapshot(sim: Sim): SimSnapshot {
+function speciesStats({ id, name, shades }: Species, agents: readonly Agent[]): SpeciesStats {
+	let oldest = 0;
+	let ageSum = 0;
+	let hpSum = 0;
+	for (let i = 0; i < agents.length; i++) {
+		oldest = Math.max(oldest, agents[i].lifetime);
+		ageSum += agents[i].lifetime;
+		hpSum += agents[i].hp;
+	}
+	const n = agents.length;
+	return {
+		id,
+		name,
+		color: oklchCss(shadeAt(shades, 0.5)),
+		population: n,
+		oldest,
+		averageAge: n > 0 ? ageSum / n : 0,
+		averageHp: n > 0 ? hpSum / n : 0,
+	};
+}
+
+function snapshot(sim: Sim, area: Area | null): SimSnapshot {
 	return {
 		step: sim.step,
-		species: sim.species.map(({ id, name, shades, agents }) => ({
-			id,
-			name,
-			color: oklchCss(shadeAt(shades, 0.5)),
-			population: agents.length,
-			oldest: Math.max(0, ...agents.map((a) => a.lifetime)),
-		})),
+		species: sim.species.map((s) => speciesStats(s, s.agents)),
+		areaSpecies: area && sim.species.map((s) => speciesStats(s, agentsIn(s.agents, area))),
 		extinct: sim.species.filter((s) => s.agents.length === 0).map((s) => s.name),
 	};
 }
@@ -50,12 +73,14 @@ export function useSimulation(initialMutation: MutationParams) {
 	/** Steps owed to the clock; the part below 1 is how far the frame is into the next step. */
 	const dueRef = useRef(0);
 	const speedRef = useRef(defaultStepsPerSecond);
+	const areaRef = useRef<Area | null>(null);
 
-	const [snap, setSnap] = useState(() => snapshot(initialSim));
+	const [snap, setSnap] = useState(() => snapshot(initialSim, null));
 	const [status, setStatus] = useState<RunStatus>("paused");
 	const [mutation, setMutationState] = useState(initialMutation);
 	const [wallPenalty, setWallPenaltyState] = useState(initialSim.wallPenalty);
 	const [stepsPerSecond, setStepsPerSecond] = useState(defaultStepsPerSecond);
+	const [area, setAreaState] = useState<Area | null>(null);
 
 	const paint = useCallback((t: number) => {
 		const ctx = canvasRef.current?.getContext("2d");
@@ -88,7 +113,7 @@ export function useSimulation(initialMutation: MutationParams) {
 				extinct = extinctSpecies(simRef.current).length > 0;
 			}
 
-			if (stepped) setSnap(snapshot(simRef.current));
+			if (stepped) setSnap(snapshot(simRef.current, areaRef.current));
 			if (extinct) {
 				frameRef.current = undefined;
 				paint(1);
@@ -119,7 +144,7 @@ export function useSimulation(initialMutation: MutationParams) {
 		// A whole step is shown, so the next Run starts its slide from these cells.
 		dueRef.current = 1;
 		paint(1);
-		setSnap(snapshot(simRef.current));
+		setSnap(snapshot(simRef.current, areaRef.current));
 		if (extinctSpecies(simRef.current).length > 0) setStatus("stopped");
 	}, [paint]);
 
@@ -138,10 +163,19 @@ export function useSimulation(initialMutation: MutationParams) {
 		const { mutation, wallPenalty } = simRef.current;
 		simRef.current = { ...createSim(mutation), wallPenalty };
 		dueRef.current = 0;
+		areaRef.current = null;
 		paint(1);
-		setSnap(snapshot(simRef.current));
+		setSnap(snapshot(simRef.current, null));
+		setAreaState(null);
 		setStatus("paused");
 	}, [cancelFrame, paint]);
+
+	/** Sets the area whose stats every snapshot carries in `areaSpecies`; null clears it. */
+	const inspect = useCallback((next: Area | null) => {
+		areaRef.current = next;
+		setAreaState(next);
+		setSnap(snapshot(simRef.current, next));
+	}, []);
 
 	const setMutation = useCallback((next: MutationParams) => {
 		simRef.current = { ...simRef.current, mutation: next };
@@ -165,12 +199,14 @@ export function useSimulation(initialMutation: MutationParams) {
 		mutation,
 		wallPenalty,
 		stepsPerSecond,
+		area,
 		run,
 		pause,
 		stepOnce,
 		setSpeed,
 		randomizeBrains,
 		reset,
+		inspect,
 		setMutation,
 		setWallPenalty,
 	};

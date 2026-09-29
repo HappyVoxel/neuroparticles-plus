@@ -34,6 +34,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `movement.ts` — `Move` (0–16), `stepMoves`, `bounce`, `hitsWall`, `moveBy`, `moveCount`, `slide`.
   - `color.ts` — `shadeAt` (age → shade), `hpOpacity`, `oklchCss`.
   - `field.ts` — `buildField`, `senseAt` (the network input).
+  - `area.ts` — `Area` (a box of cells), `areaFromCorners`, `agentsIn`.
   - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
   - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
     new values.
@@ -44,7 +45,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   stats snapshot to React.
 - `src/hooks/use-theme.ts` — light/dark, from `localStorage` key `theme` or the system setting.
   `index.html` has an inline script that applies the same key before first paint.
-- `src/components/` — app components: `sim-canvas`, `run-controls`, `food-cycle`, `species-stats`,
+- `src/components/` — app components: `sim-canvas`, `area-inspector`, `run-controls`, `food-cycle`, `species-stats`,
   `wall-controls`, `mutation-controls`, `info-popover`, `theme-toggle`. `src/App.tsx` lays them out; `src/main.tsx` mounts it.
 - `src/components/ui/` — vendored shadcn/ui components. Add with `npx shadcn@latest add <name>`;
   don't hand-edit them. Biome and Prettier skip this folder.
@@ -61,7 +62,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   sidebar width; change them together with those classes and re-measure the gaps in the browser.
 - Explanations of a sidebar section sit behind `InfoPopover` at the end of its title, not as text
   under the controls, so the sidebar stays short.
-- The only colors beyond the neutral theme are the species colors, used for data, never for text.
+- The only colors beyond the neutral theme are the species colors, used for data, never for text,
+  and the thin `yellow-400` frame of the inspected area.
 - Simulation functions don't mutate their inputs; `step` and `recreate` return a new `Sim`, and the
   hook reassigns its ref. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.
 - Constants live in `sim/config.ts`; nothing else hardcodes a size or rate.
@@ -106,6 +108,14 @@ All of it reads the fields from the previous step, so moves within a step don't 
 - `draw` paints each dot in its species' Tailwind shades 300 → 700 by age (lightest at birth,
   darkest for the species' oldest living dot) and at HP ÷ `startHp` opacity (capped at 100%). It
   blends additively, so overlapping dots show as brighter, whiter spots. The sidebar uses shade 500.
+
+## Area inspector (`area-inspector.tsx`)
+
+- A layer over the canvas turns a drag into an `Area` and passes it to `inspect` in the hook. Every
+  snapshot then carries `areaSpecies`: the same `SpeciesStats` as the sidebar, for the dots inside it,
+  so the popover beside the frame updates live.
+- Only a click on the canvas, the X button or Esc closes it; clicks in the sidebar keep it open so
+  Run and Step work while it's up. A confirmed Reset clears it.
 
 ## Rules that are easy to miss
 

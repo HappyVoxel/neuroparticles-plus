@@ -1,3 +1,4 @@
+import { AreaInspector } from "@/components/area-inspector";
 import { FoodCycle } from "@/components/food-cycle";
 import { InfoPopover } from "@/components/info-popover";
 import { MutationControls } from "@/components/mutation-controls";
@@ -54,6 +55,7 @@ export function App() {
 				>
 					<div className="relative">
 						<SimCanvas canvasRef={sim.canvasRef} />
+						<AreaInspector area={sim.area} species={snap.areaSpecies} onInspect={sim.inspect} />
 						{snap.extinct.length > 0 && (
 							<Alert variant="destructive" className="absolute inset-x-3 bottom-3 w-auto">
 								<AlertTitle>
