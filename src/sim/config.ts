@@ -65,7 +65,7 @@ export const speciesCount = speciesDefs.length;
 // Network: input → hidden (sigmoid) → output (linear), one output per move.
 export const inputSize = (2 * visionRadius + 1) ** 2 * speciesCount;
 export const hiddenSize = 25;
-export const outputSize = 9;
+export const outputSize = 17;
 export const stayBias = 1;
 
 // Life

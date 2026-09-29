@@ -75,13 +75,16 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   object; `prevX`/`prevY` is the cell before the last move, used only for drawing.
 - **Field:** `field[x][y]` is an `Int8Array` count of one species' agents per cell, rebuilt every step.
 - **Grid:** 200×200 with walls; every move goes through `bounce`, which reflects a step past a wall
-  back inside (E at the east wall lands one cell W; only the axis that hits the wall reflects).
-- **Genome:** flat `number[]` of length `genomeSize` (9325):
+  back inside (E at the east wall lands one cell W, a 2-cell jump lands two cells W; only the axis
+  that hits the wall reflects).
+- **Genome:** flat `number[]` of length `genomeSize` (9525):
   - `[0, hiddenWeightsFrom)` — input→hidden weights, index `j * inputSize + k`
   - `[hiddenWeightsFrom, biasFrom)` — hidden→output weights, index `hiddenWeightsFrom + j * hiddenSize + k`
   - `[biasFrom, genomeSize)` — hidden biases
-- **Network:** 363 inputs → 25 sigmoid hidden → 9 linear outputs. Output index is the move:
-  `0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW, 7 S, 8 SE`. `stayBias` is added to "stay" before argmax.
+- **Network:** 363 inputs → 25 sigmoid hidden → 17 linear outputs. Output index is the move.
+  Steps to a neighbor: `0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW, 7 S, 8 SE`. Knight jumps
+  (±1,±2)/(±2,±1) to the in-between directions: `9 NNW, 10 NNE, 11 WNW, 12 ENE, 13 WSW, 14 ESE`,
+  `15 SSW, 16 SSE`. `stayBias` is added to "stay" before argmax.
 - **Input:** the 11×11 window row by row, with species counts interleaved per cell `[R,G,B, R,G,B, ...]`.
   Cells outside the grid read `wallSense` (−1) on the first channel and 0 on the other two.
 

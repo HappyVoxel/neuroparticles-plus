@@ -1,7 +1,11 @@
 import { gridHeight, gridWidth } from "./config";
 
-/** Network output index → move: 0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW, 7 S, 8 SE. */
-export type Move = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+/**
+ * Network output index → move. 0–8 step to a neighbor: 0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW,
+ * 7 S, 8 SE. 9–16 are knight jumps to the in-between directions: 9 NNW, 10 NNE, 11 WNW, 12 ENE,
+ * 13 WSW, 14 ESE, 15 SSW, 16 SSE.
+ */
+export type Move = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16;
 
 export const stayMove: Move = 4;
 
@@ -15,9 +19,20 @@ const offsets: readonly (readonly [dx: number, dy: number])[] = [
 	[-1, 1],
 	[0, 1],
 	[1, 1],
+	[-1, -2],
+	[1, -2],
+	[-2, -1],
+	[2, -1],
+	[-2, 1],
+	[2, 1],
+	[-1, 2],
+	[1, 2],
 ];
 
-/** Reflects a coordinate one step past a wall back inside the grid: -1 → 1, size → size - 2. */
+/**
+ * Reflects a coordinate up to two cells past a wall back inside the grid: -1 → 1, -2 → 2,
+ * size → size - 2, size + 1 → size - 3.
+ */
 export function bounce(v: number, size: number): number {
 	if (v < 0) return -v;
 	if (v >= size) return 2 * (size - 1) - v;

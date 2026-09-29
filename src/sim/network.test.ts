@@ -13,8 +13,8 @@ describe("genome layout", () => {
 	it("sizes the three blocks for 363 inputs, 25 hidden, 9 outputs", () => {
 		expect(inputSize).toBe(363);
 		expect(hiddenWeightsFrom).toBe(363 * 25);
-		expect(biasFrom).toBe(363 * 25 + 25 * 9);
-		expect(genomeSize).toBe(9325);
+		expect(biasFrom).toBe(363 * 25 + 25 * 17);
+		expect(genomeSize).toBe(9525);
 	});
 
 	it("draws random genes in [-2, 2)", () => {
@@ -73,6 +73,12 @@ describe("evaluate", () => {
 describe("pickMove", () => {
 	it("picks the highest output", () => {
 		expect(pickMove([0, 0, 0, 0, 0, 0, 0, 9, 0])).toBe(7);
+	});
+
+	it("picks a knight jump", () => {
+		const output = new Array<number>(outputSize).fill(0);
+		output[outputSize - 1] = 9;
+		expect(pickMove(output)).toBe(16);
 	});
 
 	it("gives stay a head start of stayBias", () => {

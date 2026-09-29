@@ -31,8 +31,10 @@ the run stops.
 **Perception.** Each dot sees the 11×11 cells around it, counting red, green and blue dots separately:
 363 numbers in all.
 
-**Brain.** A fully connected network: 363 inputs → 25 sigmoid neurons (with biases) → 9 outputs, one
-per move (8 directions or stay). The highest output wins, with a small bonus for staying put.
+**Brain.** A fully connected network: 363 inputs → 25 sigmoid neurons (with biases) → 17 outputs, one
+per move (16 directions or stay). The 8 main directions step to a neighboring cell; the 8 in-between
+ones (NNE, ENE, …) are knight jumps, one cell along one axis and two along the other. The highest
+output wins, with a small bonus for staying put.
 
 **Health.** Every dot starts with 10,000 HP. Each step it loses 1 HP, loses 100 HP if it shares a
 cell with its own kind or any predator, and gains 100 HP if it shares a cell with prey. Bumping into
