@@ -3,7 +3,15 @@ import { gridHeight, gridWidth, inputSize, visionRadius } from "./config";
 import { buildField, senseAt } from "./field";
 import type { Agent } from "./types";
 
-const at = (x: number, y: number): Agent => ({ genome: [], hp: 1, x, y, lifetime: 0 });
+const at = (x: number, y: number): Agent => ({
+	genome: [],
+	hp: 1,
+	x,
+	y,
+	prevX: x,
+	prevY: y,
+	lifetime: 0,
+});
 
 describe("buildField", () => {
 	it("counts agents per cell", () => {

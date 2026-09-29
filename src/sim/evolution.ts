@@ -13,13 +13,9 @@ import type { Agent, Genome, MutationParams, Species } from "./types";
 
 /** A fresh agent at a random cell with full HP. */
 export function spawn(genome: Genome): Agent {
-	return {
-		genome,
-		hp: startHp,
-		x: Math.floor(Math.random() * gridWidth),
-		y: Math.floor(Math.random() * gridHeight),
-		lifetime: 0,
-	};
+	const x = Math.floor(Math.random() * gridWidth);
+	const y = Math.floor(Math.random() * gridHeight);
+	return { genome, hp: startHp, x, y, prevX: x, prevY: y, lifetime: 0 };
 }
 
 /**

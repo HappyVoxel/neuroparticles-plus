@@ -16,6 +16,8 @@ const agent = (x: number, y: number, hp = 1000, lifetime = 0): Agent => ({
 	hp,
 	x,
 	y,
+	prevX: x,
+	prevY: y,
 	lifetime,
 });
 

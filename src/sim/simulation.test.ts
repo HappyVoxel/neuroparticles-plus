@@ -30,6 +30,14 @@ describe("simulation", () => {
 		}
 	});
 
+	it("remembers where each agent stood before its move", () => {
+		const sim = createSim(mutation);
+		const next = step(sim);
+		const before = sim.species[0].agents[0];
+		const after = next.species[0].agents[0];
+		expect(after).toMatchObject({ prevX: before.x, prevY: before.y });
+	});
+
 	it("recreate swaps brains only", () => {
 		const sim = step(createSim(mutation));
 		const fresh = recreate(sim);

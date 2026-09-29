@@ -71,6 +71,8 @@ export function App() {
 				<aside className="flex w-full flex-col gap-4 lg:w-80 lg:shrink-0">
 					<RunControls
 						status={status}
+						stepsPerSecond={sim.stepsPerSecond}
+						onSpeedChange={sim.setSpeed}
 						onRun={sim.run}
 						onPause={sim.pause}
 						onStep={sim.stepOnce}

@@ -26,3 +26,11 @@ export function moveBy(x: number, y: number, move: Move): { x: number; y: number
 	const [dx, dy] = offsets[move];
 	return { x: wrap(x + dx, gridWidth), y: wrap(y + dy, gridHeight) };
 }
+
+/**
+ * Where to draw an agent `t` (0–1) of the way through its move from `prev` to `cur`.
+ * A move over the wrapped edge snaps to `cur` instead of sliding across the whole grid.
+ */
+export function slide(prev: number, cur: number, t: number): number {
+	return Math.abs(cur - prev) > 1 ? cur : prev + (cur - prev) * t;
+}

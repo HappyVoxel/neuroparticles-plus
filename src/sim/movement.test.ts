@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { gridHeight, gridWidth } from "./config";
-import { moveBy, wrap } from "./movement";
+import { moveBy, slide, wrap } from "./movement";
 
 describe("wrap", () => {
 	it("wraps both edges of the torus", () => {
@@ -28,5 +28,23 @@ describe("moveBy", () => {
 	it("wraps across the corner", () => {
 		expect(moveBy(0, 0, 0)).toEqual({ x: gridWidth - 1, y: gridHeight - 1 });
 		expect(moveBy(gridWidth - 1, gridHeight - 1, 8)).toEqual({ x: 0, y: 0 });
+	});
+});
+
+describe("slide", () => {
+	it("goes from the previous cell to the current one", () => {
+		expect(slide(10, 11, 0)).toBe(10);
+		expect(slide(10, 11, 0.25)).toBe(10.25);
+		expect(slide(10, 9, 0.5)).toBe(9.5);
+		expect(slide(10, 11, 1)).toBe(11);
+	});
+
+	it("stays put when the agent did not move", () => {
+		expect(slide(10, 10, 0.5)).toBe(10);
+	});
+
+	it("snaps to the current cell over the wrapped edge", () => {
+		expect(slide(gridWidth - 1, 0, 0.5)).toBe(0);
+		expect(slide(0, gridWidth - 1, 0.5)).toBe(gridWidth - 1);
 	});
 });

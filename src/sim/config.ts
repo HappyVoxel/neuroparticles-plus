@@ -5,6 +5,15 @@ export const gridWidth = 200;
 export const gridHeight = 200;
 export const cellPixels = 3;
 
+// Playback
+export const minStepsPerSecond = 5;
+export const maxStepsPerSecond = 100;
+export const defaultStepsPerSecond = 20;
+// Up to this speed dots slide between cells; above it a frame covers more than one step.
+export const maxSlidingStepsPerSecond = 60;
+// Longest the sim may run inside one animation frame before it has to draw.
+export const stepBudgetMs = 8;
+
 // Each agent sees a (2r+1)×(2r+1) window around itself, one channel per species.
 export const visionRadius = 5;
 

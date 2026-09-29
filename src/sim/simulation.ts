@@ -15,7 +15,7 @@ export function createSim(mutation: MutationParams): Sim {
 
 function think(agent: Agent, fields: readonly Field[]): Agent {
 	const move = pickMove(evaluate(senseAt(fields, agent.x, agent.y), agent.genome));
-	return { ...agent, ...moveBy(agent.x, agent.y, move) };
+	return { ...agent, prevX: agent.x, prevY: agent.y, ...moveBy(agent.x, agent.y, move) };
 }
 
 /**

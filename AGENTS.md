@@ -36,8 +36,9 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `simulation.ts` — `createSim`, `step`, `recreate`, `extinctSpecies`; pure, return a new `Sim`.
   - `render.ts` — canvas drawing.
   - `*.test.ts` — Vitest unit tests next to each module.
-- `src/hooks/use-simulation.ts` — owns the sim in a ref, runs `step` on `setInterval(..., 1)`, draws
-  straight to the canvas, and pushes a stats snapshot to React at most once per animation frame.
+- `src/hooks/use-simulation.ts` — owns the sim in a ref and runs one `requestAnimationFrame` loop:
+  each frame runs the steps that are due at the chosen speed, draws the canvas once and pushes a
+  stats snapshot to React.
 - `src/hooks/use-theme.ts` — light/dark, from `localStorage` key `theme` or the system setting.
   `index.html` has an inline script that applies the same key before first paint.
 - `src/components/` — app components: `sim-canvas`, `run-controls`, `food-cycle`, `species-stats`,
@@ -64,7 +65,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 ## Core data model
 
-- **Agent:** `{ genome, hp, x, y, lifetime }`. Genome and position live on the same object.
+- **Agent:** `{ genome, hp, x, y, prevX, prevY, lifetime }`. Genome and position live on the same
+  object; `prevX`/`prevY` is the cell before the last move, used only for drawing.
 - **Field:** `field[x][y]` is an `Int8Array` count of one species' agents per cell, rebuilt every step.
 - **Grid:** 200×200, toroidal; every coordinate goes through `wrap`.
 - **Genome:** flat `number[]` of length `genomeSize` (9325):
@@ -79,7 +81,16 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 For each species: `ageAndCull` → `breed` → every agent `evaluate`s and moves → `buildField`.
 All of it reads the fields from the previous step, so moves within a step don't see each other.
-`use-simulation.ts` runs `step` on `setInterval(..., 1)` and redraws the canvas every step.
+
+## Playback (`use-simulation.ts`, `render.ts`)
+
+- Speed is steps per second, set by the Speed slider (`minStepsPerSecond`–`maxStepsPerSecond`).
+- Steps in one frame stop after `stepBudgetMs`; steps still owed are dropped, so a slow machine slows
+  the sim and keeps the frame rate.
+- Up to `maxSlidingStepsPerSecond`, `draw` slides each dot from its previous cell to its current one
+  (`slide` in `movement.ts`); above it, dots are drawn at their cell. A move over the wrapped edge
+  snaps.
+- `draw` paints per agent with additive blending, so overlapping species mix colors (R+G is yellow).
 
 ## Rules that are easy to miss
 
@@ -93,4 +104,4 @@ All of it reads the fields from the previous step, so moves within a step don't 
   `[-2, 2)`. Both values come live from the Mutation controls.
 - Recreate gives every living agent a new random genome and keeps position, HP and lifetime.
 - A species that dies out stays extinct (`breed` returns nothing for zero survivors). The hook stops
-  the timer once `extinctSpecies` is non-empty; the page shows an Alert and disables Run and Step.
+  the frame loop once `extinctSpecies` is non-empty; the page shows an Alert and disables Run and Step.
