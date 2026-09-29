@@ -83,11 +83,18 @@ export function App() {
 
 					<Separator />
 
-					<section aria-labelledby="species-heading" className="flex flex-col gap-3">
-						<h2 id="species-heading" className="text-sm font-medium">
-							Food cycle
-						</h2>
-						<FoodCycle species={snap.species} />
+					<section aria-labelledby="population-heading" className="flex flex-col gap-3">
+						<div className="flex items-center justify-between gap-3">
+							<h2 id="population-heading" className="text-sm font-medium">
+								Population
+							</h2>
+							<InfoPopover topic="population">
+								<div className="flex flex-col gap-2">
+									<FoodCycle species={snap.species} />
+									<p>Arrows point from hunter to prey. Dot size tracks population.</p>
+								</div>
+							</InfoPopover>
+						</div>
 						<SpeciesStats species={snap.species} />
 					</section>
 

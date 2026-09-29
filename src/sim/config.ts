@@ -40,10 +40,9 @@ export const populationSize = 200;
 export const startHp = 10000;
 export const hpPenaltyFromSelfOrEnemy = 100;
 export const hpRewardFromPrey = 100;
-// Wall bump cost: the starting value and the range of its slider. At `maxWallPenalty` one bump
-// kills a dot with full HP.
-export const hpPenaltyFromWall = 100;
-export const maxWallPenalty = startHp;
+// Wall bump cost: the starting value and the range of its slider (0 to `maxWallPenalty`).
+export const hpPenaltyFromWall = 500;
+export const maxWallPenalty = 1000;
 export const wallPenaltyStep = 100;
 export const baseDecayPerStep = 1;
 
