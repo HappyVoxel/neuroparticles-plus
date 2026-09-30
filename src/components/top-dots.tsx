@@ -43,6 +43,7 @@ export function TopDots({ top, species, followedId, onFollow }: TopDotsProps) {
 											variant="ghost"
 											size="sm"
 											aria-pressed={followed}
+											data-sound="pop"
 											onClick={() => onFollow(agent.id)}
 											// Rows read as data, not as the uppercase labels buttons carry elsewhere.
 											className={cn(

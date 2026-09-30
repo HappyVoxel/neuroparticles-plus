@@ -51,8 +51,11 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - `src/hooks/use-loupe.ts` — Z toggles the canvas loupe, Esc turns it off.
 - `src/hooks/use-theme.ts` — light/dark, from `localStorage` key `theme` or the system setting.
   `index.html` has an inline script that applies the same key before first paint.
+- `src/hooks/use-sound.ts` + `src/lib/sound.ts` — Web Audio effects and shuffled music loops; on/off in
+  `localStorage` keys `music` (off by default) and `sound-effects` (on). `src/assets/` holds Opus/WebM
+  files made by `scripts/encode-audio.sh`; re-run it to change a sound, never hand-convert.
 - `src/components/` — app components: `sim-canvas`, `area-inspector`, `run-controls`, `food-cycle`, `species-stats`,
-  `wall-controls`, `mutation-controls`, `dot-record`, `top-dots`, `canvas-loupe`, `info-popover`, `theme-toggle`, `sidebar-section` (title + `InfoPopover`),
+  `wall-controls`, `mutation-controls`, `dot-record`, `top-dots`, `canvas-loupe`, `info-popover`, `theme-toggle`, `sound-menu`, `sidebar-section` (title + `InfoPopover`),
   `labeled-slider` (label, value and Slider; every sidebar slider uses it). `src/App.tsx` lays them out; `src/main.tsx` mounts it.
 - `src/components/ui/` — vendored shadcn/ui components. Add with `npx shadcn@latest add <name>`;
   don't hand-edit them. Biome and Prettier skip this folder.
@@ -73,6 +76,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   never for text, and `yellow-400` for the inspected area's frame and the followed dot's ring.
 - Global shortcuts: Space runs/pauses (`use-run-shortcut`), Z toggles the loupe (`use-loupe`). Both
   skip keys typed into fields (`isTyping` in `src/lib/keyboard.ts`); Space never presses a focused button.
+- Every button and menu item clicks through one document listener in `use-sound`; set
+  `data-sound="pop"` (selects a dot) or `data-sound="none"` on the element to change that.
 - Simulation functions don't mutate their inputs; `step` and `recreate` return a new `Sim`, and the
   hook reassigns its ref. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.
 - Constants live in `sim/config.ts`; nothing else hardcodes a size or rate.

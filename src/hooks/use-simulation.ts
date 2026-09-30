@@ -251,12 +251,13 @@ export function useSimulation(initialMutation: MutationParams) {
 
 	/**
 	 * Follows the living dot nearest to a cell: within `loupePickCells` when `precise` (the loupe
-	 * is on), `pickCells` otherwise. With none that close it stops following.
+	 * is on), `pickCells` otherwise. With none that close it stops following. True when it found one.
 	 */
 	const pick = useCallback(
-		(x: number, y: number, precise: boolean) => {
+		(x: number, y: number, precise: boolean): boolean => {
 			const found = nearestDot(simRef.current, x, y, precise ? loupePickCells : pickCells);
 			follow(found?.agent.id ?? null);
+			return found !== null;
 		},
 		[follow],
 	);

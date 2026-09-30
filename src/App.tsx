@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { AreaInspector } from "@/components/area-inspector";
 import { CanvasLoupe } from "@/components/canvas-loupe";
 import { DotRecord } from "@/components/dot-record";
@@ -6,6 +7,7 @@ import { MutationControls } from "@/components/mutation-controls";
 import { RunControls } from "@/components/run-controls";
 import { SidebarSection } from "@/components/sidebar-section";
 import { SimCanvas } from "@/components/sim-canvas";
+import { SoundMenu } from "@/components/sound-menu";
 import { SpeciesStats } from "@/components/species-stats";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TopDots, topDotsInfo } from "@/components/top-dots";
@@ -16,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { useLoupe } from "@/hooks/use-loupe";
 import { useRunShortcut } from "@/hooks/use-run-shortcut";
 import { type RunStatus, useSimulation } from "@/hooks/use-simulation";
+import { useSound } from "@/hooks/use-sound";
 import { formatCount } from "@/lib/format";
 import { defaultMutation, gridHeight, gridWidth } from "@/sim/config";
 
@@ -29,6 +32,9 @@ export function App() {
 	const sim = useSimulation(defaultMutation);
 	const { snap, status } = sim;
 	const loupeOn = useLoupe();
+	const sound = useSound();
+	const { play } = sound;
+	const playClick = useCallback(() => play("click"), [play]);
 	useRunShortcut(status === "running" ? sim.pause : sim.run);
 	const extinct = snap.species.filter((s) => s.population === 0).map((s) => s.name);
 
@@ -48,6 +54,13 @@ export function App() {
 					<Badge variant={status === "running" ? "default" : "secondary"} aria-live="polite">
 						{statusLabel[status]}
 					</Badge>
+					<SoundMenu
+						music={sound.music}
+						effects={sound.effects}
+						onMusicChange={sound.setMusic}
+						onEffectsChange={sound.setEffects}
+						onOpen={playClick}
+					/>
 					<ThemeToggle />
 				</div>
 			</header>
@@ -68,7 +81,9 @@ export function App() {
 							area={snap.area}
 							species={snap.areaSpecies}
 							onInspect={sim.inspect}
-							onPick={(x, y) => sim.pick(x, y, loupeOn)}
+							onPick={(x, y) => {
+								if (sim.pick(x, y, loupeOn)) sound.play("pop");
+							}}
 							precise={loupeOn}
 						/>
 						<DotRecord
