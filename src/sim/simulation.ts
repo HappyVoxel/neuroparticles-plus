@@ -1,5 +1,12 @@
 import { capture } from "./capture";
-import { hpPenaltyFromWall, inputSize, outputSize, populationSize, speciesDefs } from "./config";
+import {
+	hpPenaltyFromWall,
+	inputSize,
+	outputSize,
+	speciesCount,
+	speciesDefs,
+	totalPopulation,
+} from "./config";
 import { emptyDisease, spreadDisease } from "./disease";
 import { ageAndCull, breed, spawn } from "./evolution";
 import { buildField, senseAt } from "./field";
@@ -11,7 +18,7 @@ import type { Agent, Field, MutationParams, Sim, SimView, Species } from "./type
 export function createSim(mutation: MutationParams, wallPenalty = hpPenaltyFromWall): Sim {
 	let nextId = 0;
 	const species = speciesDefs.map((def): Species => {
-		const agents = Array.from({ length: populationSize }, () =>
+		const agents = Array.from({ length: Math.floor(totalPopulation / speciesCount) }, () =>
 			spawn({ id: nextId++, genome: randomGenome() }),
 		);
 		const hallOfFame = emptyHallOfFame();
@@ -58,8 +65,8 @@ function think(
 }
 
 /**
- * One tick: hunters catch the prey on their cell, every species ages, dies and breeds, then every
- * agent moves, then the fields and the disease are rebuilt. All of it reads the positions, fields
+ * One tick: hunters catch the prey on their cell, every species ages and dies, all breed into the
+ * shared budget, then every agent moves, then the fields and the disease are rebuilt. All of it reads the positions, fields
  * and disease from the previous tick, so moves don't see each other. The dead go to their
  * species' hall of fame.
  */
@@ -67,17 +74,23 @@ export function step(sim: Sim): Sim {
 	const { species, mutation, wallPenalty, disease } = sim;
 	const fields = species.map((s) => s.field);
 	const now = sim.step + 1;
-	let nextId = sim.nextId;
 
 	const captured = capture(species);
 
-	const next = species.map((self): Species => {
-		const { survivors, dead } = ageAndCull(self, disease.cost, captured, now);
-		const bred = breed(survivors, mutation, nextId, now);
-		nextId += bred.children.length;
-		const agents = [...bred.survivors, ...bred.children].map((a) =>
+	const culled = species.map((self) => ageAndCull(self, disease.cost, captured, now));
+	const bred = breed(
+		culled.map((c) => c.survivors),
+		mutation,
+		sim.nextId,
+		now,
+	);
+	const born = bred.children.reduce((sum, c) => sum + c.length, 0);
+
+	const next = species.map((self, i): Species => {
+		const agents = [...bred.survivors[i], ...bred.children[i]].map((a) =>
 			think(a, fields, disease.cost, wallPenalty),
 		);
+		const { dead } = culled[i];
 		const hallOfFame = addToHallOfFame(self.hallOfFame, dead);
 		return { ...self, agents, field: buildField(agents), hallOfFame, lastDeaths: dead };
 	});
@@ -86,7 +99,7 @@ export function step(sim: Sim): Sim {
 		...sim,
 		species: next,
 		step: now,
-		nextId,
+		nextId: sim.nextId + born,
 		disease: spreadDisease(
 			disease,
 			next.map((s) => s.field),

@@ -7,7 +7,8 @@ import {
 	hpPenaltyFromWall,
 	matureAge,
 	oldAge,
-	populationSize,
+	speciesCount,
+	totalPopulation,
 	speciesDefs,
 	startHp,
 } from "./config";
@@ -60,9 +61,9 @@ describe("simulation", () => {
 		const sim = createSim(mutation);
 		expect(sim.species.map((s) => s.id)).toEqual(speciesDefs.map((d) => d.id));
 		for (const s of sim.species) {
-			expect(s.agents).toHaveLength(populationSize);
+			expect(s.agents).toHaveLength(totalPopulation / speciesCount);
 			const total = s.field.reduce((sum, col) => sum + col.reduce((a, b) => a + b, 0), 0);
-			expect(total).toBe(populationSize);
+			expect(total).toBe(totalPopulation / speciesCount);
 		}
 	});
 
@@ -180,8 +181,9 @@ describe("simulation", () => {
 		expect(next.step).toBe(1);
 		expect(sim.step).toBe(0);
 		expect(before).toEqual(snapshot);
+		const alive = next.species.reduce((sum, s) => sum + s.agents.length, 0);
+		expect(alive).toBeLessThanOrEqual(totalPopulation);
 		for (const s of next.species) {
-			expect(s.agents.length).toBeLessThanOrEqual(populationSize);
 			for (const a of s.agents) expect(a.lifetime).toBeLessThanOrEqual(1);
 		}
 	});

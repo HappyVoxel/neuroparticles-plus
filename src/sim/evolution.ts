@@ -6,8 +6,10 @@ import {
 	hpPenaltyFromCrowding,
 	litterOdds,
 	matureAge,
-	populationSize,
+	minPopulation,
+	speciesCount,
 	startHp,
+	totalPopulation,
 	visionRadiusSquared,
 } from "./config";
 import type { Capture } from "./capture";
@@ -168,59 +170,93 @@ function killRate(agent: Agent): number {
 	return agent.kills / agent.lifetime;
 }
 
+/** The slots beyond every species' reserve, open to whichever species breeds first. */
+const sharedPool = totalPopulation - speciesCount * minPopulation;
+
 /**
- * Refills a species once it drops below `populationSize - 1`. Agents that lived `matureAge`
- * steps pair up, best catchers first (`killRate`, ties in random order): each takes the best
- * free mature agent in its view, or the best free one anywhere when none is in view. Every pair
- * gets a litter of `litterSize` children, cut to the slots still open: between parents that see
- * each other, beside the first parent otherwise. An agent breeds at most once per step.
- * Children get ids from `nextId` on and birth step `now`; the returned survivors carry the new
- * `children` counts of their parents.
+ * Open slots per species: its reserve room, plus what is left of the shared pool once every
+ * species' dots above its reserve are counted.
+ */
+function openSlots(counts: readonly number[]): number[] {
+	let used = 0;
+	for (const count of counts) used += Math.max(0, count - minPopulation);
+	const left = Math.max(0, sharedPool - used);
+	return counts.map((count) => Math.max(0, minPopulation - count) + left);
+}
+
+interface Candidate {
+	agent: Agent;
+	species: number;
+	rate: number;
+}
+
+/**
+ * Breeds every species at once into one budget of `totalPopulation` dots: each species keeps
+ * `minPopulation` slots of its own and shares the rest. Mature agents (`matureAge` steps lived)
+ * of all species pair up, best catchers first (`killRate`, ties in random order): each takes the
+ * best free mature agent of its species in its view, or the best free one anywhere when none is
+ * in view. Every pair gets a litter of `litterSize` children, cut to its species' open slots:
+ * between parents that see each other, beside the first parent otherwise. A species breeds only
+ * when it starts the step with 2 or more open slots. An agent breeds at most once per step. Children get ids from `nextId` on and birth
+ * step `now`; the returned survivors carry the new `children` counts of their parents.
  */
 export function breed(
-	survivors: readonly Agent[],
+	survivors: readonly (readonly Agent[])[],
 	mutation: MutationParams,
 	nextId = 0,
 	now = 0,
-): { survivors: readonly Agent[]; children: Agent[] } {
-	if (survivors.length >= populationSize - 1) return { survivors, children: [] };
+): { survivors: readonly (readonly Agent[])[]; children: Agent[][] } {
+	const counts = survivors.map((agents) => agents.length);
+	const children: Agent[][] = survivors.map(() => []);
+	let born = 0;
+	const total = counts.reduce((sum, count) => sum + count, 0);
+	// A species with 1 open slot waits for the next death, as a pair usually gets twins.
+	const breeding = openSlots(counts).map((open) => open >= 2);
 
-	const gap = populationSize - survivors.length;
-	const mature = shuffled(survivors.filter((agent) => agent.lifetime >= matureAge))
-		.map((agent) => ({ agent, rate: killRate(agent) }))
-		.sort((a, b) => b.rate - a.rate)
-		.map(({ agent }) => agent);
+	const mature: Candidate[] = shuffled(
+		survivors.flatMap((agents, species) =>
+			agents
+				.filter((agent) => agent.lifetime >= matureAge)
+				.map((agent) => ({ agent, species, rate: killRate(agent) })),
+		),
+	).sort((a, b) => b.rate - a.rate);
 	const paired = new Set<Agent>();
 	const litters = new Map<Agent, number>();
 
-	const children: Agent[] = [];
-	for (let i = 0; i < mature.length && children.length < gap; i++) {
-		const a = mature[i];
-		if (paired.has(a)) continue;
-		const free = (other: Agent, j: number) => j > i && !paired.has(other);
-		const near = mature.find((other, j) => free(other, j) && isNear(a, other));
-		const b = near ?? mature.find(free);
+	for (let i = 0; i < mature.length && total + born < totalPopulation; i++) {
+		const { agent: a, species } = mature[i];
+		if (paired.has(a) || !breeding[species]) continue;
+		const open = openSlots(counts)[species];
+		if (open === 0) continue;
+		const free = (other: Candidate, j: number) =>
+			j > i && other.species === species && !paired.has(other.agent);
+		const near = mature.find((other, j) => free(other, j) && isNear(a, other.agent));
+		const b = (near ?? mature.find(free))?.agent;
 		if (!b) continue;
 		paired.add(a).add(b);
 
-		const size = Math.min(litterSize(), gap - children.length);
+		const size = Math.min(litterSize(), open);
 		const from = near ? { x: Math.floor((a.x + b.x) / 2), y: Math.floor((a.y + b.y) / 2) } : a;
 		const moves = near ? siblingMoves : besideMoves;
 		litterGenomes(a.genome, b.genome, size).forEach((genome, k) => {
 			const birth = {
-				id: nextId + children.length,
+				id: nextId + born,
 				genome: mutate(genome, mutation),
 				bornStep: now,
 				parents: [a.id, b.id] as const,
 			};
-			children.push(spawn(birth, moveBy(from.x, from.y, moves[k])));
+			children[species].push(spawn(birth, moveBy(from.x, from.y, moves[k])));
+			born++;
 		});
+		counts[species] += size;
 		litters.set(a, size).set(b, size);
 	}
-	if (children.length === 0) return { survivors, children };
-	const parents = survivors.map((agent) => {
-		const size = litters.get(agent);
-		return size === undefined ? agent : { ...agent, children: agent.children + size };
-	});
+	if (born === 0) return { survivors, children };
+	const parents = survivors.map((agents) =>
+		agents.map((agent) => {
+			const size = litters.get(agent);
+			return size === undefined ? agent : { ...agent, children: agent.children + size };
+		}),
+	);
 	return { survivors: parents, children };
 }

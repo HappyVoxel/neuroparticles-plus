@@ -1,7 +1,7 @@
 import type { SpeciesStats } from "@/hooks/use-simulation";
 import { speciesDisplay } from "@/lib/species";
 import { preyOf } from "@/sim/capture";
-import { populationSize } from "@/sim/config";
+import { totalPopulation } from "@/sim/config";
 
 interface FoodCycleProps {
 	species: readonly SpeciesStats[];
@@ -15,9 +15,9 @@ const orbit = 72;
 const minRadius = 5;
 const maxRadius = 20;
 
-/** Node area tracks population, so a species at half strength looks half as big. */
+/** Node area tracks the share of the shared budget, so a species that takes the pool grows. */
 function nodeRadius(population: number): number {
-	return minRadius + (maxRadius - minRadius) * Math.sqrt(population / populationSize);
+	return minRadius + (maxRadius - minRadius) * Math.sqrt(population / totalPopulation);
 }
 
 function position(index: number, count: number): { x: number; y: number } {

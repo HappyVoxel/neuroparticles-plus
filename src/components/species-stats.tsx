@@ -4,7 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import type { SpeciesStats as Stats } from "@/hooks/use-simulation";
 import { formatCount } from "@/lib/format";
 import { speciesDisplay } from "@/lib/species";
-import { populationSize } from "@/sim/config";
+import { totalPopulation } from "@/sim/config";
 
 interface SpeciesStatsProps {
 	species: readonly Stats[];
@@ -33,7 +33,7 @@ export function SpeciesStats({ species }: SpeciesStatsProps) {
 							</span>
 						</div>
 						<Progress
-							value={(s.population / populationSize) * 100}
+							value={(s.population / totalPopulation) * 100}
 							aria-label={`${name} population`}
 							// The indicator paints with --primary; point it at this species' color.
 							style={{ "--primary": color } as CSSProperties}

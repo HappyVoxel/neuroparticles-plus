@@ -121,7 +121,10 @@ export const outputSize = 17;
 export const stayBias = 1;
 
 // Life
-export const populationSize = 200;
+// All species share one budget of dots. Each keeps `minPopulation` slots of its own; the rest is a
+// pool any species can fill, so the species whose dots breed first grows and the others shrink.
+export const totalPopulation = 600;
+export const minPopulation = 30;
 export const startHp = 10000;
 // Sharing a cell with your own kind costs this per step. Sharing one with a hunter is death: the
 // hunters on the cell split the dot's HP, each up to `startHp`.

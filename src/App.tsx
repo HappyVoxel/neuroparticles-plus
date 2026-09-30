@@ -23,7 +23,7 @@ import { type RunStatus, useSimulation } from "@/hooks/use-simulation";
 import { useSound } from "@/hooks/use-sound";
 import { formatCount } from "@/lib/format";
 import { speciesDisplay } from "@/lib/species";
-import { gridHeight, gridWidth } from "@/sim/config";
+import { gridHeight, gridWidth, minPopulation, totalPopulation } from "@/sim/config";
 
 const statusLabel: Record<RunStatus, string> = {
 	paused: "Paused",
@@ -149,7 +149,12 @@ export function App() {
 						info={
 							<div className="flex flex-col gap-2">
 								<FoodCycle species={snap.species} />
-								<p>Arrows point from hunter to prey. Dot size tracks population.</p>
+								<p>
+									Arrows point from hunter to prey. Dot size tracks population. All species share
+									one budget of {formatCount(totalPopulation)} dots; each keeps{" "}
+									{formatCount(minPopulation)} of its own and the best hunters' species take the
+									rest.
+								</p>
 							</div>
 						}
 					>

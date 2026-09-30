@@ -172,11 +172,15 @@ glow, the top-hunter swords and the disease labels: see `docs/ui.md`.
 - A move into a wall costs `sim.wallPenalty` HP (`moveAgent` in `simulation.ts`); standing next to a
   wall or walking along it is free. The value starts at `hpPenaltyFromWall` and comes live from the
   Walls control (0 to `maxWallPenalty`). This is what makes evolution select against wall bumps.
-- Breeding runs only when a species drops below `populationSize - 1`, and only fills the gap. Agents
-  that lived `matureAge` steps pair up in order of `kills` ÷ `lifetime`, highest first, ties in
-  random order. Each takes the best free mature agent inside its view (`isNear`), or the best free
-  one anywhere when none is in view, so a thinned-out species still breeds. An agent breeds once per
-  step. Breeding by kills is what stops dots from standing still; see `docs/hunting-research.md`.
+- All species share one budget of `totalPopulation` dots. Each keeps `minPopulation` slots of its
+  own; the rest is a pool any species can fill, so the species that breeds first grows and the
+  others shrink to their reserve. `breed` runs once for all species
+  and only fills the gap: a species breeds only when it starts the step with 2 or more open slots. Agents that lived `matureAge` steps, of every species, pair up in order of
+  `kills` ÷ `lifetime`, highest first, ties in random order. Each takes the best free mature agent
+  of its species inside its view (`isNear`), or the best free one anywhere when none is in view, so
+  a thinned-out species still breeds. A litter is cut to its species' open slots: its reserve room
+  plus what is left of the pool. An agent breeds once per step. Breeding by kills is what stops
+  dots from standing still; see `docs/hunting-research.md`. Reset splits the budget evenly.
 - A pair gets a litter sized by `litterOdds`: 2 children 90% of the time, 1 child 9%, 3 children 1%
   (`litterSize`), cut to the slots still open. Children start with full HP. The first lands on the
   cell halfway between the parents, the second one cell E, the third one cell S (`siblingMoves`),

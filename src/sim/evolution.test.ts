@@ -6,8 +6,9 @@ import {
 	hpPenaltyFromCrowding,
 	litterOdds,
 	matureAge,
-	populationSize,
+	minPopulation,
 	startHp,
+	totalPopulation,
 	visionRadiusSquared,
 } from "./config";
 import type { Capture } from "./capture";
@@ -25,7 +26,7 @@ import {
 import { buildField } from "./field";
 import { genomeSize } from "./network";
 import { emptyHallOfFame } from "./records";
-import type { Agent, Species } from "./types";
+import type { Agent, MutationParams, Species } from "./types";
 
 let ids = 0;
 const agent = (x: number, y: number, hp = 1000, lifetime = 0): Agent => ({
@@ -48,7 +49,13 @@ const noMutation = { percent: 0, genes: 1 };
 const noDisease = emptyDisease().cost;
 const noCapture: Capture = { caught: new Map(), gain: new Map() };
 const cull = (...args: Parameters<typeof ageAndCull>) => ageAndCull(...args).survivors;
-const litter = (...args: Parameters<typeof breed>) => breed(...args).children;
+/** Breeds one species alone; the other two are empty and keep their reserves. */
+const litter = (survivors: readonly Agent[], ...rest: [MutationParams, number?, number?]) =>
+	breed([survivors, [], []], ...rest).children[0];
+const litterAll = (survivors: readonly (readonly Agent[])[]) =>
+	breed(survivors, noMutation).children;
+// A lone species fills its own reserve and the whole shared pool.
+const full = totalPopulation - 2 * minPopulation;
 
 describe("ageAndCull", () => {
 	it("only decays a lone agent and adds a step of lifetime", () => {
@@ -249,8 +256,8 @@ describe("breed", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("does nothing while the population is at least populationSize - 1", () => {
-		const survivors = Array.from({ length: populationSize - 1 }, () => parent(10, 10));
+	it("does nothing for a species with fewer than 2 open slots", () => {
+		const survivors = Array.from({ length: full - 1 }, () => parent(10, 10));
 		expect(litter(survivors, noMutation)).toEqual([]);
 	});
 
@@ -285,7 +292,7 @@ describe("breed", () => {
 	it("lets the best catchers per step lived fill the open slots", () => {
 		roll(twins);
 		const gap = 2;
-		const still = Array.from({ length: populationSize - gap - 2 }, () => parent(50, 50));
+		const still = Array.from({ length: full - gap - 2 }, () => parent(50, 50));
 		const oldCatcher = { ...parent(10, 10, matureAge * 10), kills: 5 };
 		const youngCatcher = { ...parent(14, 10), kills: 2 };
 		const children = litter([...still, oldCatcher, youngCatcher], noMutation);
@@ -371,13 +378,13 @@ describe("breed", () => {
 	it("cuts a litter to the open slots", () => {
 		roll(triplets);
 		const gap = 2;
-		const survivors = Array.from({ length: populationSize - gap }, () => parent(10, 10));
+		const survivors = Array.from({ length: full - gap }, () => parent(10, 10));
 		expect(litter(survivors, noMutation)).toHaveLength(gap);
 	});
 
 	it("stops once the population is full again", () => {
 		const gap = 3;
-		const survivors = Array.from({ length: populationSize - gap }, (_, i) => parent(i % 4, 0));
+		const survivors = Array.from({ length: full - gap }, (_, i) => parent(i % 4, 0));
 		expect(litter(survivors, noMutation)).toHaveLength(gap);
 	});
 
@@ -398,16 +405,58 @@ describe("breed", () => {
 		const a = parent(10, 10);
 		const b = parent(14, 10);
 		const loner = parent(100, 100, matureAge - 1);
-		const { survivors } = breed([a, b, loner], noMutation);
-		expect(survivors.map((s) => s.children)).toEqual([2, 2, 0]);
-		expect(survivors[2]).toBe(loner);
+		const { survivors } = breed([[a, b, loner], [], []], noMutation);
+		expect(survivors[0].map((s) => s.children)).toEqual([2, 2, 0]);
+		expect(survivors[0][2]).toBe(loner);
 		expect(a.children).toBe(0);
 	});
 
 	it("leaves the survivors alone", () => {
-		const survivors = [parent(10, 10), parent(12, 10)];
+		const survivors = [[parent(10, 10), parent(12, 10)], [], []];
 		const before = structuredClone(survivors);
 		breed(survivors, noMutation);
 		expect(survivors).toEqual(before);
+	});
+
+	describe("shared budget", () => {
+		// Immature dots that hold slots without breeding.
+		const holders = (n: number) => Array.from({ length: n }, () => parent(50, 50, matureAge - 1));
+		const counts = (children: readonly Agent[][]) => children.map((c) => c.length);
+
+		it("hands the open pool slots to the species with the best catcher", () => {
+			roll(twins);
+			const gap = 2;
+			const red = [{ ...parent(10, 10), kills: 3 }, parent(14, 10), ...holders(minPopulation - 2)];
+			const green = [
+				{ ...parent(10, 10), kills: 1 },
+				parent(14, 10),
+				...holders(minPopulation - 2),
+			];
+			const blue = holders(totalPopulation - 2 * minPopulation - gap);
+			expect(counts(litterAll([red, green, blue]))).toEqual([gap, 0, 0]);
+		});
+
+		it("lets a species below its reserve breed while the pool is full", () => {
+			roll(twins);
+			const red = [parent(10, 10), parent(14, 10)];
+			const blue = holders(full);
+			expect(counts(litterAll([red, [], blue]))).toEqual([2, 0, 0]);
+		});
+
+		it("stops a species at the pool even when another is below its reserve", () => {
+			roll(twins);
+			const red = [parent(10, 10), parent(14, 10)];
+			const blue = [parent(10, 10), parent(14, 10), ...holders(full - 2)];
+			expect(counts(litterAll([red, [], blue]))).toEqual([2, 0, 0]);
+		});
+
+		it("never breeds past the budget", () => {
+			roll(triplets);
+			const gap = 2;
+			const red = [parent(10, 10), parent(14, 10), ...holders(minPopulation)];
+			const green = holders(minPopulation);
+			const blue = holders(totalPopulation - red.length - green.length - gap);
+			expect(counts(litterAll([red, green, blue]))).toEqual([gap, 0, 0]);
+		});
 	});
 });

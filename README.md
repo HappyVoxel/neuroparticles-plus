@@ -30,8 +30,9 @@ Live at [npp.happyvoxel.com](https://npp.happyvoxel.com).
 
 Speed, bump cost, mutation and the top-dots filter are kept across a page refresh. The Population
 rows show how many dots of each species are alive, how long the oldest has lived and the most kills
-any of them has; its info button shows the food cycle, each species sized by its population. If a
-species dies out, the run stops; Reset starts a new one.
+any of them has, with a bar for its share of the shared budget; its info button shows the food
+cycle, each species sized by its population. If a species dies out, the run stops; Reset starts a
+new one.
 
 ## Watching a run
 
@@ -81,14 +82,15 @@ pandemic for good. Every dot inside, whatever its species, loses 50 HP per step 
 100 HP at the center. Overlapping areas don't add up. An area clears once no dot has been inside it
 for more than 20 steps.
 
-**Evolution.** A genome is the flat list of all the network's weights and biases. When a species drops
-below 199 dots, it refills with children of its best hunters:
+**Evolution.** A genome is the flat list of all the network's weights and biases. The three species
+share a budget of 600 dots: each keeps 30 slots of its own, and the other 510 go to whichever species
+breeds first. Dots that die free slots, and the best hunters of any species refill them:
 
-- **Selection:** a dot can breed once it has lived 100 steps. Mature dots pair up in order of prey
-  caught per step lived, best first. Each takes the best free mature dot inside its view, or the
-  best one anywhere when it sees none. A dot breeds once per step.
+- **Selection:** a dot can breed once it has lived 100 steps. Mature dots of all species pair up in
+  order of prey caught per step lived, best first. Each takes the best free mature dot of its species
+  inside its view, or the best one anywhere when it sees none. A dot breeds once per step.
 - **Litter:** a pair gets 2 children 90% of the time, 1 child 9% and 3 children 1%, never more than
-  the species has room for.
+  its species has room for. A species with no kills only breeds into its own 30 slots.
 - **Crossover:** uniform. Each gene of a child comes from one of the two parents. Twins split the
   parents' genes between them.
 - **Mutation:** with the chosen chance (5% by default), a newborn gets that many weights (1 by
