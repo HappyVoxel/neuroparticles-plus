@@ -1,17 +1,9 @@
-import { XIcon } from "lucide-react";
 import { type PointerEvent, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-	Popover,
-	PopoverAnchor,
-	PopoverContent,
-	PopoverDescription,
-	PopoverHeader,
-	PopoverTitle,
-} from "@/components/ui/popover";
+import { CanvasPopover, cellBox } from "@/components/canvas-popover";
 import { SpeciesSwatch } from "@/components/species-swatch";
+import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import type { SpeciesStats } from "@/hooks/use-simulation";
-import { formatCount, percent } from "@/lib/format";
+import { formatCount } from "@/lib/format";
 import { speciesDisplay } from "@/lib/species";
 import { type Area, type Cell, areaFromCorners } from "@/sim/area";
 import { gridHeight, gridWidth } from "@/sim/config";
@@ -97,45 +89,28 @@ export function AreaInspector({ area, species, onInspect, onPick, precise }: Are
 					<PopoverAnchor asChild>
 						<div
 							className="pointer-events-none absolute border border-yellow-400"
-							style={{
-								left: percent(shown.x0, gridWidth),
-								top: percent(shown.y0, gridHeight),
-								width: percent(shown.x1 - shown.x0 + 1, gridWidth),
-								height: percent(shown.y1 - shown.y0 + 1, gridHeight),
-							}}
+							style={cellBox(shown.x0, shown.y0, shown.x1 - shown.x0 + 1, shown.y1 - shown.y0 + 1)}
 						/>
 					</PopoverAnchor>
 				)}
 			</div>
 			{area && species && (
-				<PopoverContent
+				<CanvasPopover
 					side="right"
-					align="start"
-					sideOffset={8}
 					aria-label="Area stats"
-					className="w-72 gap-3 text-xs"
-					onOpenAutoFocus={(e) => e.preventDefault()}
-					onInteractOutside={(e) => e.preventDefault()}
+					title={
+						<>
+							Area {area.x1 - area.x0 + 1} × {area.y1 - area.y0 + 1}
+						</>
+					}
+					description={
+						<>
+							{formatCount(total)} {total === 1 ? "dot" : "dots"}
+						</>
+					}
+					closeLabel="Close area stats"
+					onClose={() => onInspect(null)}
 				>
-					<div className="flex items-start justify-between gap-3">
-						<PopoverHeader>
-							<PopoverTitle>
-								Area {area.x1 - area.x0 + 1} × {area.y1 - area.y0 + 1}
-							</PopoverTitle>
-							<PopoverDescription className="text-xs tabular-nums">
-								{formatCount(total)} {total === 1 ? "dot" : "dots"}
-							</PopoverDescription>
-						</PopoverHeader>
-						<Button
-							variant="ghost"
-							size="icon-xs"
-							className="-mt-1.5 -mr-1.5 text-muted-foreground"
-							aria-label="Close area stats"
-							onClick={() => onInspect(null)}
-						>
-							<XIcon />
-						</Button>
-					</div>
 					<table className="w-full tabular-nums">
 						<thead className="text-muted-foreground">
 							<tr>
@@ -169,7 +144,7 @@ export function AreaInspector({ area, species, onInspect, onPick, precise }: Are
 							))}
 						</tbody>
 					</table>
-				</PopoverContent>
+				</CanvasPopover>
 			)}
 		</Popover>
 	);

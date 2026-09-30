@@ -1,19 +1,11 @@
-import { XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-	Popover,
-	PopoverAnchor,
-	PopoverContent,
-	PopoverDescription,
-	PopoverHeader,
-	PopoverTitle,
-} from "@/components/ui/popover";
+import { CanvasPopover, cellBox } from "@/components/canvas-popover";
 import { SpeciesSwatch } from "@/components/species-swatch";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import type { DotView } from "@/hooks/use-simulation";
-import { formatCount, percent } from "@/lib/format";
+import { formatCount } from "@/lib/format";
 import { speciesDisplay } from "@/lib/species";
-import { gridHeight, gridWidth } from "@/sim/config";
 
 interface DotRecordProps {
 	followed: DotView | null;
@@ -87,44 +79,26 @@ export function DotRecord({ followed, step, onClose, onCopyGenome }: DotRecordPr
 					key={agent.id}
 					aria-hidden
 					className="pointer-events-none absolute transition-[left,top] duration-500 ease-out motion-reduce:transition-none"
-					style={{
-						left: percent(agent.x, gridWidth),
-						top: percent(agent.y, gridHeight),
-						width: percent(1, gridWidth),
-						height: percent(1, gridHeight),
-					}}
+					style={cellBox(agent.x, agent.y, 1, 1)}
 				/>
 			</PopoverAnchor>
-			<PopoverContent
+			<CanvasPopover
 				side="left"
-				align="start"
-				sideOffset={8}
 				collisionPadding={16}
 				// Follow the easing anchor every frame, not only when the layout changes.
 				updatePositionStrategy="always"
 				aria-label="Dot record"
-				className="w-72 gap-3 text-xs"
-				onOpenAutoFocus={(e) => e.preventDefault()}
-				onInteractOutside={(e) => e.preventDefault()}
+				title={
+					<>
+						<SpeciesSwatch species={followed.species} />
+						{speciesDisplay[followed.species].name} #{agent.id}
+					</>
+				}
+				titleClassName="flex items-center gap-2 tabular-nums"
+				description={status}
+				closeLabel="Stop following"
+				onClose={onClose}
 			>
-				<div className="flex items-start justify-between gap-3">
-					<PopoverHeader>
-						<PopoverTitle className="flex items-center gap-2 tabular-nums">
-							<SpeciesSwatch species={followed.species} />
-							{speciesDisplay[followed.species].name} #{agent.id}
-						</PopoverTitle>
-						<PopoverDescription className="text-xs tabular-nums">{status}</PopoverDescription>
-					</PopoverHeader>
-					<Button
-						variant="ghost"
-						size="icon-xs"
-						className="-mt-1.5 -mr-1.5 text-muted-foreground"
-						aria-label="Stop following"
-						onClick={onClose}
-					>
-						<XIcon />
-					</Button>
-				</div>
 				<Rows
 					rows={[
 						["Born", `step ${formatCount(agent.bornStep)}`],
@@ -169,7 +143,7 @@ export function DotRecord({ followed, step, onClose, onCopyGenome }: DotRecordPr
 				>
 					{copied ? "Copied" : "Copy genome"}
 				</Button>
-			</PopoverContent>
+			</CanvasPopover>
 		</Popover>
 	);
 }
