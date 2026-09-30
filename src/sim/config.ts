@@ -32,7 +32,7 @@ export const visionCells: readonly (readonly [dx: number, dy: number])[] = (() =
 // never negative, so the network can tell a wall from an empty cell.
 export const wallSense = -1;
 
-// Rock-paper-scissors: each species gains HP from the next one and loses it to the previous one
+// Rock-paper-scissors: each species catches the next one and is caught by the previous one
 // (Red eats Green, Green eats Blue, Blue eats Red).
 // Shades are Tailwind v4's 300, 400, 500, 600 and 700 (tailwindcss/theme.css). The sidebar uses
 // the middle one, 500.
@@ -84,8 +84,9 @@ export const stayBias = 1;
 // Life
 export const populationSize = 200;
 export const startHp = 10000;
-export const hpPenaltyFromSelfOrEnemy = 100;
-export const hpRewardFromPrey = 100;
+// Sharing a cell with your own kind costs this per step. Sharing one with a hunter is death: the
+// hunters on the cell split the dot's HP, each up to `startHp`.
+export const hpPenaltyFromCrowding = 100;
 // Wall bump cost: the starting value and the range of its slider (0 to `maxWallPenalty`).
 export const hpPenaltyFromWall = 500;
 export const maxWallPenalty = 1000;

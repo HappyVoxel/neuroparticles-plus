@@ -28,6 +28,7 @@ describe("moveAgent", () => {
 		prevX: x,
 		prevY: y,
 		lifetime: 0,
+		kills: 0,
 	});
 
 	it("moves without HP cost on open ground", () => {
@@ -88,6 +89,23 @@ describe("simulation", () => {
 		expect(bumped).toMatchObject({ x: 1, y: 50, hp: startHp - baseDecayPerStep - 700 });
 	});
 
+	it("kills the prey on a hunter's cell and hands the hunter its HP", () => {
+		const sim = createSim(mutation);
+		const hunter = { ...sim.species[0].agents[0], x: 50, y: 50, hp: 1000 };
+		const prey = { ...sim.species[1].agents[0], x: 50, y: 50, hp: 400 };
+		const world = {
+			...sim,
+			species: sim.species.map((s, i) => {
+				const agents = i === 0 ? [hunter] : i === 1 ? [prey] : [];
+				return { ...s, agents, field: buildField(agents) };
+			}),
+		};
+		const next = step(world);
+		expect(next.species[1].agents).toEqual([]);
+		const fed = next.species[0].agents.find((a) => a.genome === hunter.genome);
+		expect(fed).toMatchObject({ hp: 1400 - baseDecayPerStep, kills: 1 });
+	});
+
 	it("charges last step's disease and rebuilds it after the moves", () => {
 		const sim = createSim(mutation);
 		const loner = { ...sim.species[0].agents[0], x: 50, y: 50, hp: startHp };
@@ -132,7 +150,10 @@ describe("simulation", () => {
 				return { ...s, agents: own, field: buildField(own) };
 			}),
 		};
-		const moved = step(world).species[0].agents.map(({ x, y }) => ({ x, y }));
+		// The two mature dots also breed; their children are still at lifetime 0.
+		const moved = step(world)
+			.species[0].agents.filter((a) => a.lifetime > 0)
+			.map(({ x, y }) => ({ x, y }));
 		expect(moved).toEqual([
 			{ x: 20, y: 50 },
 			{ x: 41, y: 52 },
@@ -150,7 +171,7 @@ describe("simulation", () => {
 		expect(sim.step).toBe(0);
 		expect(before).toEqual(snapshot);
 		for (const s of next.species) {
-			expect(s.agents.length).toBeGreaterThanOrEqual(populationSize - 1);
+			expect(s.agents.length).toBeLessThanOrEqual(populationSize);
 			for (const a of s.agents) expect(a.lifetime).toBeLessThanOrEqual(1);
 		}
 	});

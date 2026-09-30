@@ -35,6 +35,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `color.ts` — `shadeAt` (age → shade), `hpOpacity`, `oklchCss`.
   - `field.ts` — `buildField`, `senseAt` (the network input).
   - `area.ts` — `Area` (a box of cells), `areaFromCorners`, `agentsIn`.
+  - `capture.ts` — `capture` (who gets caught this step and how much HP each hunter takes).
   - `disease.ts` — `emptyDisease`, `spreadDisease` (one step of disease), `diseaseCostAt`, `circleCounts`.
   - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
   - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
@@ -74,8 +75,9 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 ## Core data model
 
-- **Agent:** `{ genome, hp, x, y, prevX, prevY, lifetime }`. Genome and position live on the same
-  object; `prevX`/`prevY` is the cell before the last move, used only for drawing.
+- **Agent:** `{ genome, hp, x, y, prevX, prevY, lifetime, kills }`. Genome and position live on the
+  same object; `prevX`/`prevY` is the cell before the last move, used only for drawing; `kills`
+  counts the prey it caught and decides who breeds first.
 - **Field:** `field[x][y]` is an `Int8Array` count of one species' agents per cell, rebuilt every step.
 - **Grid:** 200×200 with walls; every move goes through `bounce`, which reflects a step past a wall
   back inside (E at the east wall lands one cell W, a 2-cell jump lands two cells W; only the axis
@@ -97,9 +99,9 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 ## Step loop (`simulation.step`)
 
-For each species: `ageAndCull` → `breed` → every agent `evaluate`s and moves → `buildField`. Then
-`spreadDisease` reads the new fields. All of it reads the fields and disease from the previous step,
-so moves within a step don't see each other.
+`capture` runs once for all species. Then for each species: `ageAndCull` → `breed` → every agent
+`evaluate`s and moves → `buildField`. Then `spreadDisease` reads the new fields. All of it reads the
+positions, fields and disease from the previous step, so moves within a step don't see each other.
 
 ## Playback (`use-simulation.ts`, `render.ts`)
 
@@ -124,7 +126,11 @@ so moves within a step don't see each other.
 
 - For species `i`, enemies are `species[(i-1) mod 3]` and prey is `species[(i+1) mod 3]`
   (Red eats Green, Green eats Blue, Blue eats Red).
-- HP per step: −`hpPenaltyFromSelfOrEnemy` if the cell has another of your kind or any enemy, +`hpRewardFromPrey` if it has prey, −`baseDecayPerStep` always. Dead at `hp <= 0`.
+- Capture (`capture.ts`): a dot that shares a cell with an enemy dies. The enemies on that cell split
+  its HP equally, each capped at `startHp`, and each adds 1 to its `kills`. All species resolve from
+  the same positions, so a dot caught this step still catches.
+- HP per step: −`hpPenaltyFromCrowding` if the cell has another of your kind, −`baseDecayPerStep`
+  always. Dead at `hp <= 0`.
 - Disease (`disease.ts`): the circle of view size around a cell counts a crowded step while it holds
   more than `diseaseCrowd` dots of one species outside disease, and resets otherwise. Past
   `diseaseAfterSteps` in a row it becomes a `DiseaseArea` of that species, born at view size. Dots
@@ -139,14 +145,16 @@ so moves within a step don't see each other.
 - A move into a wall costs `sim.wallPenalty` HP (`moveAgent` in `simulation.ts`); standing next to a
   wall or walking along it is free. The value starts at `hpPenaltyFromWall` and comes live from the
   Walls control (0 to `maxWallPenalty`). This is what makes evolution select against wall bumps.
-- Breeding runs only when a species drops below `populationSize - 1`, and only fills the gap. Two
-  agents can breed when both have lived `matureAge` steps and each is inside the other's view
-  (`isNear`). Mature agents pair up in random order; an agent breeds once per step. No mature pair
-  in view means no children.
+- Breeding runs only when a species drops below `populationSize - 1`, and only fills the gap. Agents
+  that lived `matureAge` steps pair up in order of `kills` ÷ `lifetime`, highest first, ties in
+  random order. Each takes the best free mature agent inside its view (`isNear`), or the best free
+  one anywhere when none is in view, so a thinned-out species still breeds. An agent breeds once per
+  step. Breeding by kills is what stops dots from standing still; see `docs/hunting-research.md`.
 - A pair gets a litter sized by `litterOdds`: 2 children 90% of the time, 1 child 9%, 3 children 1%
   (`litterSize`), cut to the slots still open. Children start with full HP. The first lands on the
   cell halfway between the parents, the second one cell E, the third one cell S (`siblingMoves`),
-  so siblings don't pay the crowding penalty. Twins get the two halves of one `crossover`; a third
+  so siblings don't pay the crowding penalty. Children of a pair out of each other's view land E, S
+  and W of the first parent (`besideMoves`). Twins get the two halves of one `crossover`; a third
   child gets its own.
 - Speed depends on age (`moveCount`): agents younger than `matureAge` or at least `oldAge`
   (0.8 × `startHp` ÷ `baseDecayPerStep`, the last 20% of a life without food) pick only from the

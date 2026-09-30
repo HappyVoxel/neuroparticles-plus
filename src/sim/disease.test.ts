@@ -29,6 +29,7 @@ const at = (x: number, y: number): Agent => ({
 	prevX: x,
 	prevY: y,
 	lifetime: 0,
+	kills: 0,
 });
 
 const crowd = (n: number, x: number, y: number): Field =>

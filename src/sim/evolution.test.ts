@@ -3,16 +3,25 @@ import {
 	baseDecayPerStep,
 	gridHeight,
 	gridWidth,
-	hpPenaltyFromSelfOrEnemy,
-	hpRewardFromPrey,
+	hpPenaltyFromCrowding,
 	litterOdds,
 	matureAge,
 	populationSize,
 	startHp,
 	visionRadiusSquared,
 } from "./config";
+import type { Capture } from "./capture";
 import { emptyDisease } from "./disease";
-import { ageAndCull, breed, crossover, litterSize, mutate, siblingMoves, spawn } from "./evolution";
+import {
+	ageAndCull,
+	besideMoves,
+	breed,
+	crossover,
+	litterSize,
+	mutate,
+	siblingMoves,
+	spawn,
+} from "./evolution";
 import { buildField } from "./field";
 import { genomeSize } from "./network";
 import type { Agent, Species } from "./types";
@@ -25,6 +34,7 @@ const agent = (x: number, y: number, hp = 1000, lifetime = 0): Agent => ({
 	prevX: x,
 	prevY: y,
 	lifetime,
+	kills: 0,
 });
 
 const species = (agents: Agent[]): Species => ({
@@ -37,44 +47,58 @@ const species = (agents: Agent[]): Species => ({
 
 const noMutation = { percent: 0, genes: 1 };
 const noDisease = emptyDisease().cost;
+const noCapture: Capture = { caught: new Set(), gain: new Map() };
 
 describe("ageAndCull", () => {
 	it("only decays a lone agent and adds a step of lifetime", () => {
-		const [a] = ageAndCull(species([agent(1, 1)]), species([]), species([]), noDisease);
-		expect(a).toMatchObject({ hp: 1000 - baseDecayPerStep, lifetime: 1 });
+		const [a] = ageAndCull(species([agent(1, 1)]), noDisease, noCapture);
+		expect(a).toMatchObject({ hp: 1000 - baseDecayPerStep, lifetime: 1, kills: 0 });
 	});
 
 	it("charges for sharing a cell with your own kind", () => {
-		const [a] = ageAndCull(
-			species([agent(1, 1), agent(1, 1)]),
-			species([]),
-			species([]),
-			noDisease,
-		);
-		expect(a.hp).toBe(1000 - hpPenaltyFromSelfOrEnemy - baseDecayPerStep);
+		const [a] = ageAndCull(species([agent(1, 1), agent(1, 1)]), noDisease, noCapture);
+		expect(a.hp).toBe(1000 - hpPenaltyFromCrowding - baseDecayPerStep);
 	});
 
-	it("charges for meeting an enemy and pays for meeting prey", () => {
-		const me = species([agent(1, 1)]);
-		const there = species([agent(1, 1)]);
-		expect(ageAndCull(me, there, species([]), noDisease)[0].hp).toBe(
-			1000 - hpPenaltyFromSelfOrEnemy - baseDecayPerStep,
-		);
-		expect(ageAndCull(me, species([]), there, noDisease)[0].hp).toBe(
-			1000 + hpRewardFromPrey - baseDecayPerStep,
-		);
+	it("drops a caught agent whatever its HP", () => {
+		const prey = agent(1, 1, startHp);
+		const other = agent(2, 2);
+		const survivors = ageAndCull(species([prey, other]), noDisease, {
+			caught: new Set([prey]),
+			gain: new Map(),
+		});
+		expect(survivors).toHaveLength(1);
+		expect(survivors[0]).toMatchObject({ x: 2, y: 2 });
+	});
+
+	it("gives a hunter its gain and counts the kill", () => {
+		const hunter = agent(1, 1, 1000);
+		const [a] = ageAndCull(species([hunter]), noDisease, {
+			caught: new Set(),
+			gain: new Map([[hunter, 300]]),
+		});
+		expect(a).toMatchObject({ hp: 1300 - baseDecayPerStep, kills: 1 });
+	});
+
+	it("caps a hunter's HP at startHp", () => {
+		const hunter = agent(1, 1, startHp - 10);
+		const [a] = ageAndCull(species([hunter]), noDisease, {
+			caught: new Set(),
+			gain: new Map([[hunter, 5000]]),
+		});
+		expect(a.hp).toBe(startHp - baseDecayPerStep);
 	});
 
 	it("charges the disease cost of the agent's cell", () => {
 		const cost = emptyDisease().cost;
 		cost[1][1] = 750;
-		const [a] = ageAndCull(species([agent(1, 1)]), species([]), species([]), cost);
+		const [a] = ageAndCull(species([agent(1, 1)]), cost, noCapture);
 		expect(a.hp).toBe(1000 - 750 - baseDecayPerStep);
 	});
 
 	it("drops agents whose HP hits zero and leaves the input alone", () => {
 		const self = species([agent(1, 1, baseDecayPerStep), agent(2, 2)]);
-		const survivors = ageAndCull(self, species([]), species([]), noDisease);
+		const survivors = ageAndCull(self, noDisease, noCapture);
 		expect(survivors).toHaveLength(1);
 		expect(self.agents[1].hp).toBe(1000);
 	});
@@ -130,6 +154,8 @@ describe("litterSize", () => {
 	});
 
 	it("has odds that add up to 100% and a cell for every child of the biggest litter", () => {
+		const biggest = Math.max(...litterOdds.map((o) => o.children));
+		expect(biggest).toBeLessThanOrEqual(besideMoves.length);
 		expect(litterOdds.reduce((sum, o) => sum + o.percent, 0)).toBe(100);
 		expect(Math.max(...litterOdds.map((o) => o.children))).toBeLessThanOrEqual(siblingMoves.length);
 	});
@@ -168,13 +194,37 @@ describe("breed", () => {
 		expect(breed([parent(10, 10)], noMutation)).toEqual([]);
 	});
 
-	it("breeds nothing from a pair outside each other's view", () => {
-		const farInX = [parent(10, 10), parent(10 + reach + 1, 10)];
-		const farInY = [parent(10, 10), parent(10, 10 + reach + 1)];
-		const farCorner = [parent(10, 10), parent(10 + diagonalReach + 1, 10 + diagonalReach + 1)];
-		expect(breed(farInX, noMutation)).toEqual([]);
-		expect(breed(farInY, noMutation)).toEqual([]);
-		expect(breed(farCorner, noMutation)).toEqual([]);
+	it("puts the children of a pair outside each other's view beside the better catcher", () => {
+		roll(triplets);
+		const catcher = { ...parent(10, 10), kills: 1 };
+		const far = parent(10 + reach + 1, 10);
+		expect(cells(breed([far, catcher], noMutation))).toEqual([
+			{ x: 11, y: 10 },
+			{ x: 10, y: 11 },
+			{ x: 9, y: 10 },
+		]);
+	});
+
+	it("pairs a catcher with a mate in view before one out of view", () => {
+		roll(single);
+		const catcher = { ...parent(10, 10), kills: 3 };
+		const farCatcher = { ...parent(100, 100), kills: 2 };
+		const neighbor = parent(14, 10);
+		const children = breed([farCatcher, neighbor, catcher], noMutation);
+		expect(cells(children)).toEqual([{ x: 12, y: 10 }]);
+	});
+
+	it("lets the best catchers per step lived fill the open slots", () => {
+		roll(twins);
+		const gap = 2;
+		const still = Array.from({ length: populationSize - gap - 2 }, () => parent(50, 50));
+		const oldCatcher = { ...parent(10, 10, matureAge * 10), kills: 5 };
+		const youngCatcher = { ...parent(14, 10), kills: 2 };
+		const children = breed([...still, oldCatcher, youngCatcher], noMutation);
+		expect(cells(children)).toEqual([
+			{ x: 12, y: 10 },
+			{ x: 13, y: 10 },
+		]);
 	});
 
 	it("breeds a pair at the edge of the round view", () => {

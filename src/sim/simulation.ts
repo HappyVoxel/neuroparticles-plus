@@ -1,3 +1,4 @@
+import { capture } from "./capture";
 import { hpPenaltyFromWall, populationSize, speciesDefs } from "./config";
 import { emptyDisease, spreadDisease } from "./disease";
 import { ageAndCull, breed, spawn } from "./evolution";
@@ -33,19 +34,18 @@ function think(
 }
 
 /**
- * One tick: every species ages, dies and breeds, then every agent moves, then the fields and the
- * disease are rebuilt. All of it reads the fields and disease from the previous tick, so moves
- * don't see each other.
+ * One tick: hunters catch the prey on their cell, every species ages, dies and breeds, then every
+ * agent moves, then the fields and the disease are rebuilt. All of it reads the positions, fields
+ * and disease from the previous tick, so moves don't see each other.
  */
 export function step(sim: Sim): Sim {
 	const { species, mutation, wallPenalty, disease } = sim;
-	const n = species.length;
 	const fields = species.map((s) => s.field);
 
-	const next = species.map((self, i) => {
-		const enemies = species[(i + n - 1) % n];
-		const prey = species[(i + 1) % n];
-		const survivors = ageAndCull(self, enemies, prey, disease.cost);
+	const captured = capture(species);
+
+	const next = species.map((self) => {
+		const survivors = ageAndCull(self, disease.cost, captured);
 		const agents = [...survivors, ...breed(survivors, mutation)].map((a) =>
 			think(a, fields, disease.cost, wallPenalty),
 		);

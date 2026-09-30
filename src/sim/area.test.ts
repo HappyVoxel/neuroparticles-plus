@@ -11,6 +11,7 @@ const agent = (x: number, y: number): Agent => ({
 	prevX: x,
 	prevY: y,
 	lifetime: 0,
+	kills: 0,
 });
 
 describe("areaFromCorners", () => {

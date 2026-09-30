@@ -17,6 +17,8 @@ export interface Agent {
 	prevY: number;
 	/** Steps survived; an agent can breed from `matureAge` on. */
 	lifetime: number;
+	/** Prey it caught, alone or shared; the best catchers per step lived breed first. */
+	kills: number;
 }
 
 export interface Species {

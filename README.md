@@ -41,10 +41,13 @@ output wins, with a small bonus for staying put.
 steps and up) only step to a neighboring cell. Adults in between can also knight-jump, so they are
 the fastest.
 
-**Health.** Every dot starts with 10,000 HP. Each step it loses 1 HP, loses 100 HP if it shares a
-cell with its own kind or any predator, and gains 100 HP if it shares a cell with prey. Bumping into
+**Health.** Every dot starts with 10,000 HP. Each step it loses 1 HP, and 100 HP more if it shares a
+cell with its own kind. Bumping into
 a wall costs 500 HP; the Walls slider changes that cost (0 to 1,000) while the sim runs. At 0 HP it
 dies.
+
+**Hunting.** A dot that ends a step on the same cell as its predator dies. The predators on that cell
+split its HP equally, up to the 10,000 HP a dot starts with.
 
 **Disease.** When more than 10 dots of one species stay in the same view-sized circle (121 cells) for
 over 100 steps in a row, that circle becomes a disease area, tinted in that species' color. Every dot
@@ -54,8 +57,9 @@ Overlapping areas don't add up. An area clears once no dot has been inside it fo
 **Evolution.** A genome is the flat list of all the network's weights and biases. When a species drops
 below 199 dots, it refills with children bred from mature dots that stand near each other:
 
-- **Selection:** two dots can breed when both have lived 100 steps and each is inside the other's
-  view. Mature dots pair up in random order. A dot breeds once per step.
+- **Selection:** a dot can breed once it has lived 100 steps. The best hunters go first: mature dots
+  pair up in order of prey caught per step lived. Each takes the best free mature dot inside its
+  view, or the best one anywhere when it sees none. A dot breeds once per step.
 - **Litter:** a pair gets 2 children 90% of the time, 1 child 9% and 3 children 1%, never more than
   the species has room for.
 - **Crossover:** uniform. Each gene of a child comes from one of the two parents. Twins split the
@@ -63,7 +67,8 @@ below 199 dots, it refills with children bred from mature dots that stand near e
 - **Mutation:** with the chosen chance, a newborn gets that many weights replaced by random values in
   `[-2, 2)`.
 - **Placement:** the first child appears halfway between its parents, its siblings on the cells next
-  to it. All start with full HP.
+  to it. When the parents can't see each other, the children appear next to the first parent. All
+  start with full HP.
 
 **World.** The 200×200 grid has walls at the edges: a dot that steps into one bounces back, and
 dots see the walls inside their view. All dots move at the same time, each
