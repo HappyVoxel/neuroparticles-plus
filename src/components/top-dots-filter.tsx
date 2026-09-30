@@ -1,5 +1,6 @@
 import { ListFilterIcon } from "lucide-react";
 import { memo } from "react";
+import { SpeciesSwatch } from "@/components/species-swatch";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -9,13 +10,11 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { SpeciesStats } from "@/hooks/use-simulation";
+import { speciesDisplay } from "@/lib/species";
 import type { TopDotsFilter } from "@/sim/types";
 
 interface TopDotsFilterMenuProps {
 	filter: TopDotsFilter;
-	/** Name and color of each species, by index. */
-	species: readonly SpeciesStats[];
 	onChange: (next: TopDotsFilter) => void;
 	/** Plays the open sound; Radix blocks the trigger's click (see `SoundMenu`). */
 	onOpen: () => void;
@@ -27,7 +26,6 @@ const stayOpen = (e: Event) => e.preventDefault();
 /** A filter icon for the top-dots title: show or hide the dead and each species. */
 export const TopDotsFilterMenu = memo(function TopDotsFilterMenu({
 	filter,
-	species,
 	onChange,
 	onOpen,
 }: TopDotsFilterMenuProps) {
@@ -62,16 +60,16 @@ export const TopDotsFilterMenu = memo(function TopDotsFilterMenu({
 					Dead dots
 				</DropdownMenuCheckboxItem>
 				<DropdownMenuSeparator />
-				{species.map((s, i) => (
+				{speciesDisplay.map((s, i) => (
 					<DropdownMenuCheckboxItem
-						key={s.id}
+						key={s.name}
 						checked={filter.species[i]}
 						onCheckedChange={(shown) =>
 							onChange({ ...filter, species: filter.species.map((v, k) => (k === i ? shown : v)) })
 						}
 						onSelect={stayOpen}
 					>
-						<span aria-hidden className="size-2 shrink-0" style={{ backgroundColor: s.color }} />
+						<SpeciesSwatch species={i} />
 						{s.name}
 					</DropdownMenuCheckboxItem>
 				))}

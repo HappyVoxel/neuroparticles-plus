@@ -56,7 +56,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   master volume; `localStorage` keys `music` (off by default), `sound-effects` (on) and `volume` (0–1,
   squared into gain). `src/assets/` holds Opus/WebM files made by `scripts/encode-audio.sh`; re-run
   it to change a sound, never hand-convert.
-- `src/components/` — app components: `sim-canvas`, `area-inspector`, `run-controls`, `food-cycle`, `species-stats`,
+- `src/lib/species.ts` — `speciesDisplay`, each species' name and shade-500 color by index; the UI reads them here.
+- `src/components/` — app components: `sim-canvas`, `area-inspector`, `run-controls`, `food-cycle`, `species-stats`, `species-swatch`,
   `wall-controls`, `mutation-controls`, `dot-record`, `top-dots`, `top-dots-filter`, `canvas-loupe`, `disease-labels`, `info-popover`, `theme-toggle`, `sound-menu`, `sidebar-section` (title + `InfoPopover`),
   `labeled-slider` (label, value and Slider; every sidebar slider uses it). `src/App.tsx` lays them out; `src/main.tsx` mounts it.
 - `src/components/ui/` — vendored shadcn/ui components. Add with `npx shadcn@latest add <name>`;

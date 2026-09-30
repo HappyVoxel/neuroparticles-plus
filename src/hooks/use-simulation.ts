@@ -9,7 +9,6 @@ import {
 	stepBudgetMs,
 	topDotsShown,
 } from "@/sim/config";
-import { oklchCss, shadeAt } from "@/sim/color";
 import { type DotRef, findDot, isDead, nearestDot, topDots, topHunterIds } from "@/sim/records";
 import { draw } from "@/sim/render";
 import { createSim, extinctSpecies, recreate, step } from "@/sim/simulation";
@@ -21,17 +20,13 @@ import type {
 	MutationParams,
 	Ranking,
 	Sim,
-	Species,
 	TopDotsFilter,
 } from "@/sim/types";
 
 export type RunStatus = "paused" | "running" | "stopped";
 
+/** Live stats of one species; its name and color are in `speciesDisplay`, by the same index. */
 export interface SpeciesStats {
-	id: Species["id"];
-	name: string;
-	/** CSS color for the sidebar: the middle of the species' shades. */
-	color: string;
 	population: number;
 	/** Longest lifetime among living agents, in steps. */
 	oldest: number;
@@ -67,7 +62,7 @@ export interface SimSnapshot {
 	diseaseAreas: readonly DiseaseArea[];
 }
 
-function speciesStats({ id, name, shades }: Species, agents: readonly Agent[]): SpeciesStats {
+function speciesStats(agents: readonly Agent[]): SpeciesStats {
 	let oldest = 0;
 	let topKills = 0;
 	let ageSum = 0;
@@ -80,9 +75,6 @@ function speciesStats({ id, name, shades }: Species, agents: readonly Agent[]): 
 	}
 	const n = agents.length;
 	return {
-		id,
-		name,
-		color: oklchCss(shadeAt(shades, 0.5)),
 		population: n,
 		oldest,
 		averageAge: n > 0 ? ageSum / n : 0,
@@ -104,8 +96,8 @@ function snapshot(
 ): SimSnapshot {
 	return {
 		step: sim.step,
-		species: sim.species.map((s) => speciesStats(s, s.agents)),
-		areaSpecies: area && sim.species.map((s) => speciesStats(s, agentsIn(s.agents, area))),
+		species: sim.species.map((s) => speciesStats(s.agents)),
+		areaSpecies: area && sim.species.map((s) => speciesStats(agentsIn(s.agents, area))),
 		area,
 		followed: followed && dotView(followed),
 		top: {

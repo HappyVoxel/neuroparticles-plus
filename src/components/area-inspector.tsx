@@ -9,8 +9,10 @@ import {
 	PopoverHeader,
 	PopoverTitle,
 } from "@/components/ui/popover";
+import { SpeciesSwatch } from "@/components/species-swatch";
 import type { SpeciesStats } from "@/hooks/use-simulation";
 import { formatCount, percent } from "@/lib/format";
+import { speciesDisplay } from "@/lib/species";
 import { type Area, type Cell, areaFromCorners } from "@/sim/area";
 import { gridHeight, gridWidth } from "@/sim/config";
 
@@ -145,16 +147,12 @@ export function AreaInspector({ area, species, onInspect, onPick, precise }: Are
 							</tr>
 						</thead>
 						<tbody>
-							{species.map((s) => (
-								<tr key={s.id}>
+							{species.map((s, i) => (
+								<tr key={speciesDisplay[i].name}>
 									<td className="py-0.5">
 										<span className="flex items-center gap-2 font-medium">
-											<span
-												aria-hidden
-												className="size-2 shrink-0"
-												style={{ backgroundColor: s.color }}
-											/>
-											{s.name}
+											<SpeciesSwatch species={i} />
+											{speciesDisplay[i].name}
 										</span>
 									</td>
 									<td className="py-0.5 text-right">{formatCount(s.population)}</td>

@@ -35,7 +35,7 @@ export function capture(species: readonly Species[]): Capture {
 			if (!onCell) continue;
 			caught.set(prey, {
 				kind: "caught",
-				by: species[i].id,
+				by: i,
 				killers: onCell.map((hunter) => hunter.id),
 			});
 			const share = prey.hp / onCell.length;

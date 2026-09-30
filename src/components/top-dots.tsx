@@ -1,7 +1,9 @@
 import { cn } from "cn";
+import { SpeciesSwatch } from "@/components/species-swatch";
 import { Button } from "@/components/ui/button";
-import type { DotView, SpeciesStats } from "@/hooks/use-simulation";
+import type { DotView } from "@/hooks/use-simulation";
 import { formatCount } from "@/lib/format";
+import { speciesDisplay } from "@/lib/species";
 import { hallOfFameSize, topDotsShown } from "@/sim/config";
 import type { Ranking } from "@/sim/types";
 
@@ -14,8 +16,6 @@ const columns: readonly { ranking: Ranking; label: string }[] = [
 
 interface TopDotsProps {
 	top: Record<Ranking, DotView[]>;
-	/** Name and color of each species, by the index a `DotView` carries. */
-	species: readonly SpeciesStats[];
 	followedId: number | null;
 	onFollow: (id: number) => void;
 }
@@ -24,7 +24,7 @@ interface TopDotsProps {
  * The best dots of all species by kills and by lifetime, side by side; a click follows one. A dot
  * at 0 isn't listed, so before the first catch or step the slots show "–".
  */
-export function TopDots({ top, species, followedId, onFollow }: TopDotsProps) {
+export function TopDots({ top, followedId, onFollow }: TopDotsProps) {
 	return (
 		<div className="grid grid-cols-2 gap-3">
 			{columns.map(({ ranking, label }) => {
@@ -34,8 +34,7 @@ export function TopDots({ top, species, followedId, onFollow }: TopDotsProps) {
 					<div key={ranking} className="flex flex-col gap-1">
 						<h3 className="text-xs text-muted-foreground">{label}</h3>
 						<ol className="flex flex-col">
-							{dots.map(({ species: index, agent, death }) => {
-								const s = species[index];
+							{dots.map(({ species, agent, death }) => {
 								const followed = agent.id === followedId;
 								return (
 									<li key={agent.id}>
@@ -51,12 +50,8 @@ export function TopDots({ top, species, followedId, onFollow }: TopDotsProps) {
 												followed && "bg-muted",
 											)}
 										>
-											<span
-												aria-hidden
-												className="size-2 shrink-0"
-												style={{ backgroundColor: s?.color }}
-											/>
-											<span className="sr-only">{s?.name}</span>#{agent.id}
+											<SpeciesSwatch species={species} />
+											<span className="sr-only">{speciesDisplay[species].name}</span>#{agent.id}
 											{death && (
 												<span className="text-muted-foreground" title="Dead">
 													†

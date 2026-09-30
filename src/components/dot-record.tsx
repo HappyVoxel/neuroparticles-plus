@@ -9,14 +9,14 @@ import {
 	PopoverHeader,
 	PopoverTitle,
 } from "@/components/ui/popover";
-import type { DotView, SpeciesStats } from "@/hooks/use-simulation";
+import { SpeciesSwatch } from "@/components/species-swatch";
+import type { DotView } from "@/hooks/use-simulation";
 import { formatCount, percent } from "@/lib/format";
+import { speciesDisplay } from "@/lib/species";
 import { gridHeight, gridWidth } from "@/sim/config";
 
 interface DotRecordProps {
 	followed: DotView | null;
-	/** Stats per species, for the dot's species name and color. */
-	species: readonly SpeciesStats[];
 	/** The current sim step. */
 	step: number;
 	onClose: () => void;
@@ -49,7 +49,7 @@ function Rows({ rows }: { rows: readonly (readonly [string, string])[] }) {
  * The record of the followed dot, beside its cell on the canvas: who it is, how it lives and where
  * its HP went. It stays open after the dot dies and shows how. The X button or Escape closes it.
  */
-export function DotRecord({ followed, species, step, onClose, onCopyGenome }: DotRecordProps) {
+export function DotRecord({ followed, step, onClose, onCopyGenome }: DotRecordProps) {
 	const [copied, setCopied] = useState(false);
 
 	useEffect(() => {
@@ -58,8 +58,7 @@ export function DotRecord({ followed, species, step, onClose, onCopyGenome }: Do
 		return () => window.clearTimeout(timer);
 	}, [copied]);
 
-	const dotSpecies = followed && species[followed.species];
-	if (!followed || !dotSpecies) return null;
+	if (!followed) return null;
 
 	const { agent, death } = followed;
 	const moves = agent.stays + agent.steps + agent.jumps;
@@ -68,7 +67,7 @@ export function DotRecord({ followed, species, step, onClose, onCopyGenome }: Do
 		? `Alive, age ${formatCount(agent.lifetime)} steps`
 		: `Died at step ${formatCount(death.diedStep)} (${formatCount(step - death.diedStep)} ago) · ${
 				cause?.kind === "caught"
-					? `caught by ${species.find((s) => s.id === cause.by)?.name ?? cause.by} ${ids(cause.killers)}`
+					? `caught by ${speciesDisplay[cause.by].name} ${ids(cause.killers)}`
 					: "ran out of HP"
 			}`;
 
@@ -111,12 +110,8 @@ export function DotRecord({ followed, species, step, onClose, onCopyGenome }: Do
 				<div className="flex items-start justify-between gap-3">
 					<PopoverHeader>
 						<PopoverTitle className="flex items-center gap-2 tabular-nums">
-							<span
-								aria-hidden
-								className="size-2 shrink-0"
-								style={{ backgroundColor: dotSpecies.color }}
-							/>
-							{dotSpecies.name} #{agent.id}
+							<SpeciesSwatch species={followed.species} />
+							{speciesDisplay[followed.species].name} #{agent.id}
 						</PopoverTitle>
 						<PopoverDescription className="text-xs tabular-nums">{status}</PopoverDescription>
 					</PopoverHeader>

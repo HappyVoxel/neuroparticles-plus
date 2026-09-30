@@ -23,6 +23,7 @@ import { useShortcut } from "@/hooks/use-shortcut";
 import { type RunStatus, useSimulation } from "@/hooks/use-simulation";
 import { useSound } from "@/hooks/use-sound";
 import { formatCount } from "@/lib/format";
+import { speciesDisplay } from "@/lib/species";
 import { gridHeight, gridWidth } from "@/sim/config";
 
 const statusLabel: Record<RunStatus, string> = {
@@ -40,7 +41,9 @@ export function App() {
 	const playClick = useCallback(() => play("click"), [play]);
 	useRunShortcut(status === "running" ? sim.pause : sim.run, status !== "stopped");
 	useShortcut("s", sim.stepOnce, status === "paused");
-	const extinct = snap.species.filter((s) => s.population === 0).map((s) => s.name);
+	const extinct = speciesDisplay
+		.filter((_, i) => snap.species[i].population === 0)
+		.map((s) => s.name);
 
 	const copyGenome = () => {
 		const genome = sim.followedGenome();
@@ -85,7 +88,6 @@ export function App() {
 						<SimCanvas canvasRef={sim.canvasRef} />
 						<DiseaseLabels
 							areas={snap.diseaseAreas}
-							species={snap.species}
 							step={snap.step}
 							stepsPerSecond={sim.stepsPerSecond}
 						/>
@@ -100,7 +102,6 @@ export function App() {
 						/>
 						<DotRecord
 							followed={snap.followed}
-							species={snap.species}
 							step={snap.step}
 							onClose={() => sim.follow(null)}
 							onCopyGenome={copyGenome}
@@ -158,7 +159,6 @@ export function App() {
 						action={
 							<TopDotsFilterMenu
 								filter={sim.topFilter}
-								species={snap.species}
 								onChange={sim.setTopFilter}
 								onOpen={playClick}
 							/>
@@ -166,7 +166,6 @@ export function App() {
 					>
 						<TopDots
 							top={snap.top}
-							species={snap.species}
 							followedId={snap.followed?.agent.id ?? null}
 							onFollow={sim.follow}
 						/>

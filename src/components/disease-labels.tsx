@@ -1,5 +1,5 @@
-import type { SpeciesStats } from "@/hooks/use-simulation";
 import { percent } from "@/lib/format";
+import { speciesDisplay } from "@/lib/species";
 import {
 	diseaseLabelEmPerChar,
 	diseaseLabelFade,
@@ -89,8 +89,6 @@ export function diseaseLabels(
 
 interface DiseaseLabelsProps {
 	areas: readonly DiseaseArea[];
-	/** Stats per species, for each label's color. */
-	species: readonly SpeciesStats[];
 	step: number;
 	stepsPerSecond: number;
 }
@@ -99,11 +97,11 @@ interface DiseaseLabelsProps {
  * Over the canvas, the `diseaseLabels` in their species' color with a white outline. Sizes are in
  * container units, so they scale with the canvas.
  */
-export function DiseaseLabels({ areas, species, step, stepsPerSecond }: DiseaseLabelsProps) {
+export function DiseaseLabels({ areas, step, stepsPerSecond }: DiseaseLabelsProps) {
 	return (
 		<div aria-hidden className="@container pointer-events-none absolute inset-0 overflow-hidden">
 			{diseaseLabels(areas, step, stepsPerSecond).map(
-				({ key, text, species: owner, x, bottom, size, opacity }) => (
+				({ key, text, species, x, bottom, size, opacity }) => (
 					<div
 						key={key}
 						className="absolute -translate-x-1/2 -translate-y-full transition-opacity duration-200"
@@ -112,7 +110,7 @@ export function DiseaseLabels({ areas, species, step, stepsPerSecond }: DiseaseL
 						<span
 							className="block origin-bottom animate-disease-label font-display leading-none whitespace-nowrap [-webkit-text-stroke:2px_white] [paint-order:stroke_fill]"
 							style={{
-								color: species[owner]?.color,
+								color: speciesDisplay[species].color,
 								fontSize: `${(size / gridWidth) * 100}cqw`,
 							}}
 						>

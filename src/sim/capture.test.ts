@@ -55,7 +55,7 @@ describe("capture", () => {
 		const { caught } = capture(world([prey], [], hunters));
 		expect(caught.get(prey)).toEqual({
 			kind: "caught",
-			by: "B",
+			by: 2,
 			killers: hunters.map((h) => h.id),
 		});
 	});

@@ -123,7 +123,7 @@ describe("ageAndCull", () => {
 describe("ageAndCull records", () => {
 	it("returns a caught dot as dead with its hunters", () => {
 		const prey = agent(1, 1);
-		const cause = { kind: "caught" as const, by: "B" as const, killers: [7, 8] };
+		const cause = { kind: "caught" as const, by: 2, killers: [7, 8] };
 		const { survivors, dead } = ageAndCull(
 			species([prey]),
 			noDisease,

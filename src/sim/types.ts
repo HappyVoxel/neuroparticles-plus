@@ -39,9 +39,12 @@ export interface Agent {
 	hpLostWall: number;
 }
 
-/** Why a dot died: caught by hunters (with their ids), or out of HP. */
+/**
+ * Why a dot died: caught by hunters (`by` is their species' index in `Sim.species`, `killers`
+ * their ids), or out of HP.
+ */
 export type DeathCause =
-	{ kind: "caught"; by: Species["id"]; killers: readonly number[] } | { kind: "hp" };
+	{ kind: "caught"; by: number; killers: readonly number[] } | { kind: "hp" };
 
 /** A dot at the moment it died. */
 export interface DeadAgent extends Agent {

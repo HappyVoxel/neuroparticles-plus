@@ -213,7 +213,7 @@ describe("simulation", () => {
 			}),
 		};
 		const next = step(world);
-		const cause = { kind: "caught", by: "R", killers: [hunter.id] };
+		const cause = { kind: "caught", by: 0, killers: [hunter.id] };
 		expect(next.species[1].lastDeaths).toEqual([{ ...prey, diedStep: 1, cause }]);
 		expect(next.species[1].hallOfFame.kills.map((a) => a.id)).toEqual([prey.id]);
 		expect(step(next).species[1].lastDeaths).toEqual([]);

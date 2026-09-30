@@ -1,4 +1,5 @@
 import type { SpeciesStats } from "@/hooks/use-simulation";
+import { speciesDisplay } from "@/lib/species";
 import { preyOf } from "@/sim/capture";
 import { populationSize } from "@/sim/config";
 
@@ -30,8 +31,8 @@ function position(index: number, count: number): { x: number; y: number } {
  */
 export function FoodCycle({ species }: FoodCycleProps) {
 	const n = species.length;
-	const summary = species
-		.map((s, i) => `${s.name} eats ${species[preyOf(i, n)].name.toLowerCase()}`)
+	const summary = speciesDisplay
+		.map((s, i) => `${s.name} eats ${speciesDisplay[preyOf(i, n)].name.toLowerCase()}`)
 		.join(", ");
 
 	return (
@@ -55,7 +56,7 @@ export function FoodCycle({ species }: FoodCycleProps) {
 				</marker>
 			</defs>
 
-			{species.map((s, i) => {
+			{speciesDisplay.map(({ name }, i) => {
 				const from = position(i, n);
 				const to = position(preyOf(i, n), n);
 				const dx = to.x - from.x;
@@ -64,7 +65,7 @@ export function FoodCycle({ species }: FoodCycleProps) {
 				const gap = maxRadius + 6;
 				return (
 					<line
-						key={`${s.id}-arrow`}
+						key={`${name}-arrow`}
 						x1={from.x + (dx / length) * gap}
 						y1={from.y + (dy / length) * gap}
 						x2={to.x - (dx / length) * gap}
@@ -77,16 +78,17 @@ export function FoodCycle({ species }: FoodCycleProps) {
 			})}
 
 			{species.map((s, i) => {
+				const { name, color } = speciesDisplay[i];
 				const { x, y } = position(i, n);
 				const extinct = s.population === 0;
 				const labelBelow = y > center;
 				return (
-					<g key={s.id}>
+					<g key={name}>
 						<circle
 							cx={x}
 							cy={y}
 							r={nodeRadius(s.population)}
-							fill={extinct ? "none" : s.color}
+							fill={extinct ? "none" : color}
 							stroke={extinct ? "currentColor" : "none"}
 							strokeWidth="1.25"
 							className="transition-[r] duration-150 motion-reduce:transition-none"
@@ -97,7 +99,7 @@ export function FoodCycle({ species }: FoodCycleProps) {
 							textAnchor="middle"
 							className="fill-foreground text-xs"
 						>
-							{s.name}
+							{name}
 						</text>
 					</g>
 				);
