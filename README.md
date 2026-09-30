@@ -1,6 +1,6 @@
-# Neuroparticles
+# Neuroparticles+
 
-![Neuroparticles after 623 steps: the field on the left, controls and species stats on the right](images/preview.png)
+![Neuroparticles+ after 623 steps: the field on the left, controls and species stats on the right](images/preview.png)
 
 Each teeny-weeny dot is a lil organism. It sees (using a neural network) what's around it and moves
 depending on what it sees. If it survives long enough, it produces offspring. If not, bb lil dot, you
@@ -80,14 +80,14 @@ Requires Node.js. Built with TypeScript, React, [shadcn/ui](https://ui.shadcn.co
 bundled with Vite.
 
 ```sh
-npm install
-npm run dev      # dev server at http://localhost:5173
-npm test         # unit tests (Vitest)
-npm run build    # typecheck, then a static site in dist/
+pnpm install
+pnpm dev      # dev server at http://localhost:5173
+pnpm test         # unit tests (Vitest)
+pnpm build    # typecheck, then a static site in dist/
 ```
 
 `dist/` uses relative paths, so it can be hosted from any folder. Open it through a server
-(`npm run preview` works); browsers block ES modules on `file://`.
+(`pnpm preview` works); browsers block ES modules on `file://`.
 
 | Path                | What's there                                                             |
 | ------------------- | ------------------------------------------------------------------------ |
@@ -103,7 +103,7 @@ simulation, the neural network and genetic algorithm design, and the RGB predato
 from the [original project](https://github.com/xcontcom/neuroparticles).
 
 This fork keeps that simulation and rebuilds everything around it: TypeScript modules with unit tests,
-a React and shadcn/ui interface, and a stop when a species dies out.
+a React and shadcn/ui interface, and many things useful for inspection.
 
 ## License
 

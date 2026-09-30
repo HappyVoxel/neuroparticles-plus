@@ -28,7 +28,7 @@ export function App() {
 		<div className="mx-auto flex min-h-svh w-full flex-col gap-2 p-4 lg:w-fit lg:justify-center">
 			<header className="flex items-start justify-between gap-6">
 				<div className="flex max-w-prose flex-col gap-2">
-					<h1 className="text-2xl font-semibold tracking-tight">Neuroparticles</h1>
+					<h1 className="text-2xl font-semibold tracking-tight">Neuroparticles+</h1>
 					<p className="text-sm text-muted-foreground">
 						Each dot is a small neural net that sees a circle of 121 cells around it and picks a
 						move. Red eats green, green eats blue, blue eats red. The best hunters breed first.
