@@ -27,6 +27,9 @@ const crossfadeSeconds = 3;
 const stopFadeSeconds = 0.5;
 
 let context: AudioContext | null = null;
+/** Master volume, 0–1, set before or after the context exists. */
+let volume = 1;
+let masterBus: GainNode | null = null;
 let effectsBus: GainNode | null = null;
 let musicBus: GainNode | null = null;
 const effectBuffers = new Map<Effect, Promise<AudioBuffer>>();
@@ -58,6 +61,17 @@ async function decode(ctx: AudioContext, url: string): Promise<AudioBuffer> {
 	return ctx.decodeAudioData(await response.arrayBuffer());
 }
 
+/** Ears hear gain roughly on a log scale; squaring makes the slider's middle sound like the middle. */
+const loudness = (v: number): number => v * v;
+
+/** Sets the master volume (0–1) over both music and effects. */
+export function setVolume(next: number): void {
+	volume = Math.min(1, Math.max(0, next));
+	// A short glide instead of a jump, so dragging the slider doesn't crackle.
+	if (context && masterBus)
+		masterBus.gain.setTargetAtTime(loudness(volume), context.currentTime, 0.02);
+}
+
 /**
  * Creates or resumes the audio context. Browsers keep audio silent until a user gesture, so call
  * this from one (pointerdown, keydown). Also starts decoding the effects so the first click plays.
@@ -65,10 +79,12 @@ async function decode(ctx: AudioContext, url: string): Promise<AudioBuffer> {
 export function unlockAudio(): void {
 	if (!context) {
 		context = new AudioContext();
+		masterBus = new GainNode(context, { gain: loudness(volume) });
+		masterBus.connect(context.destination);
 		effectsBus = new GainNode(context, { gain: effectVolume });
-		effectsBus.connect(context.destination);
+		effectsBus.connect(masterBus);
 		musicBus = new GainNode(context, { gain: musicVolume });
-		musicBus.connect(context.destination);
+		musicBus.connect(masterBus);
 		for (const [effect, url] of Object.entries(effectUrls)) {
 			const buffer = decode(context, url);
 			// A failed decode leaves that effect silent; it must not surface as an unhandled rejection.

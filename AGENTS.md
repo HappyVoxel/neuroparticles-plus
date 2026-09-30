@@ -51,9 +51,10 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - `src/hooks/use-loupe.ts` — Z toggles the canvas loupe, Esc turns it off.
 - `src/hooks/use-theme.ts` — light/dark, from `localStorage` key `theme` or the system setting.
   `index.html` has an inline script that applies the same key before first paint.
-- `src/hooks/use-sound.ts` + `src/lib/sound.ts` — Web Audio effects and shuffled music loops; on/off in
-  `localStorage` keys `music` (off by default) and `sound-effects` (on). `src/assets/` holds Opus/WebM
-  files made by `scripts/encode-audio.sh`; re-run it to change a sound, never hand-convert.
+- `src/hooks/use-sound.ts` + `src/lib/sound.ts` — Web Audio effects and shuffled music loops under one
+  master volume; `localStorage` keys `music` (off by default), `sound-effects` (on) and `volume` (0–1,
+  squared into gain). `src/assets/` holds Opus/WebM files made by `scripts/encode-audio.sh`; re-run
+  it to change a sound, never hand-convert.
 - `src/components/` — app components: `sim-canvas`, `area-inspector`, `run-controls`, `food-cycle`, `species-stats`,
   `wall-controls`, `mutation-controls`, `dot-record`, `top-dots`, `canvas-loupe`, `info-popover`, `theme-toggle`, `sound-menu`, `sidebar-section` (title + `InfoPopover`),
   `labeled-slider` (label, value and Slider; every sidebar slider uses it). `src/App.tsx` lays them out; `src/main.tsx` mounts it.

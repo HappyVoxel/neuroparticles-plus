@@ -57,8 +57,10 @@ export function App() {
 					<SoundMenu
 						music={sound.music}
 						effects={sound.effects}
+						volume={sound.volume}
 						onMusicChange={sound.setMusic}
 						onEffectsChange={sound.setEffects}
+						onVolumeChange={sound.setVolume}
 						onOpen={playClick}
 					/>
 					<ThemeToggle />

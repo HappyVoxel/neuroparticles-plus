@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type Effect, playEffect, startMusic, stopMusic, unlockAudio } from "@/lib/sound";
+import {
+	type Effect,
+	playEffect,
+	setVolume as setAudioVolume,
+	startMusic,
+	stopMusic,
+	unlockAudio,
+} from "@/lib/sound";
 
 const musicKey = "music";
 const effectsKey = "sound-effects";
+const volumeKey = "volume";
 
 function stored(key: string, fallback: boolean): boolean {
 	try {
@@ -14,9 +22,20 @@ function stored(key: string, fallback: boolean): boolean {
 	return fallback;
 }
 
-function save(key: string, on: boolean): void {
+function storedVolume(): number {
 	try {
-		localStorage.setItem(key, on ? "on" : "off");
+		const value = localStorage.getItem(volumeKey);
+		const parsed = value === null ? Number.NaN : Number(value);
+		if (parsed >= 0 && parsed <= 1) return parsed;
+	} catch {
+		// Storage blocked: full volume.
+	}
+	return 1;
+}
+
+function save(key: string, value: string): void {
+	try {
+		localStorage.setItem(key, value);
 	} catch {
 		// Not saved; the setting still holds for this visit.
 	}
@@ -38,20 +57,25 @@ function effectFor(target: EventTarget | null): Effect | null {
 export interface Sound {
 	music: boolean;
 	effects: boolean;
+	/** Master volume over music and effects, 0–1. */
+	volume: number;
 	setMusic: (on: boolean) => void;
 	setEffects: (on: boolean) => void;
+	setVolume: (next: number) => void;
 	/** Plays an effect unless effects are off. */
 	play: (effect: Effect) => void;
 }
 
 /**
- * Music (off by default) and UI effects (on by default), remembered in `localStorage`. Audio
- * starts on the first pointer or key press, since browsers block it before a gesture. Every
- * button and menu item on the page plays its effect through one document click listener.
+ * Music (off by default), UI effects (on by default) and a master volume, remembered in
+ * `localStorage`. Audio starts on the first pointer or key press, since browsers block it before
+ * a gesture. Every button and menu item on the page plays its effect through one document click
+ * listener.
  */
 export function useSound(): Sound {
 	const [music, setMusicState] = useState(() => stored(musicKey, false));
 	const [effects, setEffectsState] = useState(() => stored(effectsKey, true));
+	const [volume, setVolumeState] = useState(storedVolume);
 	const [unlocked, setUnlocked] = useState(false);
 	const effectsRef = useRef(effects);
 	effectsRef.current = effects;
@@ -69,6 +93,8 @@ export function useSound(): Sound {
 		};
 	}, []);
 
+	useEffect(() => setAudioVolume(volume), [volume]);
+
 	useEffect(() => {
 		if (!music || !unlocked) return;
 		startMusic();
@@ -85,20 +111,25 @@ export function useSound(): Sound {
 	}, []);
 
 	const setMusic = useCallback((on: boolean) => {
-		save(musicKey, on);
+		save(musicKey, on ? "on" : "off");
 		setMusicState(on);
 	}, []);
 
 	const setEffects = useCallback((on: boolean) => {
-		save(effectsKey, on);
+		save(effectsKey, on ? "on" : "off");
 		setEffectsState(on);
 		// The menu item stays silent (it would click on the way off); confirm the way on instead.
 		if (on) playEffect("click");
+	}, []);
+
+	const setVolume = useCallback((next: number) => {
+		save(volumeKey, String(next));
+		setVolumeState(next);
 	}, []);
 
 	const play = useCallback((effect: Effect) => {
 		if (effectsRef.current) playEffect(effect);
 	}, []);
 
-	return { music, effects, setMusic, setEffects, play };
+	return { music, effects, volume, setMusic, setEffects, setVolume, play };
 }
