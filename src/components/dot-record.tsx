@@ -1,3 +1,4 @@
+import { SwordsIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CanvasPopover, cellBox } from "@/components/canvas-popover";
 import { SpeciesSwatch } from "@/components/species-swatch";
@@ -10,6 +11,8 @@ import { isDead } from "@/sim/records";
 
 interface DotRecordProps {
 	followed: DotView | null;
+	/** Whether the followed dot is its species' top hunter, which wears swords on the canvas. */
+	topHunter: boolean;
 	/** The current sim step. */
 	step: number;
 	onClose: () => void;
@@ -42,7 +45,7 @@ function Rows({ rows }: { rows: readonly (readonly [string, string])[] }) {
  * The record of the followed dot, beside its cell on the canvas: who it is, how it lives and where
  * its HP went. It stays open after the dot dies and shows how. The X button or Escape closes it.
  */
-export function DotRecord({ followed, step, onClose, onCopyGenome }: DotRecordProps) {
+export function DotRecord({ followed, topHunter, step, onClose, onCopyGenome }: DotRecordProps) {
 	const [copied, setCopied] = useState(false);
 
 	useEffect(() => {
@@ -94,6 +97,14 @@ export function DotRecord({ followed, step, onClose, onCopyGenome }: DotRecordPr
 					<>
 						<SpeciesSwatch species={followed.species} />
 						{speciesDisplay[followed.species].name} #{agent.id}
+						{topHunter && (
+							<SwordsIcon
+								role="img"
+								aria-label="Top hunter"
+								className="size-4"
+								style={{ color: speciesDisplay[followed.species].color }}
+							/>
+						)}
 					</>
 				}
 				titleClassName="flex items-center gap-2 tabular-nums"

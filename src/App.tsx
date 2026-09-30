@@ -96,6 +96,10 @@ export function App() {
 						/>
 						<DotRecord
 							followed={snap.followed}
+							topHunter={
+								snap.followed !== null &&
+								snap.topHunterIds[snap.followed.species] === snap.followed.agent.id
+							}
 							step={snap.step}
 							onClose={() => sim.follow(null)}
 							onCopyGenome={copyGenome}

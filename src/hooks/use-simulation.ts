@@ -60,6 +60,8 @@ export interface SimSnapshot {
 	top: Record<Ranking, DotView[]>;
 	/** The disease areas on the field, for their labels. */
 	diseaseAreas: readonly DiseaseArea[];
+	/** Per species, the id of its living dot with the most kills (the swords); null with no kills. */
+	topHunterIds: (number | null)[];
 }
 
 function speciesStats(agents: readonly Agent[]): SpeciesStats {
@@ -106,6 +108,7 @@ function snapshot(
 			lifetime: topDots(sim, "lifetime", topDotsShown, filter).map(dotView),
 		},
 		diseaseAreas: sim.disease.areas,
+		topHunterIds: leaderIds(sim, "kills"),
 	};
 }
 

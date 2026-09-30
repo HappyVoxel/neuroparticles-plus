@@ -22,7 +22,8 @@ How the canvas and sidebar tools behave. `AGENTS.md` links here.
   paused.
 - Each species' living dot with the most kills (ties to the longer life, `leaderIds(sim, "kills")`)
   wears Lucide's Swords icon above it, in its species' 500 shade with a white outline, drawn on the
-  canvas so it slides with the dot. No swords while a species has no kills.
+  canvas so it slides with the dot. No swords while a species has no kills. The dot record's title
+  shows the same icon after the id while the followed dot holds the lead (`snap.topHunterIds`).
 
 ## Disease labels (`disease-labels.tsx`)
 

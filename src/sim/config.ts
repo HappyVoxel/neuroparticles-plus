@@ -42,7 +42,7 @@ export const glowMaxOpacity = 0.9;
 // The swords over each species' living dot with the most kills: Lucide's Swords icon,
 // `swordsCells` wide, its bottom `swordsGapCells` above the dot, in the species' 500 shade with a
 // white outline `swordsOutline` times the icon's stroke.
-export const swordsCells = 7;
+export const swordsCells = 4;
 export const swordsGapCells = 1;
 export const swordsOutline = 2.5;
 // Dead dots kept per species and ranking (kills, lifetime), each with its genome (about 100 KB).
