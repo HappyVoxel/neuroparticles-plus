@@ -90,9 +90,9 @@ export function step(sim: Sim): Sim {
 	};
 }
 
-/** Ids of species with no agents left; the sim stops once this is non-empty. */
-export function extinctSpecies(sim: Sim): Species["id"][] {
-	return sim.species.filter((s) => s.agents.length === 0).map((s) => s.id);
+/** Indexes in `Sim.species` of species with no agents left; the sim stops once this is non-empty. */
+export function extinctSpecies(sim: Sim): number[] {
+	return sim.species.flatMap((s, i) => (s.agents.length === 0 ? [i] : []));
 }
 
 /**

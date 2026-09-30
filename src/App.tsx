@@ -18,8 +18,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useLoupe } from "@/hooks/use-loupe";
-import { useRunShortcut } from "@/hooks/use-run-shortcut";
-import { useShortcut } from "@/hooks/use-shortcut";
 import { type RunStatus, useSimulation } from "@/hooks/use-simulation";
 import { useSound } from "@/hooks/use-sound";
 import { formatCount } from "@/lib/format";
@@ -39,11 +37,7 @@ export function App() {
 	const sound = useSound();
 	const { play } = sound;
 	const playClick = useCallback(() => play("click"), [play]);
-	useRunShortcut(status === "running" ? sim.pause : sim.run, status !== "stopped");
-	useShortcut("s", sim.stepOnce, status === "paused");
-	const extinct = speciesDisplay
-		.filter((_, i) => snap.species[i].population === 0)
-		.map((s) => s.name);
+	const extinct = snap.extinct.map((i) => speciesDisplay[i].name);
 
 	const copyGenome = () => {
 		const genome = sim.followedGenome();

@@ -78,8 +78,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - The only colors beyond the neutral theme are the species colors, used for data, disease areas,
   the top-hunter glow and the disease labels (white-outlined), never for other text, and
   `yellow-400` for the inspected area's frame and the followed dot's ring.
-- Global shortcuts: Space runs/pauses (`use-run-shortcut`), S steps, Z toggles the loupe and Esc
-  turns it off (`use-loupe`). Every shortcut goes through `useShortcut`: it skips modifiers, held
+- Global shortcuts: Space runs/pauses (`use-run-shortcut`) and S steps, both bound in `run-controls`
+  beside their buttons; Z toggles the loupe and Esc turns it off (`use-loupe`). Every shortcut goes through `useShortcut`: it skips modifiers, held
   keys, fields and confirm dialogs (`isShortcut`), is off when its button would be disabled, and
   clicks. Space never presses a focused button.
 - Buttons, menu items, shortcuts and sliders (per step while dragged, never on press or release,
@@ -191,5 +191,5 @@ glow and the disease labels: see `docs/ui.md`.
   the Walls, Mutation and Speed settings. `sim-settings.ts` also keeps them in `localStorage` across
   a refresh; an invalid value falls back to its `config.ts` default, and a saved value hides a new one.
 - A species that dies out stays extinct (`breed` returns nothing for zero survivors). The hook stops
-  the frame loop once `extinctSpecies` is non-empty; the page shows an Alert and disables Run, Step
-  and Randomize. Reset stays enabled and starts a new run.
+  the frame loop once `extinctSpecies` is non-empty (`snap.extinct`); the page shows an Alert and
+  disables Run, Step and Randomize. Reset stays enabled and starts a new run.

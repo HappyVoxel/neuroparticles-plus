@@ -274,7 +274,7 @@ describe("simulation", () => {
 			...sim,
 			species: sim.species.map((s) => (s.id === "G" ? { ...s, agents: [] } : s)),
 		};
-		expect(extinctSpecies(dead)).toEqual(["G"]);
+		expect(extinctSpecies(dead)).toEqual([1]);
 	});
 
 	it("keeps stepping the others when one species is gone", () => {
@@ -284,6 +284,6 @@ describe("simulation", () => {
 			species: sim.species.map((s) => (s.id === "G" ? { ...s, agents: [] } : s)),
 		};
 		const next = step(dead);
-		expect(extinctSpecies(next)).toEqual(["G"]);
+		expect(extinctSpecies(next)).toEqual([1]);
 	});
 });

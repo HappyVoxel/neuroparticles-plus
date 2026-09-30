@@ -50,6 +50,8 @@ export interface DotView {
 export interface SimSnapshot {
 	step: number;
 	species: SpeciesStats[];
+	/** Indexes of the species that died out (`extinctSpecies`); the run is over once non-empty. */
+	extinct: number[];
 	/** The same stats for the agents inside the inspected area, or null with no area. */
 	areaSpecies: SpeciesStats[] | null;
 	/** The inspected area, or null. */
@@ -97,6 +99,7 @@ function snapshot(
 	return {
 		step: sim.step,
 		species: sim.species.map((s) => speciesStats(s.agents)),
+		extinct: extinctSpecies(sim),
 		areaSpecies: area && sim.species.map((s) => speciesStats(agentsIn(s.agents, area))),
 		area,
 		followed: followed && dotView(followed),
@@ -142,8 +145,7 @@ export function useSimulation() {
 		saveSimSettings({ mutation, wallPenalty, stepsPerSecond, topDots: topFilter }, writeSetting);
 	}, [mutation, wallPenalty, stepsPerSecond, topFilter]);
 
-	const over = snap.species.some((s) => s.population === 0);
-	const status: RunStatus = over ? "stopped" : running ? "running" : "paused";
+	const status: RunStatus = snap.extinct.length > 0 ? "stopped" : running ? "running" : "paused";
 
 	const paint = useCallback((t: number) => {
 		const ctx = canvasRef.current?.getContext("2d");

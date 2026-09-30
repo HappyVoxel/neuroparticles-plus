@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useRunShortcut } from "@/hooks/use-run-shortcut";
+import { useShortcut } from "@/hooks/use-shortcut";
 import type { RunStatus } from "@/hooks/use-simulation";
 import { maxStepsPerSecond, minStepsPerSecond } from "@/sim/config";
 
@@ -87,11 +89,16 @@ export const RunControls = memo(function RunControls({
 }: RunControlsProps) {
 	const running = status === "running";
 	const stopped = status === "stopped";
+	const toggle = running ? onPause : onRun;
+	const stepDisabled = running || stopped;
+	// Space and S press these buttons, off whenever the button is disabled.
+	useRunShortcut(toggle, !stopped);
+	useShortcut("s", onStep, !stepDisabled);
 
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="flex gap-2">
-				<Button size="sm" className="flex-1" onClick={running ? onPause : onRun} disabled={stopped}>
+				<Button size="sm" className="flex-1" onClick={toggle} disabled={stopped}>
 					{running ? <PauseIcon data-icon="inline-start" /> : <PlayIcon data-icon="inline-start" />}
 					{running ? "Pause" : "Run"}
 				</Button>
@@ -103,7 +110,7 @@ export const RunControls = memo(function RunControls({
 							size="sm"
 							className="flex-1"
 							onClick={onStep}
-							disabled={running || stopped}
+							disabled={stepDisabled}
 						>
 							<StepForwardIcon data-icon="inline-start" />
 							Step
