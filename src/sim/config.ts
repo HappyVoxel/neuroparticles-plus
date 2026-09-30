@@ -11,6 +11,8 @@ export const ageColorSteps = 64;
 export const minStepsPerSecond = 5;
 export const maxStepsPerSecond = 100;
 export const defaultStepsPerSecond = 20;
+// The Speed slider moves in steps of its minimum.
+export const stepsPerSecondStep = minStepsPerSecond;
 // Up to this speed dots slide between cells; above it a frame covers more than one step.
 export const maxSlidingStepsPerSecond = 60;
 // Longest the sim may run inside one animation frame before it has to draw.
@@ -118,8 +120,9 @@ export const startHp = 10000;
 // Sharing a cell with your own kind costs this per step. Sharing one with a hunter is death: the
 // hunters on the cell split the dot's HP, each up to `startHp`.
 export const hpPenaltyFromCrowding = 100;
-// Wall bump cost: the starting value and the range of its slider (0 to `maxWallPenalty`).
+// Wall bump cost: the starting value and the range and step of its slider.
 export const hpPenaltyFromWall = 500;
+export const minWallPenalty = 0;
 export const maxWallPenalty = 1000;
 export const wallPenaltyStep = 100;
 export const baseDecayPerStep = 1;
@@ -168,5 +171,8 @@ export const litterOdds: readonly { children: number; percent: number }[] = [
 	{ children: 3, percent: 1 },
 ];
 export const geneRange = 4; // genes are random in [-2, 2)
-// What the Mutation controls start at.
+// What the Mutation controls start at, and their limits (genes up to `genomeSize`).
 export const defaultMutation: MutationParams = { percent: 5, genes: 1 };
+export const minMutationPercent = 0;
+export const maxMutationPercent = 100;
+export const minMutationGenes = 1;

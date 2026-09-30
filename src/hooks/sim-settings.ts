@@ -4,10 +4,15 @@ import {
 	defaultMutation,
 	defaultStepsPerSecond,
 	hpPenaltyFromWall,
+	maxMutationPercent,
 	maxStepsPerSecond,
 	maxWallPenalty,
+	minMutationGenes,
+	minMutationPercent,
 	minStepsPerSecond,
+	minWallPenalty,
 	speciesDefs,
+	stepsPerSecondStep,
 	wallPenaltyStep,
 } from "@/sim/config";
 import { genomeSize } from "@/sim/network";
@@ -57,12 +62,17 @@ function topDotsFilter(dead: boolean, species: string | null): TopDotsFilter {
 export function loadSimSettings(read: (key: string) => string | null): SimSettings {
 	return {
 		mutation: {
-			percent: wholeIn(read(keys.percent), 0, 100, defaultMutation.percent),
-			genes: wholeIn(read(keys.genes), 1, genomeSize, defaultMutation.genes),
+			percent: wholeIn(
+				read(keys.percent),
+				minMutationPercent,
+				maxMutationPercent,
+				defaultMutation.percent,
+			),
+			genes: wholeIn(read(keys.genes), minMutationGenes, genomeSize, defaultMutation.genes),
 		},
 		wallPenalty: wholeIn(
 			read(keys.wallPenalty),
-			0,
+			minWallPenalty,
 			maxWallPenalty,
 			hpPenaltyFromWall,
 			wallPenaltyStep,
@@ -72,8 +82,7 @@ export function loadSimSettings(read: (key: string) => string | null): SimSettin
 			minStepsPerSecond,
 			maxStepsPerSecond,
 			defaultStepsPerSecond,
-			// The Speed slider moves in steps of its minimum.
-			minStepsPerSecond,
+			stepsPerSecondStep,
 		),
 		topDots: topDotsFilter(readFlag(keys.dead, allTopDots.dead, read), read(keys.species)),
 	};

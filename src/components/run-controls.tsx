@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useRunShortcut } from "@/hooks/use-run-shortcut";
 import { useShortcut } from "@/hooks/use-shortcut";
 import type { RunStatus } from "@/hooks/use-simulation";
-import { maxStepsPerSecond, minStepsPerSecond } from "@/sim/config";
+import { maxStepsPerSecond, minStepsPerSecond, stepsPerSecondStep } from "@/sim/config";
 
 interface ConfirmButtonProps {
 	icon: ReactNode;
@@ -142,7 +142,7 @@ export const RunControls = memo(function RunControls({
 				display={`${stepsPerSecond} steps/s`}
 				min={minStepsPerSecond}
 				max={maxStepsPerSecond}
-				step={minStepsPerSecond}
+				step={stepsPerSecondStep}
 				value={stepsPerSecond}
 				onChange={onSpeedChange}
 			/>
