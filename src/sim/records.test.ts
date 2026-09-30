@@ -117,6 +117,31 @@ describe("topDots", () => {
 			{ species: 2, agent: blue },
 		]);
 	});
+
+	it("skips dots at 0 on the ranking", () => {
+		const hunter = dot({ kills: 1 });
+		const idle = dot({ lifetime: 50 });
+		const sim = world([idle, hunter], [dot()]);
+		expect(topDots(sim, "kills", 3)).toEqual([{ species: 0, agent: hunter }]);
+		expect(topDots(sim, "lifetime", 3)).toEqual([{ species: 0, agent: idle }]);
+	});
+
+	it("breaks a full tie by species order, the living before the dead", () => {
+		const redLiving = dot({ kills: 2, lifetime: 5 });
+		const redDead = dead({ kills: 2, lifetime: 5 });
+		const greenLiving = dot({ kills: 2, lifetime: 5 });
+		const sim = world([redLiving], [greenLiving]);
+		const withDead = {
+			...sim,
+			species: sim.species.map((s, i) =>
+				i === 0 ? { ...s, hallOfFame: addToHallOfFame(s.hallOfFame, [redDead]) } : s,
+			),
+		};
+		expect(topDots(withDead, "kills", 2)).toEqual([
+			{ species: 0, agent: redLiving },
+			{ species: 0, agent: redDead },
+		]);
+	});
 });
 
 describe("topHunterIds", () => {

@@ -46,7 +46,9 @@ export function findDot(sim: Sim, id: number): DotRef | null {
 
 /**
  * The best `n` dots on one ranking among those `filter` lets through (every species, living and
- * dead, by default). Filtering comes before the cut, so hidden dots never leave a slot empty.
+ * dead, by default), skipping dots at 0 on that ranking. Filtering comes before the cut, so
+ * hidden dots never leave a slot empty. Ties keep species order, the living before the dead.
+ * One pass that keeps the best `n` so far, so it can run every frame.
  */
 export function topDots(
 	sim: Sim,
@@ -54,15 +56,25 @@ export function topDots(
 	n: number,
 	filter: TopDotsFilter = allTopDots,
 ): DotRef[] {
-	const all: DotRef[] = [];
-	sim.species.forEach((s, species) => {
-		if (!filter.species[species]) return;
-		for (const agent of s.agents) all.push({ species, agent });
-		if (!filter.dead) return;
-		for (const agent of s.hallOfFame[ranking]) all.push({ species, agent });
-	});
 	const order = compare(ranking);
-	return all.sort((a, b) => order(a.agent, b.agent)).slice(0, n);
+	const best: DotRef[] = [];
+	const offer = (species: number, agent: Agent | DeadAgent) => {
+		if (agent[ranking] <= 0) return;
+		let i = best.length;
+		while (i > 0 && order(agent, best[i - 1].agent) < 0) i--;
+		if (i >= n) return;
+		best.splice(i, 0, { species, agent });
+		if (best.length > n) best.pop();
+	};
+	for (let species = 0; species < sim.species.length; species++) {
+		if (!filter.species[species]) continue;
+		const { agents, hallOfFame } = sim.species[species];
+		for (let i = 0; i < agents.length; i++) offer(species, agents[i]);
+		if (!filter.dead) continue;
+		const dead = hallOfFame[ranking];
+		for (let i = 0; i < dead.length; i++) offer(species, dead[i]);
+	}
+	return best;
 }
 
 /**
