@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useLoupe } from "@/hooks/use-loupe";
+import { useRunShortcut } from "@/hooks/use-run-shortcut";
 import { type RunStatus, useSimulation } from "@/hooks/use-simulation";
 import { formatCount } from "@/lib/format";
 import { defaultMutation, gridHeight, gridWidth } from "@/sim/config";
@@ -28,6 +29,7 @@ export function App() {
 	const sim = useSimulation(defaultMutation);
 	const { snap, status } = sim;
 	const loupeOn = useLoupe();
+	useRunShortcut(status === "running" ? sim.pause : sim.run);
 	const extinct = snap.species.filter((s) => s.population === 0).map((s) => s.name);
 
 	const copyGenome = () => {
@@ -89,7 +91,7 @@ export function App() {
 					<div className="flex justify-between gap-4 text-sm text-muted-foreground tabular-nums">
 						<span>Step {formatCount(snap.step)}</span>
 						<span>
-							Drag an area · click a dot · Z zooms · {gridWidth} × {gridHeight} grid
+							Space runs · drag an area · click a dot · Z zooms · {gridWidth} × {gridHeight} grid
 						</span>
 					</div>
 				</section>

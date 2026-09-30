@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-
-/** True while focus sits in a field that takes typing, where Z is a letter, not a shortcut. */
-function isTyping(target: EventTarget | null): boolean {
-	if (!(target instanceof HTMLElement)) return false;
-	const tag = target.tagName;
-	return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
-}
+import { isTyping } from "@/lib/keyboard";
 
 /** Whether the canvas loupe is on. Z toggles it and Escape turns it off. */
 export function useLoupe(): boolean {
