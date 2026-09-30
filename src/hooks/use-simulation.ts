@@ -42,9 +42,7 @@ export interface SpeciesStats {
 export interface DotView {
 	/** Index in `Sim.species`. */
 	species: number;
-	agent: Omit<Agent, "genome">;
-	/** When and how it died; null while it lives. */
-	death: Pick<DeadAgent, "diedStep" | "cause"> | null;
+	agent: Omit<Agent, "genome"> | Omit<DeadAgent, "genome">;
 }
 
 export interface SimSnapshot {
@@ -87,7 +85,7 @@ function speciesStats(agents: readonly Agent[]): SpeciesStats {
 
 function dotView({ species, agent }: DotRef): DotView {
 	const { genome: _, ...rest } = agent;
-	return { species, agent: rest, death: isDead(agent) ? agent : null };
+	return { species, agent: rest };
 }
 
 function snapshot(

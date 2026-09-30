@@ -5,6 +5,7 @@ import type { DotView } from "@/hooks/use-simulation";
 import { formatCount } from "@/lib/format";
 import { speciesDisplay } from "@/lib/species";
 import { hallOfFameSize, topDotsShown } from "@/sim/config";
+import { isDead } from "@/sim/records";
 import type { Ranking } from "@/sim/types";
 
 export const topDotsInfo = `The best hunters and the longest lives among the living dots and the ${hallOfFameSize} best dead of each species; † marks a dead one. The filter icon hides the dead or a species. Click a row to follow that dot on the canvas. Or press Z over the canvas to zoom in and click a dot to follow it.`;
@@ -28,13 +29,13 @@ export function TopDots({ top, followedId, onFollow }: TopDotsProps) {
 	return (
 		<div className="grid grid-cols-2 gap-3">
 			{columns.map(({ ranking, label }) => {
-				const dots = top[ranking].filter(({ agent }) => agent[ranking] > 0);
+				const dots = top[ranking];
 				const empty = Array.from({ length: topDotsShown - dots.length }, (_, k) => k);
 				return (
 					<div key={ranking} className="flex flex-col gap-1">
 						<h3 className="text-xs text-muted-foreground">{label}</h3>
 						<ol className="flex flex-col">
-							{dots.map(({ species, agent, death }) => {
+							{dots.map(({ species, agent }) => {
 								const followed = agent.id === followedId;
 								return (
 									<li key={agent.id}>
@@ -52,7 +53,7 @@ export function TopDots({ top, followedId, onFollow }: TopDotsProps) {
 										>
 											<SpeciesSwatch species={species} />
 											<span className="sr-only">{speciesDisplay[species].name}</span>#{agent.id}
-											{death && (
+											{isDead(agent) && (
 												<span className="text-muted-foreground" title="Dead">
 													†
 												</span>

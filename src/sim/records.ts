@@ -7,7 +7,10 @@ export interface DotRef {
 	agent: Agent | DeadAgent;
 }
 
-export function isDead(agent: Agent | DeadAgent): agent is DeadAgent {
+/** Works on a dot with or without its genome. */
+export function isDead<T extends Omit<Agent, "genome"> | Omit<DeadAgent, "genome">>(
+	agent: T,
+): agent is Extract<T, { diedStep: number }> {
 	return "diedStep" in agent;
 }
 

@@ -6,6 +6,7 @@ import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import type { DotView } from "@/hooks/use-simulation";
 import { formatCount } from "@/lib/format";
 import { speciesDisplay } from "@/lib/species";
+import { isDead } from "@/sim/records";
 
 interface DotRecordProps {
 	followed: DotView | null;
@@ -52,12 +53,13 @@ export function DotRecord({ followed, step, onClose, onCopyGenome }: DotRecordPr
 
 	if (!followed) return null;
 
-	const { agent, death } = followed;
+	const { agent } = followed;
 	const moves = agent.stays + agent.steps + agent.jumps;
-	const cause = death?.cause;
-	const status = !death
+	const dead = isDead(agent);
+	const cause = dead ? agent.cause : null;
+	const status = !dead
 		? `Alive, age ${formatCount(agent.lifetime)} steps`
-		: `Died at step ${formatCount(death.diedStep)} (${formatCount(step - death.diedStep)} ago) · ${
+		: `Died at step ${formatCount(agent.diedStep)} (${formatCount(step - agent.diedStep)} ago) · ${
 				cause?.kind === "caught"
 					? `caught by ${speciesDisplay[cause.by].name} ${ids(cause.killers)}`
 					: "ran out of HP"
@@ -107,7 +109,7 @@ export function DotRecord({ followed, step, onClose, onCopyGenome }: DotRecordPr
 							agent.parents ? `#${agent.parents[0]} × #${agent.parents[1]}` : "first generation",
 						],
 						["Children", formatCount(agent.children)],
-						["HP", death ? "–" : formatCount(Math.round(agent.hp))],
+						["HP", dead ? "–" : formatCount(Math.round(agent.hp))],
 						["Kills", formatCount(agent.kills)],
 						[
 							"Kills per 1,000 steps",
