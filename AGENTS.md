@@ -74,8 +74,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   sidebar width; change them together with those classes and re-measure the gaps in the browser.
 - Explanations of a sidebar section sit behind `InfoPopover` at the end of its title, not as text
   under the controls, so the sidebar stays short.
-- The only colors beyond the neutral theme are the species colors, used for data and disease areas,
-  never for text, and `yellow-400` for the inspected area's frame and the followed dot's ring.
+- The only colors beyond the neutral theme are the species colors, used for data, disease areas
+  and the top-hunter glow, never for text, and `yellow-400` for the inspected area's frame and the followed dot's ring.
 - Global shortcuts: Space runs/pauses (`use-run-shortcut`), S steps, Z toggles the loupe and Esc
   turns it off (`use-loupe`). Every shortcut goes through `useShortcut`: it skips modifiers, held
   keys, fields and confirm dialogs (`isShortcut`), is off when its button would be disabled, and

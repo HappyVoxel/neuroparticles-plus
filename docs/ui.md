@@ -14,6 +14,13 @@ How the canvas and sidebar tools behave. `AGENTS.md` links here.
   and stays until closed. Snapshots carry records without genomes; "Copy genome" reads it from the
   hook. Randomize and Reset stop following.
 
+## Top-hunter glow (`render.ts`)
+
+- Each species' living dot with the most kills (ties to the longer life, `topHunterIds`) gets a
+  halo in its species' 300 shade that swells and brightens once every `glowPeriodMs`. No glow while
+  a species has no kills. `paint` passes `performance.now()`, so the pulse runs with the frame loop
+  and holds still while paused.
+
 ## Area inspector (`area-inspector.tsx`)
 
 - A layer over the canvas turns a drag into an `Area` and passes it to `inspect` in the hook. Every

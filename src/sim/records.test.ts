@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { hallOfFameSize } from "./config";
 import { spawn } from "./evolution";
-import { addToHallOfFame, emptyHallOfFame, findDot, isDead, nearestDot, topDots } from "./records";
+import {
+	addToHallOfFame,
+	emptyHallOfFame,
+	findDot,
+	isDead,
+	nearestDot,
+	topDots,
+	topHunterIds,
+} from "./records";
 import { createSim } from "./simulation";
 import type { Agent, DeadAgent, Sim } from "./types";
 
@@ -108,6 +116,27 @@ describe("topDots", () => {
 			{ species: 1, agent: green },
 			{ species: 2, agent: blue },
 		]);
+	});
+});
+
+describe("topHunterIds", () => {
+	it("takes each species' living dot with the most kills", () => {
+		const red = dot({ kills: 4 });
+		const green = dot({ kills: 2 });
+		expect(topHunterIds(world([dot({ kills: 1 }), red], [green, dot({ kills: 1 })]))).toEqual([
+			red.id,
+			green.id,
+			null,
+		]);
+	});
+
+	it("breaks a tie on kills by the longer life", () => {
+		const older = dot({ kills: 3, lifetime: 90 });
+		expect(topHunterIds(world([dot({ kills: 3, lifetime: 10 }), older]))[0]).toBe(older.id);
+	});
+
+	it("names no one while a species has no kills", () => {
+		expect(topHunterIds(world([dot(), dot()]))).toEqual([null, null, null]);
 	});
 });
 

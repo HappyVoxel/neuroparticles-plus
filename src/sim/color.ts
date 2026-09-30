@@ -18,6 +18,6 @@ export function hpOpacity(hp: number): number {
 	return Math.min(Math.max(hp / startHp, 0), 1);
 }
 
-export function oklchCss([l, c, h]: Oklch): string {
-	return `oklch(${l} ${c} ${h})`;
+export function oklchCss([l, c, h]: Oklch, alpha = 1): string {
+	return alpha === 1 ? `oklch(${l} ${c} ${h})` : `oklch(${l} ${c} ${h} / ${alpha})`;
 }

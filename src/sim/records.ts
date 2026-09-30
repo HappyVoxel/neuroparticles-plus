@@ -65,6 +65,22 @@ export function topDots(
 	return all.sort((a, b) => order(a.agent, b.agent)).slice(0, n);
 }
 
+/**
+ * Per species, the id of its living dot with the most kills, a tie going to the longer life; null
+ * while no living dot of that species has a kill. One pass, no sort, so it can run every frame.
+ */
+export function topHunterIds(sim: Sim): (number | null)[] {
+	const order = compare("kills");
+	return sim.species.map(({ agents }) => {
+		let best: Agent | null = null;
+		for (let i = 0; i < agents.length; i++) {
+			const agent = agents[i];
+			if (agent.kills > 0 && (best === null || order(agent, best) < 0)) best = agent;
+		}
+		return best?.id ?? null;
+	});
+}
+
 /** The living dot nearest to a cell, within `maxCells`; null when none is that close. */
 export function nearestDot(sim: Sim, x: number, y: number, maxCells: number): DotRef | null {
 	let best: DotRef | null = null;

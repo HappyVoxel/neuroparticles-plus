@@ -10,7 +10,7 @@ import {
 	topDotsShown,
 } from "@/sim/config";
 import { oklchCss, shadeAt } from "@/sim/color";
-import { type DotRef, findDot, isDead, nearestDot, topDots } from "@/sim/records";
+import { type DotRef, findDot, isDead, nearestDot, topDots, topHunterIds } from "@/sim/records";
 import { draw } from "@/sim/render";
 import { createSim, extinctSpecies, recreate, step } from "@/sim/simulation";
 import type {
@@ -151,8 +151,11 @@ export function useSimulation() {
 
 	const paint = useCallback((t: number) => {
 		const ctx = canvasRef.current?.getContext("2d");
-		const { species, disease } = simRef.current;
-		if (ctx) draw(ctx, species, disease.areas, t, followRef.current?.agent.id ?? null);
+		const sim = simRef.current;
+		if (!ctx) return;
+		const followId = followRef.current?.agent.id ?? null;
+		const glowIds = topHunterIds(sim);
+		draw(ctx, sim.species, sim.disease.areas, t, followId, glowIds, performance.now());
 	}, []);
 
 	/** Runs one step and keeps the followed dot's record current, including its death. */

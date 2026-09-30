@@ -56,4 +56,8 @@ describe("oklchCss", () => {
 	it("writes a CSS color", () => {
 		expect(oklchCss([0.637, 0.237, 25.331])).toBe("oklch(0.637 0.237 25.331)");
 	});
+
+	it("adds the alpha below 1", () => {
+		expect(oklchCss([0.637, 0.237, 25.331], 0.5)).toBe("oklch(0.637 0.237 25.331 / 0.5)");
+	});
 });
