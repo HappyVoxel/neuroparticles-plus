@@ -106,6 +106,12 @@ export function App() {
 							onCopyGenome={copyGenome}
 						/>
 						<CanvasLoupe canvasRef={sim.canvasRef} on={loupeOn} />
+						{sim.failure && (
+							<Alert variant="destructive" className="absolute inset-x-3 bottom-3 w-auto">
+								<AlertTitle>The simulation stopped: {sim.failure}</AlertTitle>
+								<AlertDescription>Reload the page to start again.</AlertDescription>
+							</Alert>
+						)}
 						{extinct.length > 0 && (
 							<Alert variant="destructive" className="absolute inset-x-3 bottom-3 w-auto">
 								<AlertTitle>

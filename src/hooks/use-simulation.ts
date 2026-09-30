@@ -111,21 +111,22 @@ function snapshot(
 	};
 }
 
-/** The field before the worker's first frame: no dots yet. */
-function emptyView(): SimView {
-	return {
-		step: 0,
-		disease: { areas: [] },
-		species: speciesDefs.map(({ id, name, shades }) => ({
-			id,
-			name,
-			shades,
-			agents: [],
-			hallOfFame: emptyHallOfFame(),
-			lastDeaths: [],
-		})),
-	};
-}
+/**
+ * The field before the worker's first frame. It has no dots, which is not a run that ended, so
+ * nothing is published from it.
+ */
+const noDotsYet: SimView = {
+	step: 0,
+	disease: { areas: [] },
+	species: speciesDefs.map(({ id, name, shades }) => ({
+		id,
+		name,
+		shades,
+		agents: [],
+		hallOfFame: emptyHallOfFame(),
+		lastDeaths: [],
+	})),
+};
 
 const isOver = (sim: SimView): boolean => extinctSpecies(sim).length > 0;
 
@@ -141,7 +142,7 @@ export function useSimulation() {
 	const [saved] = useState(() => loadSimSettings(readSetting));
 	const workerRef = useRef<Worker | null>(null);
 	/** The step on the canvas. */
-	const viewRef = useRef<SimView>(emptyView());
+	const viewRef = useRef(noDotsYet);
 	/** Steps from the worker waiting for their turn on the canvas, oldest first. */
 	const queueRef = useRef<SimView[]>([]);
 	/** Steps asked of the worker and not back yet. */
@@ -164,12 +165,13 @@ export function useSimulation() {
 	/** How far through the last move the canvas was last painted, to repaint it the same. */
 	const paintedTRef = useRef(1);
 
-	// Before the worker's first frame there are no dots, which is not a run that ended.
 	const [snap, setSnap] = useState((): SimSnapshot => ({
-		...snapshot(viewRef.current, null, null, saved.topDots),
+		...snapshot(noDotsYet, null, null, saved.topDots),
 		extinct: [],
 	}));
 	const [running, setRunning] = useState(false);
+	/** Why the worker stopped (it failed to load or threw); null while it works. */
+	const [failure, setFailure] = useState<string | null>(null);
 	const [mutation, setMutationState] = useState(saved.mutation);
 	const [wallPenalty, setWallPenaltyState] = useState(saved.wallPenalty);
 	const [stepsPerSecond, setStepsPerSecond] = useState(saved.stepsPerSecond);
@@ -179,7 +181,8 @@ export function useSimulation() {
 		saveSimSettings({ mutation, wallPenalty, stepsPerSecond, topDots: topFilter }, writeSetting);
 	}, [mutation, wallPenalty, stepsPerSecond, topFilter]);
 
-	const status: RunStatus = snap.extinct.length > 0 ? "stopped" : running ? "running" : "paused";
+	const status: RunStatus =
+		snap.extinct.length > 0 || failure ? "stopped" : running ? "running" : "paused";
 
 	const paint = useCallback((t: number) => {
 		const canvas = canvasRef.current;
@@ -225,6 +228,7 @@ export function useSimulation() {
 	}, []);
 
 	const publish = useCallback(() => {
+		if (viewRef.current === noDotsYet) return;
 		setSnap(snapshot(viewRef.current, areaRef.current, followRef.current, topFilterRef.current));
 	}, []);
 
@@ -404,13 +408,18 @@ export function useSimulation() {
 	useEffect(() => {
 		const worker = new Worker(new URL("../sim/worker.ts", import.meta.url), { type: "module" });
 		worker.addEventListener("message", (e: MessageEvent<SimReply>) => receive(e.data));
+		worker.addEventListener("error", (e) => {
+			cancelFrame();
+			setRunning(false);
+			setFailure(e.message || "The simulation worker failed to load.");
+		});
 		workerRef.current = worker;
 		send({ type: "reset", epoch: discard(), ...settingsRef.current });
 		return () => {
 			worker.terminate();
 			workerRef.current = null;
 		};
-	}, [receive, send, discard]);
+	}, [receive, send, discard, cancelFrame]);
 
 	useEffect(() => {
 		paint(1);
@@ -437,6 +446,7 @@ export function useSimulation() {
 		canvasRef,
 		snap,
 		status,
+		failure,
 		mutation,
 		wallPenalty,
 		stepsPerSecond,
