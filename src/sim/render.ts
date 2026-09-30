@@ -19,7 +19,7 @@ import {
 	swordsOutline,
 } from "./config";
 import { slide } from "./movement";
-import type { DiseaseArea, Oklch, Species } from "./types";
+import type { DiseaseArea, Oklch, SpeciesView } from "./types";
 
 // Lucide's Swords icon (ISC license) on its 24-unit grid, drawn with a 2-unit round stroke.
 const swordsViewBox = 24;
@@ -42,7 +42,7 @@ let swords: Path2D | null = null;
  */
 export function draw(
 	ctx: CanvasRenderingContext2D,
-	species: readonly Species[],
+	species: readonly SpeciesView[],
 	diseaseAreas: readonly DiseaseArea[],
 	t: number,
 	followId: number | null,

@@ -1,14 +1,22 @@
 import { allTopDots, hallOfFameSize } from "./config";
-import type { Agent, DeadAgent, HallOfFame, Ranking, Sim, TopDotsFilter } from "./types";
+import type {
+	AgentView,
+	DeadAgent,
+	DeadAgentView,
+	HallOfFame,
+	Ranking,
+	SimView,
+	TopDotsFilter,
+} from "./types";
 
-/** A dot, living or dead, with the index of its species in `Sim.species`. */
+/** A dot, living or dead, without its genome, with the index of its species in `Sim.species`. */
 export interface DotRef {
 	species: number;
-	agent: Agent | DeadAgent;
+	agent: AgentView | DeadAgentView;
 }
 
 /** Works on a dot with or without its genome. */
-export function isDead<T extends Omit<Agent, "genome"> | Omit<DeadAgent, "genome">>(
+export function isDead<T extends AgentView | DeadAgentView>(
 	agent: T,
 ): agent is Extract<T, { diedStep: number }> {
 	return "diedStep" in agent;
@@ -19,7 +27,7 @@ export function emptyHallOfFame(): HallOfFame {
 }
 
 /** Higher first on the ranking, then on the other one. */
-function compare(ranking: Ranking): (a: Agent, b: Agent) => number {
+function compare(ranking: Ranking): (a: AgentView, b: AgentView) => number {
 	const other: Ranking = ranking === "kills" ? "lifetime" : "kills";
 	return (a, b) => b[ranking] - a[ranking] || b[other] - a[other];
 }
@@ -33,8 +41,8 @@ export function addToHallOfFame(hall: HallOfFame, dead: readonly DeadAgent[]): H
 }
 
 /** The dot with this id: living, died on the last step, or in a hall of fame; null otherwise. */
-export function findDot(sim: Sim, id: number): DotRef | null {
-	const match = (a: Agent) => a.id === id;
+export function findDot(sim: SimView, id: number): DotRef | null {
+	const match = (a: AgentView) => a.id === id;
 	for (let species = 0; species < sim.species.length; species++) {
 		const { agents, lastDeaths, hallOfFame } = sim.species[species];
 		const agent =
@@ -54,14 +62,14 @@ export function findDot(sim: Sim, id: number): DotRef | null {
  * One pass that keeps the best `n` so far, so it can run every frame.
  */
 export function topDots(
-	sim: Sim,
+	sim: SimView,
 	ranking: Ranking,
 	n: number,
 	filter: TopDotsFilter = allTopDots,
 ): DotRef[] {
 	const order = compare(ranking);
 	const best: DotRef[] = [];
-	const offer = (species: number, agent: Agent | DeadAgent) => {
+	const offer = (species: number, agent: AgentView | DeadAgentView) => {
 		if (agent[ranking] <= 0) return;
 		let i = best.length;
 		while (i > 0 && order(agent, best[i - 1].agent) < 0) i--;
@@ -85,10 +93,10 @@ export function topDots(
  * null while no living dot of that species is above 0 on it. One pass, no sort, so it can run
  * every frame.
  */
-export function leaderIds(sim: Sim, ranking: Ranking): (number | null)[] {
+export function leaderIds(sim: SimView, ranking: Ranking): (number | null)[] {
 	const order = compare(ranking);
 	return sim.species.map(({ agents }) => {
-		let best: Agent | null = null;
+		let best: AgentView | null = null;
 		for (let i = 0; i < agents.length; i++) {
 			const agent = agents[i];
 			if (agent[ranking] > 0 && (best === null || order(agent, best) < 0)) best = agent;
@@ -98,7 +106,7 @@ export function leaderIds(sim: Sim, ranking: Ranking): (number | null)[] {
 }
 
 /** The living dot nearest to a cell, within `maxCells`; null when none is that close. */
-export function nearestDot(sim: Sim, x: number, y: number, maxCells: number): DotRef | null {
+export function nearestDot(sim: SimView, x: number, y: number, maxCells: number): DotRef | null {
 	let best: DotRef | null = null;
 	let bestDistance = maxCells * maxCells;
 	for (let species = 0; species < sim.species.length; species++) {

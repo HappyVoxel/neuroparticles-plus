@@ -1,6 +1,6 @@
 import { gridHeight, gridWidth } from "./config";
 import { clamp } from "./math";
-import type { Agent, Cell } from "./types";
+import type { AgentView, Cell } from "./types";
 
 /** A box of grid cells; the cells on both corners are inside it. */
 export interface Area {
@@ -21,6 +21,6 @@ export function areaFromCorners(a: Cell, b: Cell): Area {
 }
 
 /** Agents whose current cell is inside the area. */
-export function agentsIn(agents: readonly Agent[], { x0, y0, x1, y1 }: Area): Agent[] {
+export function agentsIn<A extends AgentView>(agents: readonly A[], { x0, y0, x1, y1 }: Area): A[] {
 	return agents.filter(({ x, y }) => x >= x0 && x <= x1 && y >= y0 && y <= y1);
 }

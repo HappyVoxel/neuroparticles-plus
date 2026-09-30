@@ -42,11 +42,10 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
   - `records.ts` — `addToHallOfFame`, `findDot`, `topDots`, `leaderIds`, `nearestDot`, `isDead`.
   - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies` (all pure).
-  - `render.ts` — canvas drawing.
+  - `render.ts` — canvas drawing. `host.ts` — the worker's side (`createHost`, `simView`); `worker.ts` runs it.
   - `*.test.ts` — Vitest unit tests next to each module.
-- `src/hooks/use-simulation.ts` — owns the sim in a ref and runs one `requestAnimationFrame` loop:
-  each frame runs the steps that are due at the chosen speed, draws the canvas once and pushes a
-  stats snapshot to React.
+- `src/hooks/use-simulation.ts` — talks to the worker and runs one `requestAnimationFrame` loop:
+  each frame shows the steps that are due, draws the canvas once and pushes a snapshot to React.
 - `src/hooks/use-loupe.ts` — Z toggles the canvas loupe, Esc turns it off.
 - `src/hooks/use-shortcut.ts` — `useShortcut(key, onPress, enabled)`, the one way to add a key shortcut.
 - `src/hooks/use-theme.ts` — light/dark, from `localStorage` key `theme` or the system setting.
@@ -86,7 +85,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   and per key step) click through document listeners in `use-sound`; `data-sound="pop"` (selects a dot) or
   `"none"` on a button changes that.
 - Simulation functions don't mutate their inputs; `step` and `recreate` return a new `Sim`, and the
-  hook reassigns its ref. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.
+  host keeps the last few. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.
 - Constants live in `sim/config.ts`; nothing else hardcodes a size or rate.
 - `tsconfig` is `strict` without `noUncheckedIndexedAccess`, so grid and genome indexing stays readable.
 - Browser checks use the Playwright MCP (Firefox) against `npm run build && npm run preview`.
@@ -132,8 +131,9 @@ positions, fields and disease from the previous step, so moves within a step don
 ## Playback (`use-simulation.ts`, `render.ts`)
 
 - Speed is steps per second, set by the Speed slider (`minStepsPerSecond`–`maxStepsPerSecond`).
-- Steps in one frame stop after `stepBudgetMs`; steps still owed are dropped, so a slow machine slows
-  the sim and keeps the frame rate.
+- The sim runs in a worker. While running it keeps up to `stepsAhead` steps ready; with none ready a
+  frame holds the dots on their cells, so a slow machine slows the sim, not the frames. Pause,
+  Randomize and Reset bump an `epoch` that drops older frames; pause rewinds the worker to the canvas.
 - Up to `maxSlidingStepsPerSecond`, `draw` slides each dot from its previous cell to its current one
   (`slide` in `movement.ts`); above it, dots are drawn at their cell.
 - `draw` paints each dot in its species' Tailwind shades 300 → 700 by age (lightest at birth,

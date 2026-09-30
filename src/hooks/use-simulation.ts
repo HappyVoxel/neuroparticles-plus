@@ -8,20 +8,29 @@ import {
 	loupePickCells,
 	maxSlidingStepsPerSecond,
 	pickCells,
-	stepBudgetMs,
+	speciesDefs,
+	stepsAhead,
 	topDotsShown,
 } from "@/sim/config";
-import { type DotRef, findDot, isDead, leaderIds, nearestDot, topDots } from "@/sim/records";
+import type { SimReply, SimRequest } from "@/sim/host";
+import {
+	type DotRef,
+	emptyHallOfFame,
+	findDot,
+	isDead,
+	leaderIds,
+	nearestDot,
+	topDots,
+} from "@/sim/records";
 import { draw } from "@/sim/render";
-import { createSim, extinctSpecies, recreate, step } from "@/sim/simulation";
+import { extinctSpecies } from "@/sim/simulation";
 import type {
-	Agent,
-	DeadAgent,
+	AgentView,
 	DiseaseArea,
 	Genome,
 	MutationParams,
 	Ranking,
-	Sim,
+	SimView,
 	TopDotsFilter,
 } from "@/sim/types";
 
@@ -40,13 +49,6 @@ export interface SpeciesStats {
 	topKills: number;
 }
 
-/** A dot's record for React, without its genome (about 100 KB). */
-export interface DotView {
-	/** Index in `Sim.species`. */
-	species: number;
-	agent: Omit<Agent, "genome"> | Omit<DeadAgent, "genome">;
-}
-
 export interface SimSnapshot {
 	step: number;
 	species: SpeciesStats[];
@@ -57,16 +59,16 @@ export interface SimSnapshot {
 	/** The inspected area, or null. */
 	area: Area | null;
 	/** The dot being followed, last seen alive or at its death; null when none. */
-	followed: DotView | null;
+	followed: DotRef | null;
 	/** The best `topDotsShown` dots the top-dots filter lets through, per ranking. */
-	top: Record<Ranking, DotView[]>;
+	top: Record<Ranking, DotRef[]>;
 	/** The disease areas on the field, for their labels. */
 	diseaseAreas: readonly DiseaseArea[];
 	/** Per species, the id of its living dot with the most kills (the swords); null with no kills. */
 	topHunterIds: (number | null)[];
 }
 
-function speciesStats(agents: readonly Agent[]): SpeciesStats {
+function speciesStats(agents: readonly AgentView[]): SpeciesStats {
 	let oldest = 0;
 	let topKills = 0;
 	let ageSum = 0;
@@ -87,13 +89,8 @@ function speciesStats(agents: readonly Agent[]): SpeciesStats {
 	};
 }
 
-function dotView({ species, agent }: DotRef): DotView {
-	const { genome: _, ...rest } = agent;
-	return { species, agent: rest };
-}
-
 function snapshot(
-	sim: Sim,
+	sim: SimView,
 	area: Area | null,
 	followed: DotRef | null,
 	filter: TopDotsFilter,
@@ -104,28 +101,54 @@ function snapshot(
 		extinct: extinctSpecies(sim),
 		areaSpecies: area && sim.species.map((s) => speciesStats(agentsIn(s.agents, area))),
 		area,
-		followed: followed && dotView(followed),
+		followed,
 		top: {
-			kills: topDots(sim, "kills", topDotsShown, filter).map(dotView),
-			lifetime: topDots(sim, "lifetime", topDotsShown, filter).map(dotView),
+			kills: topDots(sim, "kills", topDotsShown, filter),
+			lifetime: topDots(sim, "lifetime", topDotsShown, filter),
 		},
 		diseaseAreas: sim.disease.areas,
 		topHunterIds: leaderIds(sim, "kills"),
 	};
 }
 
-const isOver = (sim: Sim): boolean => extinctSpecies(sim).length > 0;
+/** The field before the worker's first frame: no dots yet. */
+function emptyView(): SimView {
+	return {
+		step: 0,
+		disease: { areas: [] },
+		species: speciesDefs.map(({ id, name, shades }) => ({
+			id,
+			name,
+			shades,
+			agents: [],
+			hallOfFame: emptyHallOfFame(),
+			lastDeaths: [],
+		})),
+	};
+}
+
+const isOver = (sim: SimView): boolean => extinctSpecies(sim).length > 0;
 
 /**
- * Runs the simulation outside React on one animation-frame loop: each frame runs the steps that
- * are due at the chosen speed, draws the canvas once and hands React a fresh snapshot. Speed,
- * walls, mutation and the top-dots filter start from the values saved in `localStorage` and are
- * saved on every change.
+ * Runs the simulation in a worker (`sim/worker.ts`) and draws it on one animation-frame loop.
+ * While running, the worker keeps up to `stepsAhead` steps ready; each frame takes the steps that
+ * are due at the chosen speed, draws the canvas once and hands React a fresh snapshot. A frame
+ * never waits for a step: when none is ready, the dots hold on their cells. Speed, walls,
+ * mutation and the top-dots filter start from the values saved in `localStorage` and are saved on
+ * every change.
  */
 export function useSimulation() {
 	const [saved] = useState(() => loadSimSettings(readSetting));
-	const [initialSim] = useState(() => createSim(saved.mutation, saved.wallPenalty));
-	const simRef = useRef(initialSim);
+	const workerRef = useRef<Worker | null>(null);
+	/** The step on the canvas. */
+	const viewRef = useRef<SimView>(emptyView());
+	/** Steps from the worker waiting for their turn on the canvas, oldest first. */
+	const queueRef = useRef<SimView[]>([]);
+	/** Steps asked of the worker and not back yet. */
+	const inFlightRef = useRef(0);
+	/** Goes up each time the steps asked for are thrown away; frames of an older epoch are dropped. */
+	const epochRef = useRef(0);
+	const settingsRef = useRef({ mutation: saved.mutation, wallPenalty: saved.wallPenalty });
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const frameRef = useRef<number | undefined>(undefined);
 	const lastFrameRef = useRef(0);
@@ -135,14 +158,20 @@ export function useSimulation() {
 	const areaRef = useRef<Area | null>(null);
 	/** The followed dot as last seen: alive, or at its death once it is gone. */
 	const followRef = useRef<DotRef | null>(null);
+	/** The followed dot's genome, once the worker sends it. */
+	const followedGenomeRef = useRef<Genome | null>(null);
 	const topFilterRef = useRef(saved.topDots);
 	/** How far through the last move the canvas was last painted, to repaint it the same. */
 	const paintedTRef = useRef(1);
 
-	const [snap, setSnap] = useState(() => snapshot(initialSim, null, null, saved.topDots));
+	// Before the worker's first frame there are no dots, which is not a run that ended.
+	const [snap, setSnap] = useState((): SimSnapshot => ({
+		...snapshot(viewRef.current, null, null, saved.topDots),
+		extinct: [],
+	}));
 	const [running, setRunning] = useState(false);
 	const [mutation, setMutationState] = useState(saved.mutation);
-	const [wallPenalty, setWallPenaltyState] = useState(initialSim.wallPenalty);
+	const [wallPenalty, setWallPenaltyState] = useState(saved.wallPenalty);
 	const [stepsPerSecond, setStepsPerSecond] = useState(saved.stepsPerSecond);
 	const [topFilter, setTopFilterState] = useState(saved.topDots);
 
@@ -155,7 +184,7 @@ export function useSimulation() {
 	const paint = useCallback((t: number) => {
 		const canvas = canvasRef.current;
 		const ctx = canvas?.getContext("2d");
-		const sim = simRef.current;
+		const sim = viewRef.current;
 		if (!canvas || !ctx) return;
 		paintedTRef.current = t;
 		// `draw` works in `cellPixels` per cell; this maps that onto the canvas' real pixels.
@@ -167,17 +196,36 @@ export function useSimulation() {
 		draw(ctx, sim.species, sim.disease.areas, t, followId, glowIds, swordsIds, performance.now());
 	}, []);
 
-	/** Runs one step and keeps the followed dot's record current, including its death. */
-	const advance = useCallback(() => {
-		simRef.current = step(simRef.current);
+	const send = useCallback((request: SimRequest) => {
+		workerRef.current?.postMessage(request);
+	}, []);
+
+	/** Throws away the steps asked for and not shown yet; returns the new epoch. */
+	const discard = useCallback((): number => {
+		queueRef.current = [];
+		inFlightRef.current = 0;
+		return ++epochRef.current;
+	}, []);
+
+	const askSteps = useCallback(
+		(count: number) => {
+			for (let i = 0; i < count; i++) send({ type: "step", epoch: epochRef.current });
+			inFlightRef.current += Math.max(0, count);
+		},
+		[send],
+	);
+
+	/** Puts the next step on the canvas and keeps the followed dot's record current, including its death. */
+	const show = useCallback((next: SimView) => {
+		viewRef.current = next;
 		const followed = followRef.current;
 		if (followed && !isDead(followed.agent)) {
-			followRef.current = findDot(simRef.current, followed.agent.id) ?? followed;
+			followRef.current = findDot(next, followed.agent.id) ?? followed;
 		}
 	}, []);
 
 	const publish = useCallback(() => {
-		setSnap(snapshot(simRef.current, areaRef.current, followRef.current, topFilterRef.current));
+		setSnap(snapshot(viewRef.current, areaRef.current, followRef.current, topFilterRef.current));
 	}, []);
 
 	const cancelFrame = useCallback(() => {
@@ -191,20 +239,17 @@ export function useSimulation() {
 			lastFrameRef.current = now;
 			dueRef.current += (elapsed * speedRef.current) / 1000;
 
-			const started = performance.now();
+			const queue = queueRef.current;
 			let stepped = false;
 			let extinct = false;
-			while (dueRef.current >= 1 && !extinct) {
-				// Out of time: drop the steps still owed, so the sim slows down instead of the frames.
-				if (performance.now() - started > stepBudgetMs) {
-					dueRef.current = 0;
-					break;
-				}
-				advance();
+			while (dueRef.current >= 1 && queue.length > 0 && !extinct) {
+				show(queue.shift() as SimView);
 				dueRef.current -= 1;
 				stepped = true;
-				extinct = isOver(simRef.current);
+				extinct = isOver(viewRef.current);
 			}
+			// The worker is behind: hold the dots on their cells until its next step comes.
+			dueRef.current = Math.min(dueRef.current, 1);
 
 			if (stepped) publish();
 			if (extinct) {
@@ -213,32 +258,58 @@ export function useSimulation() {
 				setRunning(false);
 				return;
 			}
+			askSteps(stepsAhead - inFlightRef.current - queue.length);
 			paint(speedRef.current <= maxSlidingStepsPerSecond ? dueRef.current : 1);
 			frameRef.current = window.requestAnimationFrame(frame);
 		},
-		[paint, advance, publish],
+		[paint, show, publish, askSteps],
+	);
+
+	const receive = useCallback(
+		(reply: SimReply) => {
+			if (reply.type === "genome") {
+				if (reply.id === followRef.current?.agent.id) followedGenomeRef.current = reply.genome;
+				return;
+			}
+			if (reply.epoch !== epochRef.current) return;
+			if (reply.kind === "replace") {
+				viewRef.current = reply.view;
+			} else {
+				inFlightRef.current--;
+				// Running, the frame loop takes it when due; paused, it is a Step and shows at once.
+				if (frameRef.current !== undefined) {
+					queueRef.current.push(reply.view);
+					return;
+				}
+				show(reply.view);
+				// A whole step is shown, so the next Run starts its slide from these cells.
+				dueRef.current = 1;
+			}
+			paint(1);
+			publish();
+		},
+		[paint, show, publish],
 	);
 
 	const run = useCallback(() => {
-		if (frameRef.current !== undefined || isOver(simRef.current)) return;
+		if (frameRef.current !== undefined || isOver(viewRef.current)) return;
 		lastFrameRef.current = performance.now();
 		frameRef.current = window.requestAnimationFrame(frame);
 		setRunning(true);
 	}, [frame]);
 
+	/** Stops the loop and sends the worker back to the step on the canvas. */
 	const pause = useCallback(() => {
 		cancelFrame();
+		send({ type: "rewind", epoch: discard(), step: viewRef.current.step });
 		setRunning(false);
-	}, [cancelFrame]);
+	}, [cancelFrame, send, discard]);
 
+	/** Asks for one step; it shows when it comes back. Ignored while one is on its way. */
 	const stepOnce = useCallback(() => {
-		if (isOver(simRef.current)) return;
-		advance();
-		// A whole step is shown, so the next Run starts its slide from these cells.
-		dueRef.current = 1;
-		paint(1);
-		publish();
-	}, [paint, advance, publish]);
+		if (isOver(viewRef.current) || inFlightRef.current > 0) return;
+		askSteps(1);
+	}, [askSteps]);
 
 	const setSpeed = useCallback((next: number) => {
 		speedRef.current = next;
@@ -247,24 +318,21 @@ export function useSimulation() {
 
 	/** New brains make new dots with new ids, so the followed dot is let go. */
 	const randomizeBrains = useCallback(() => {
-		simRef.current = recreate(simRef.current);
 		followRef.current = null;
-		paint(1);
-		publish();
-	}, [paint, publish]);
+		followedGenomeRef.current = null;
+		send({ type: "recreate", epoch: discard(), step: viewRef.current.step });
+	}, [send, discard]);
 
 	/** Starts a new run at step 0 with fresh random dots; keeps the mutation and wall settings. */
 	const reset = useCallback(() => {
 		cancelFrame();
-		const { mutation, wallPenalty } = simRef.current;
-		simRef.current = createSim(mutation, wallPenalty);
+		send({ type: "reset", epoch: discard(), ...settingsRef.current });
 		dueRef.current = 0;
 		areaRef.current = null;
 		followRef.current = null;
-		paint(1);
-		publish();
+		followedGenomeRef.current = null;
 		setRunning(false);
-	}, [cancelFrame, paint, publish]);
+	}, [cancelFrame, send, discard]);
 
 	/** Sets the area every snapshot carries, with its stats in `areaSpecies`; null clears it. */
 	const inspect = useCallback(
@@ -288,11 +356,14 @@ export function useSimulation() {
 	/** Follows the dot with this id (living or dead); null or an unknown id stops following. */
 	const follow = useCallback(
 		(id: number | null) => {
-			followRef.current = id === null ? null : findDot(simRef.current, id);
-			paint(1);
+			const found = id === null ? null : findDot(viewRef.current, id);
+			followRef.current = found;
+			followedGenomeRef.current = null;
+			if (found) send({ type: "follow", id: found.agent.id });
+			paint(paintedTRef.current);
 			publish();
 		},
-		[paint, publish],
+		[paint, publish, send],
 	);
 
 	/**
@@ -301,27 +372,45 @@ export function useSimulation() {
 	 */
 	const pick = useCallback(
 		(x: number, y: number, precise: boolean): boolean => {
-			const found = nearestDot(simRef.current, x, y, precise ? loupePickCells : pickCells);
+			const found = nearestDot(viewRef.current, x, y, precise ? loupePickCells : pickCells);
 			follow(found?.agent.id ?? null);
 			return found !== null;
 		},
 		[follow],
 	);
 
-	/** The followed dot's genome, for copying; null when none is followed. */
-	const followedGenome = useCallback((): Genome | null => {
-		return followRef.current?.agent.genome ?? null;
-	}, []);
+	/** The followed dot's genome, for copying; null when none is followed or it hasn't come yet. */
+	const followedGenome = useCallback((): Genome | null => followedGenomeRef.current, []);
 
-	const setMutation = useCallback((next: MutationParams) => {
-		simRef.current = { ...simRef.current, mutation: next };
-		setMutationState(next);
-	}, []);
+	const setMutation = useCallback(
+		(next: MutationParams) => {
+			settingsRef.current = { ...settingsRef.current, mutation: next };
+			send({ type: "settings", ...settingsRef.current });
+			setMutationState(next);
+		},
+		[send],
+	);
 
-	const setWallPenalty = useCallback((next: number) => {
-		simRef.current = { ...simRef.current, wallPenalty: next };
-		setWallPenaltyState(next);
-	}, []);
+	const setWallPenalty = useCallback(
+		(next: number) => {
+			settingsRef.current = { ...settingsRef.current, wallPenalty: next };
+			send({ type: "settings", ...settingsRef.current });
+			setWallPenaltyState(next);
+		},
+		[send],
+	);
+
+	// One worker per mount; its first frame is a fresh sim at step 0.
+	useEffect(() => {
+		const worker = new Worker(new URL("../sim/worker.ts", import.meta.url), { type: "module" });
+		worker.addEventListener("message", (e: MessageEvent<SimReply>) => receive(e.data));
+		workerRef.current = worker;
+		send({ type: "reset", epoch: discard(), ...settingsRef.current });
+		return () => {
+			worker.terminate();
+			workerRef.current = null;
+		};
+	}, [receive, send, discard]);
 
 	useEffect(() => {
 		paint(1);

@@ -6,7 +6,7 @@ import { buildField, senseAt } from "./field";
 import { hitsWall, type Move, moveCount, moveX, moveY, stayMove, stepMoves } from "./movement";
 import { evaluate, pickMove, randomGenome } from "./network";
 import { addToHallOfFame, emptyHallOfFame } from "./records";
-import type { Agent, Field, MutationParams, Sim, Species } from "./types";
+import type { Agent, Field, MutationParams, Sim, SimView, Species } from "./types";
 
 export function createSim(mutation: MutationParams, wallPenalty = hpPenaltyFromWall): Sim {
 	let nextId = 0;
@@ -96,7 +96,7 @@ export function step(sim: Sim): Sim {
 }
 
 /** Indexes in `Sim.species` of species with no agents left; the sim stops once this is non-empty. */
-export function extinctSpecies(sim: Sim): number[] {
+export function extinctSpecies(sim: SimView): number[] {
 	return sim.species.flatMap((s, i) => (s.agents.length === 0 ? [i] : []));
 }
 

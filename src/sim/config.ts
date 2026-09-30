@@ -15,8 +15,8 @@ export const defaultStepsPerSecond = 20;
 export const stepsPerSecondStep = minStepsPerSecond;
 // Up to this speed dots slide between cells; above it a frame covers more than one step.
 export const maxSlidingStepsPerSecond = 60;
-// Longest the sim may run inside one animation frame before it has to draw.
-export const stepBudgetMs = 8;
+// Steps the worker runs ahead of the canvas while running, so the next one is ready when due.
+export const stepsAhead = 3;
 
 // Picking a dot to follow: a click takes the nearest dot within this many cells, or within
 // `loupePickCells` while the loupe (Z) is on. The loupe shows the canvas at `loupeZoom`× in a

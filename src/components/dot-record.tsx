@@ -4,13 +4,13 @@ import { CanvasPopover, cellBox } from "@/components/canvas-popover";
 import { SpeciesSwatch } from "@/components/species-swatch";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverAnchor } from "@/components/ui/popover";
-import type { DotView } from "@/hooks/use-simulation";
+import type { DotRef } from "@/sim/records";
 import { formatCount } from "@/lib/format";
 import { speciesDisplay } from "@/lib/species";
 import { isDead } from "@/sim/records";
 
 interface DotRecordProps {
-	followed: DotView | null;
+	followed: DotRef | null;
 	/** Whether the followed dot is its species' top hunter, which wears swords on the canvas. */
 	topHunter: boolean;
 	/** The current sim step. */

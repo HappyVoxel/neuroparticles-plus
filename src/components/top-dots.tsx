@@ -1,7 +1,7 @@
 import { cn } from "cn";
 import { SpeciesSwatch } from "@/components/species-swatch";
 import { Button } from "@/components/ui/button";
-import type { DotView } from "@/hooks/use-simulation";
+import type { DotRef } from "@/sim/records";
 import { formatCount } from "@/lib/format";
 import { speciesDisplay } from "@/lib/species";
 import { hallOfFameSize, topDotsShown } from "@/sim/config";
@@ -16,7 +16,7 @@ const columns: readonly { ranking: Ranking; label: string }[] = [
 ];
 
 interface TopDotsProps {
-	top: Record<Ranking, DotView[]>;
+	top: Record<Ranking, DotRef[]>;
 	followedId: number | null;
 	onFollow: (id: number) => void;
 }

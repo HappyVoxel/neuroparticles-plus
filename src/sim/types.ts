@@ -118,6 +118,25 @@ export interface Disease {
 	cost: Float32Array[];
 }
 
+/**
+ * The sim as the page sees it: the worker sends each step without the genomes (about 100 KB a
+ * dot), the fields and the disease grids. A `Sim` fits it too.
+ */
+export type AgentView = Omit<Agent, "genome">;
+export type DeadAgentView = Omit<DeadAgent, "genome">;
+
+export interface SpeciesView extends Pick<Species, "id" | "name" | "shades"> {
+	agents: readonly AgentView[];
+	hallOfFame: Readonly<Record<Ranking, readonly DeadAgentView[]>>;
+	lastDeaths: readonly DeadAgentView[];
+}
+
+export interface SimView {
+	species: readonly SpeciesView[];
+	step: number;
+	disease: { areas: readonly DiseaseArea[] };
+}
+
 export interface Sim {
 	species: Species[];
 	step: number;
