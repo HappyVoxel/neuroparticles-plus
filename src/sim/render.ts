@@ -32,9 +32,9 @@ export function draw(
 	species: readonly Species[],
 	diseaseAreas: readonly DiseaseArea[],
 	t: number,
-	followId: number | null = null,
-	glowIds: readonly (number | null)[] = [],
-	now = 0,
+	followId: number | null,
+	glowIds: readonly (number | null)[],
+	now: number,
 ): void {
 	ctx.globalCompositeOperation = "source-over";
 	ctx.globalAlpha = 1;
@@ -62,9 +62,7 @@ export function draw(
 	const glows: { x: number; y: number; color: Oklch }[] = [];
 	for (let s = 0; s < species.length; s++) {
 		const { agents, shades } = species[s];
-		const colors = Array.from({ length: ageColorSteps }, (_, k) =>
-			oklchCss(shadeAt(shades, k / (ageColorSteps - 1))),
-		);
+		const colors = ageColors(shades);
 		let oldest = 0;
 		for (let i = 0; i < agents.length; i++) oldest = Math.max(oldest, agents[i].lifetime);
 
@@ -111,6 +109,20 @@ export function draw(
 		);
 		ctx.stroke();
 	}
+}
+
+// Each species' `ageColorSteps` CSS colors, youngest first, built once per list of shades.
+const ageColorCache = new WeakMap<readonly Oklch[], readonly string[]>();
+
+function ageColors(shades: readonly Oklch[]): readonly string[] {
+	let colors = ageColorCache.get(shades);
+	if (!colors) {
+		colors = Array.from({ length: ageColorSteps }, (_, k) =>
+			oklchCss(shadeAt(shades, k / (ageColorSteps - 1))),
+		);
+		ageColorCache.set(shades, colors);
+	}
+	return colors;
 }
 
 /**

@@ -64,7 +64,7 @@ export function spawn(
 }
 
 /** True when each agent stands inside the other's view. */
-export function isNear(a: Cell, b: Cell): boolean {
+function isNear(a: Cell, b: Cell): boolean {
 	const dx = a.x - b.x;
 	const dy = a.y - b.y;
 	return dx * dx + dy * dy <= visionRadiusSquared;
@@ -191,9 +191,10 @@ export function breed(
 	if (survivors.length >= populationSize - 1) return { survivors, children: [] };
 
 	const gap = populationSize - survivors.length;
-	const mature = shuffled(survivors.filter((agent) => agent.lifetime >= matureAge)).sort(
-		(a, b) => killRate(b) - killRate(a),
-	);
+	const mature = shuffled(survivors.filter((agent) => agent.lifetime >= matureAge))
+		.map((agent) => ({ agent, rate: killRate(agent) }))
+		.sort((a, b) => b.rate - a.rate)
+		.map(({ agent }) => agent);
 	const paired = new Set<Agent>();
 	const litters = new Map<Agent, number>();
 

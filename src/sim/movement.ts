@@ -53,9 +53,18 @@ export function moveCount(lifetime: number): number {
 	return lifetime < matureAge || lifetime >= oldAge ? stepMoves : outputSize;
 }
 
+/** The column `move` lands on from column `x`, bounced off a wall. */
+export function moveX(x: number, move: Move): number {
+	return bounce(x + offsets[move][0], gridWidth);
+}
+
+/** The row `move` lands on from row `y`, bounced off a wall. */
+export function moveY(y: number, move: Move): number {
+	return bounce(y + offsets[move][1], gridHeight);
+}
+
 export function moveBy(x: number, y: number, move: Move): { x: number; y: number } {
-	const [dx, dy] = offsets[move];
-	return { x: bounce(x + dx, gridWidth), y: bounce(y + dy, gridHeight) };
+	return { x: moveX(x, move), y: moveY(y, move) };
 }
 
 /** Where to draw an agent `t` (0–1) of the way through its move from `prev` to `cur`. */

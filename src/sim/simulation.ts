@@ -3,7 +3,7 @@ import { hpPenaltyFromWall, inputSize, outputSize, populationSize, speciesDefs }
 import { emptyDisease, spreadDisease } from "./disease";
 import { ageAndCull, breed, spawn } from "./evolution";
 import { buildField, senseAt } from "./field";
-import { hitsWall, type Move, moveBy, moveCount, stayMove, stepMoves } from "./movement";
+import { hitsWall, type Move, moveCount, moveX, moveY, stayMove, stepMoves } from "./movement";
 import { evaluate, pickMove, randomGenome } from "./network";
 import { addToHallOfFame, emptyHallOfFame } from "./records";
 import type { Agent, Field, MutationParams, Sim, Species } from "./types";
@@ -32,7 +32,8 @@ export function moveAgent(agent: Agent, move: Move, wallPenalty: number): Agent 
 		hp: bump ? agent.hp - wallPenalty : agent.hp,
 		prevX: x,
 		prevY: y,
-		...moveBy(x, y, move),
+		x: moveX(x, move),
+		y: moveY(y, move),
 		stays: move === stayMove ? agent.stays + 1 : agent.stays,
 		steps: move !== stayMove && move < stepMoves ? agent.steps + 1 : agent.steps,
 		jumps: move >= stepMoves ? agent.jumps + 1 : agent.jumps,
