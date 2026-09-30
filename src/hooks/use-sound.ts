@@ -8,16 +8,11 @@ import {
 	unlockAudio,
 } from "@/lib/sound";
 import { shortcutEvent, sliderKeys } from "@/lib/keyboard";
-import { readSetting, writeSetting } from "@/lib/storage";
+import { readFlag, readSetting, writeFlag, writeSetting } from "@/lib/storage";
 
 const musicKey = "music";
 const effectsKey = "sound-effects";
 const volumeKey = "volume";
-
-function storedOn(key: string, fallback: boolean): boolean {
-	const value = readSetting(key);
-	return value === "on" || value === "off" ? value === "on" : fallback;
-}
 
 function storedVolume(): number {
 	const value = readSetting(volumeKey);
@@ -66,8 +61,8 @@ export interface Sound {
  * through document listeners.
  */
 export function useSound(): Sound {
-	const [music, setMusicState] = useState(() => storedOn(musicKey, false));
-	const [effects, setEffectsState] = useState(() => storedOn(effectsKey, true));
+	const [music, setMusicState] = useState(() => readFlag(musicKey, false));
+	const [effects, setEffectsState] = useState(() => readFlag(effectsKey, true));
 	const [volume, setVolumeState] = useState(storedVolume);
 	const [unlocked, setUnlocked] = useState(false);
 	const effectsRef = useRef(effects);
@@ -148,12 +143,12 @@ export function useSound(): Sound {
 	}, []);
 
 	const setMusic = useCallback((on: boolean) => {
-		writeSetting(musicKey, on ? "on" : "off");
+		writeFlag(musicKey, on);
 		setMusicState(on);
 	}, []);
 
 	const setEffects = useCallback((on: boolean) => {
-		writeSetting(effectsKey, on ? "on" : "off");
+		writeFlag(effectsKey, on);
 		setEffectsState(on);
 		// The menu item stays silent (it would click on the way off); confirm the way on instead.
 		if (on) playEffect("click");

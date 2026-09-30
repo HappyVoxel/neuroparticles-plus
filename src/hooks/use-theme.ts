@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
+import { readSetting, writeSetting } from "@/lib/storage";
 
 export type Theme = "light" | "dark";
 
 // index.html reads the same key before first paint so the page never flashes the wrong theme.
 const storageKey = "theme";
 
+/** The saved theme, else the system setting. */
 function initialTheme(): Theme {
-	try {
-		const stored = localStorage.getItem(storageKey);
-		if (stored === "light" || stored === "dark") return stored;
-	} catch {
-		// Storage blocked (private window, sandbox): fall through to the system setting.
-	}
+	const stored = readSetting(storageKey);
+	if (stored === "light" || stored === "dark") return stored;
 	return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
@@ -25,11 +23,7 @@ export function useTheme(): { theme: Theme; toggleTheme: () => void } {
 	const toggleTheme = useCallback(() => {
 		setTheme((current) => {
 			const next = current === "dark" ? "light" : "dark";
-			try {
-				localStorage.setItem(storageKey, next);
-			} catch {
-				// Not saved; the toggle still works for this visit.
-			}
+			writeSetting(storageKey, next);
 			return next;
 		});
 	}, []);

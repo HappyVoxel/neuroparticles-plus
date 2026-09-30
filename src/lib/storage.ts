@@ -15,3 +15,14 @@ export function writeSetting(key: string, value: string): void {
 		// Not saved.
 	}
 }
+
+/** A setting saved as "on" or "off"; `fallback` when unset or anything else. */
+export function readFlag(key: string, fallback: boolean, read = readSetting): boolean {
+	const value = read(key);
+	return value === "on" || value === "off" ? value === "on" : fallback;
+}
+
+/** Saves a setting as "on" or "off". */
+export function writeFlag(key: string, on: boolean, write = writeSetting): void {
+	write(key, on ? "on" : "off");
+}

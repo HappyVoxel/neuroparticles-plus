@@ -1,3 +1,4 @@
+import { readFlag, writeFlag } from "@/lib/storage";
 import {
 	allTopDots,
 	defaultMutation,
@@ -44,10 +45,10 @@ function wholeIn(
 	return onGrid && value >= min && value <= max ? value : fallback;
 }
 
-function topDotsFilter(dead: string | null, species: string | null): TopDotsFilter {
+function topDotsFilter(dead: boolean, species: string | null): TopDotsFilter {
 	const shown = species === null ? null : new Set(species.split(","));
 	return {
-		dead: dead === "on" || dead === "off" ? dead === "on" : allTopDots.dead,
+		dead,
 		species: shown === null ? allTopDots.species : speciesDefs.map(({ id }) => shown.has(id)),
 	};
 }
@@ -74,7 +75,7 @@ export function loadSimSettings(read: (key: string) => string | null): SimSettin
 			// The Speed slider moves in steps of its minimum.
 			minStepsPerSecond,
 		),
-		topDots: topDotsFilter(read(keys.dead), read(keys.species)),
+		topDots: topDotsFilter(readFlag(keys.dead, allTopDots.dead, read), read(keys.species)),
 	};
 }
 
@@ -86,7 +87,7 @@ export function saveSimSettings(
 	write(keys.genes, String(settings.mutation.genes));
 	write(keys.wallPenalty, String(settings.wallPenalty));
 	write(keys.stepsPerSecond, String(settings.stepsPerSecond));
-	write(keys.dead, settings.topDots.dead ? "on" : "off");
+	writeFlag(keys.dead, settings.topDots.dead, write);
 	write(
 		keys.species,
 		speciesDefs
