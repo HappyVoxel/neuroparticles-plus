@@ -48,7 +48,7 @@ steps:
         from_secret: easypanel_token
       # The Easypanel service this repo deploys to.
       EP_PROJECT: ideas
-      EP_SERVICE: neuroparticles
+      EP_SERVICE: neuroparticles-plus
     commands:
       # `$$` stops Woodpecker substituting the variable before the shell sees it.
       # --fail-with-body exits non-zero on >=400 and keeps Easypanel's reason in
