@@ -10,6 +10,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { stayOpen } from "@/lib/menu";
 import { speciesDisplay } from "@/lib/species";
 import type { TopDotsFilter } from "@/sim/types";
 
@@ -19,9 +20,6 @@ interface TopDotsFilterMenuProps {
 	/** Plays the open sound; Radix blocks the trigger's click (see `SoundMenu`). */
 	onOpen: () => void;
 }
-
-// Keeps the menu open after a toggle, so several can be set in one visit.
-const stayOpen = (e: Event) => e.preventDefault();
 
 /** A filter icon for the top-dots title: show or hide the dead and each species. */
 export const TopDotsFilterMenu = memo(function TopDotsFilterMenu({

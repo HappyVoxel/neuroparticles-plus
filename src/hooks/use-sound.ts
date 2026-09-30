@@ -20,13 +20,16 @@ function storedVolume(): number {
 	return parsed >= 0 && parsed <= 1 ? parsed : 1;
 }
 
+function closestTo(target: EventTarget | null, selector: string): Element | null {
+	return target instanceof Element ? target.closest(selector) : null;
+}
+
 /**
  * The effect a click on this element plays: any button or menu item clicks, `data-sound="pop"`
  * pops, `data-sound="none"` stays silent. Other elements play nothing.
  */
 function effectFor(target: EventTarget | null): Effect | null {
-	if (!(target instanceof Element)) return null;
-	const el = target.closest('button, [role^="menuitem"]');
+	const el = closestTo(target, 'button, [role^="menuitem"]');
 	if (!el) return null;
 	const sound = el.getAttribute("data-sound");
 	if (sound === "none") return null;
@@ -37,10 +40,6 @@ const enabledSlider = '[data-slot="slider"]:not([data-disabled])';
 
 /** Gap between drag ticks, so a fast drag across many steps doesn't pile up into a buzz. */
 const dragTickMs = 50;
-
-function closestTo(target: EventTarget | null, selector: string): Element | null {
-	return target instanceof Element ? target.closest(selector) : null;
-}
 
 export interface Sound {
 	music: boolean;
