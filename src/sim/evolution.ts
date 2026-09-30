@@ -13,7 +13,7 @@ import {
 import type { Capture } from "./capture";
 import { type Move, moveBy, stayMove } from "./movement";
 import { genomeSize, randomGene } from "./network";
-import type { Agent, Genome, MutationParams, Species } from "./types";
+import type { Agent, DeadAgent, Genome, MutationParams, Species } from "./types";
 
 interface Cell {
 	x: number;
@@ -27,9 +27,40 @@ function randomCell(): Cell {
 	};
 }
 
-/** A fresh agent with full HP, at the given cell or a random one. */
-export function spawn(genome: Genome, { x, y }: Cell = randomCell()): Agent {
-	return { genome, hp: startHp, x, y, prevX: x, prevY: y, lifetime: 0, kills: 0 };
+interface Birth {
+	id: number;
+	genome: Genome;
+	bornStep?: number;
+	parents?: Agent["parents"];
+}
+
+/** A fresh agent with full HP and zeroed counters, at the given cell or a random one. */
+export function spawn(
+	{ id, genome, bornStep = 0, parents = null }: Birth,
+	{ x, y }: Cell = randomCell(),
+): Agent {
+	return {
+		id,
+		genome,
+		hp: startHp,
+		x,
+		y,
+		prevX: x,
+		prevY: y,
+		lifetime: 0,
+		kills: 0,
+		bornStep,
+		parents,
+		children: 0,
+		stays: 0,
+		steps: 0,
+		jumps: 0,
+		wallBumps: 0,
+		hpEaten: 0,
+		hpLostCrowding: 0,
+		hpLostDisease: 0,
+		hpLostWall: 0,
+	};
 }
 
 /** True when each agent stands inside the other's view. */
@@ -40,29 +71,43 @@ export function isNear(a: Cell, b: Cell): boolean {
 }
 
 /**
- * Applies one step of HP change and drops the dead: dots that were caught and dots out of HP.
- * A hunter takes its share of the prey's HP, up to `startHp`. Crowding your own kind or standing
- * in disease costs HP.
+ * Applies one step of HP change and splits the dots into survivors and the dead of step `now`:
+ * dots that were caught and dots out of HP. A hunter takes its share of the prey's HP, up to
+ * `startHp`. Crowding your own kind or standing in disease costs HP.
  */
 export function ageAndCull(
 	self: Species,
 	diseaseCost: readonly Float32Array[],
 	{ caught, gain }: Capture,
-): Agent[] {
+	now: number,
+): { survivors: Agent[]; dead: DeadAgent[] } {
 	const survivors: Agent[] = [];
+	const dead: DeadAgent[] = [];
 	for (const agent of self.agents) {
-		if (caught.has(agent)) continue;
-		const { x, y } = agent;
-		const eaten = gain.get(agent);
-		let hp = eaten === undefined ? agent.hp : Math.min(startHp, agent.hp + eaten);
-		if (self.field[x][y] > 1) hp -= hpPenaltyFromCrowding;
-		hp -= diseaseCost[x][y] + baseDecayPerStep;
-		if (hp > 0) {
-			const kills = eaten === undefined ? agent.kills : agent.kills + 1;
-			survivors.push({ ...agent, hp, kills, lifetime: agent.lifetime + 1 });
+		const cause = caught.get(agent);
+		if (cause) {
+			dead.push({ ...agent, diedStep: now, cause });
+			continue;
 		}
+		const { x, y } = agent;
+		const share = gain.get(agent);
+		const eaten = share ?? 0;
+		const crowding = self.field[x][y] > 1 ? hpPenaltyFromCrowding : 0;
+		const disease = diseaseCost[x][y];
+		const hp = Math.min(startHp, agent.hp + eaten) - crowding - disease - baseDecayPerStep;
+		const next: Agent = {
+			...agent,
+			hp,
+			kills: share === undefined ? agent.kills : agent.kills + 1,
+			lifetime: agent.lifetime + 1,
+			hpEaten: agent.hpEaten + eaten,
+			hpLostCrowding: agent.hpLostCrowding + crowding,
+			hpLostDisease: agent.hpLostDisease + disease,
+		};
+		if (hp > 0) survivors.push(next);
+		else dead.push({ ...next, diedStep: now, cause: { kind: "hp" } });
 	}
-	return survivors;
+	return { survivors, dead };
 }
 
 /** Uniform crossover: each gene goes to one child and the other parent's gene to the other. */
@@ -134,15 +179,23 @@ function killRate(agent: Agent): number {
  * free mature agent in its view, or the best free one anywhere when none is in view. Every pair
  * gets a litter of `litterSize` children, cut to the slots still open: between parents that see
  * each other, beside the first parent otherwise. An agent breeds at most once per step.
+ * Children get ids from `nextId` on and birth step `now`; the returned survivors carry the new
+ * `children` counts of their parents.
  */
-export function breed(survivors: readonly Agent[], mutation: MutationParams): Agent[] {
-	if (survivors.length >= populationSize - 1) return [];
+export function breed(
+	survivors: readonly Agent[],
+	mutation: MutationParams,
+	nextId = 0,
+	now = 0,
+): { survivors: readonly Agent[]; children: Agent[] } {
+	if (survivors.length >= populationSize - 1) return { survivors, children: [] };
 
 	const gap = populationSize - survivors.length;
 	const mature = shuffled(survivors.filter((agent) => agent.lifetime >= matureAge)).sort(
 		(a, b) => killRate(b) - killRate(a),
 	);
 	const paired = new Set<Agent>();
+	const litters = new Map<Agent, number>();
 
 	const children: Agent[] = [];
 	for (let i = 0; i < mature.length && children.length < gap; i++) {
@@ -158,8 +211,20 @@ export function breed(survivors: readonly Agent[], mutation: MutationParams): Ag
 		const from = near ? { x: Math.floor((a.x + b.x) / 2), y: Math.floor((a.y + b.y) / 2) } : a;
 		const moves = near ? siblingMoves : besideMoves;
 		litterGenomes(a.genome, b.genome, size).forEach((genome, k) => {
-			children.push(spawn(mutate(genome, mutation), moveBy(from.x, from.y, moves[k])));
+			const birth = {
+				id: nextId + children.length,
+				genome: mutate(genome, mutation),
+				bornStep: now,
+				parents: [a.id, b.id] as const,
+			};
+			children.push(spawn(birth, moveBy(from.x, from.y, moves[k])));
 		});
+		litters.set(a, size).set(b, size);
 	}
-	return children;
+	if (children.length === 0) return { survivors, children };
+	const parents = survivors.map((agent) => {
+		const size = litters.get(agent);
+		return size === undefined ? agent : { ...agent, children: agent.children + size };
+	});
+	return { survivors: parents, children };
 }

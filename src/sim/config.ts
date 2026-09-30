@@ -1,4 +1,4 @@
-import type { MutationParams, Species } from "./types";
+import type { MutationParams, Oklch, Species } from "./types";
 
 // World
 export const gridWidth = 200;
@@ -15,6 +15,20 @@ export const defaultStepsPerSecond = 20;
 export const maxSlidingStepsPerSecond = 60;
 // Longest the sim may run inside one animation frame before it has to draw.
 export const stepBudgetMs = 8;
+
+// Picking a dot to follow: a click takes the nearest dot within this many cells, or within
+// `loupePickCells` while the loupe (Z) is on. The loupe shows the canvas at `loupeZoom`× in a
+// circle `loupeDiameterPx` CSS pixels wide.
+export const pickCells = 3;
+export const loupePickCells = 1;
+export const loupeZoom = 4;
+export const loupeDiameterPx = 160;
+// The ring around the followed dot: Tailwind's yellow-400, like the inspected area's frame.
+export const followRingColor: Oklch = [0.852, 0.199, 91.936];
+// Dead dots kept per species and ranking (kills, lifetime), each with its genome (about 100 KB).
+export const hallOfFameSize = 20;
+// Dots shown in the sidebar's top list.
+export const topDotsShown = 3;
 
 // Each agent sees every cell with dx² + dy² <= visionRadiusSquared around itself, one channel per
 // species. 37 makes a round view of 121 cells: 6 cells straight out, 4 along a diagonal.

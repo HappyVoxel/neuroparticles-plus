@@ -1,9 +1,9 @@
 import { gridHeight } from "./config";
-import type { Agent, Species } from "./types";
+import type { Agent, DeathCause, Species } from "./types";
 
 export interface Capture {
-	/** Prey that die this step. */
-	caught: ReadonlySet<Agent>;
+	/** Prey that die this step, each with the hunters that caught it. */
+	caught: ReadonlyMap<Agent, DeathCause>;
 	/** HP each hunter takes from the prey it caught. */
 	gain: ReadonlyMap<Agent, number>;
 }
@@ -19,7 +19,7 @@ export function preyOf(i: number, n: number): number {
  * snapshot, so a dot caught this step still catches.
  */
 export function capture(species: readonly Species[]): Capture {
-	const caught = new Set<Agent>();
+	const caught = new Map<Agent, DeathCause>();
 	const gain = new Map<Agent, number>();
 	const n = species.length;
 	for (let i = 0; i < n; i++) {
@@ -33,7 +33,11 @@ export function capture(species: readonly Species[]): Capture {
 		for (const prey of species[preyOf(i, n)].agents) {
 			const onCell = hunters.get(prey.x * gridHeight + prey.y);
 			if (!onCell) continue;
-			caught.add(prey);
+			caught.set(prey, {
+				kind: "caught",
+				by: species[i].id,
+				killers: onCell.map((hunter) => hunter.id),
+			});
 			const share = prey.hp / onCell.length;
 			for (const hunter of onCell) gain.set(hunter, (gain.get(hunter) ?? 0) + share);
 		}

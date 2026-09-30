@@ -1,18 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { capture } from "./capture";
 import { speciesDefs } from "./config";
+import { spawn } from "./evolution";
+import { emptyHallOfFame } from "./records";
 import { buildField } from "./field";
 import type { Agent, Species } from "./types";
 
+let ids = 0;
 const at = (x: number, y: number, hp = 1000): Agent => ({
-	genome: [],
+	...spawn({ id: ids++, genome: [] }, { x, y }),
 	hp,
-	x,
-	y,
-	prevX: x,
-	prevY: y,
-	lifetime: 0,
-	kills: 0,
 });
 
 // Red, Green, Blue in order: each catches the next one.
@@ -21,6 +18,8 @@ const world = (...agents: Agent[][]): Species[] =>
 		...def,
 		agents: agents[i] ?? [],
 		field: buildField(agents[i] ?? []),
+		hallOfFame: emptyHallOfFame(),
+		lastDeaths: [],
 	}));
 
 describe("capture", () => {
@@ -34,7 +33,7 @@ describe("capture", () => {
 		const red = at(5, 5);
 		const green = at(5, 5, 700);
 		const { caught, gain } = capture(world([red], [green]));
-		expect([...caught]).toEqual([green]);
+		expect([...caught.keys()]).toEqual([green]);
 		expect(gain.get(red)).toBe(700);
 	});
 
@@ -44,10 +43,21 @@ describe("capture", () => {
 		const blueOnRed = at(5, 5, 400);
 		const blueOnGreen = at(9, 9, 600);
 		const { caught, gain } = capture(world([red], [green], [blueOnRed, blueOnGreen]));
-		expect(caught).toEqual(new Set([red, blueOnGreen]));
+		expect(new Set(caught.keys())).toEqual(new Set([red, blueOnGreen]));
 		expect(gain.get(blueOnRed)).toBe(1000);
 		expect(gain.get(green)).toBe(600);
 		expect(gain.has(red)).toBe(false);
+	});
+
+	it("names the hunters' species and ids as the cause", () => {
+		const hunters = [at(5, 5), at(5, 5)];
+		const prey = at(5, 5);
+		const { caught } = capture(world([prey], [], hunters));
+		expect(caught.get(prey)).toEqual({
+			kind: "caught",
+			by: "B",
+			killers: hunters.map((h) => h.id),
+		});
 	});
 
 	it("splits the prey's HP equally between the hunters on its cell", () => {
@@ -68,7 +78,7 @@ describe("capture", () => {
 		const green = at(5, 5, 800);
 		const blue = at(5, 5, 600);
 		const { caught, gain } = capture(world([red], [green], [blue]));
-		expect(caught).toEqual(new Set([red, green, blue]));
+		expect(new Set(caught.keys())).toEqual(new Set([red, green, blue]));
 		expect(gain.get(red)).toBe(800);
 		expect(gain.get(green)).toBe(600);
 		expect(gain.get(blue)).toBe(1000);

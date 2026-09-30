@@ -8,6 +8,8 @@ export type Field = Int8Array[];
 export type Oklch = readonly [l: number, c: number, h: number];
 
 export interface Agent {
+	/** Unique within a run; `Sim.nextId` hands them out. */
+	id: number;
 	genome: Genome;
 	hp: number;
 	x: number;
@@ -19,7 +21,39 @@ export interface Agent {
 	lifetime: number;
 	/** Prey it caught, alone or shared; the best catchers per step lived breed first. */
 	kills: number;
+	/** Sim step it was born on. */
+	bornStep: number;
+	/** Ids of both parents; null for a dot of the first generation or a Randomize. */
+	parents: readonly [number, number] | null;
+	children: number;
+	/** Moves it picked: stand still, one cell, knight jump. */
+	stays: number;
+	steps: number;
+	jumps: number;
+	/** Moves that ran into a wall. */
+	wallBumps: number;
+	/** HP taken from prey, before the `startHp` cap. */
+	hpEaten: number;
+	hpLostCrowding: number;
+	hpLostDisease: number;
+	hpLostWall: number;
 }
+
+/** Why a dot died: caught by hunters (with their ids), or out of HP. */
+export type DeathCause =
+	{ kind: "caught"; by: Species["id"]; killers: readonly number[] } | { kind: "hp" };
+
+/** A dot at the moment it died. */
+export interface DeadAgent extends Agent {
+	diedStep: number;
+	cause: DeathCause;
+}
+
+/** What a hall of fame ranks by. */
+export type Ranking = "kills" | "lifetime";
+
+/** The best dead dots of a species, best first, at most `hallOfFameSize` per ranking. */
+export type HallOfFame = Readonly<Record<Ranking, readonly DeadAgent[]>>;
 
 export interface Species {
 	id: "R" | "G" | "B";
@@ -29,6 +63,9 @@ export interface Species {
 	agents: Agent[];
 	/** Built at the end of the previous step; everyone reads the same snapshot. */
 	field: Field;
+	hallOfFame: HallOfFame;
+	/** Dots that died on the last step; lets a followed dot's death be seen. */
+	lastDeaths: readonly DeadAgent[];
 }
 
 export interface MutationParams {
@@ -65,4 +102,6 @@ export interface Sim {
 	/** HP a move into a wall costs; comes live from the Walls control. */
 	wallPenalty: number;
 	disease: Disease;
+	/** The id the next new agent gets. */
+	nextId: number;
 }

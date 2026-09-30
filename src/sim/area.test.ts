@@ -1,17 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { agentsIn, areaFromCorners } from "./area";
 import { gridHeight, gridWidth } from "./config";
+import { spawn } from "./evolution";
 import type { Agent } from "./types";
 
 const agent = (x: number, y: number): Agent => ({
-	genome: [],
+	...spawn({ id: 0, genome: [] }, { x, y }),
 	hp: 1000,
-	x,
-	y,
-	prevX: x,
-	prevY: y,
-	lifetime: 0,
-	kills: 0,
 });
 
 describe("areaFromCorners", () => {

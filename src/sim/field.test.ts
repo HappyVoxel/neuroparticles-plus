@@ -9,18 +9,10 @@ import {
 } from "./config";
 import { emptyDisease } from "./disease";
 import { buildField, senseAt } from "./field";
+import { spawn } from "./evolution";
 import type { Agent } from "./types";
 
-const at = (x: number, y: number): Agent => ({
-	genome: [],
-	hp: 1,
-	x,
-	y,
-	prevX: x,
-	prevY: y,
-	lifetime: 0,
-	kills: 0,
-});
+const at = (x: number, y: number): Agent => ({ ...spawn({ id: 0, genome: [] }, { x, y }), hp: 1 });
 
 describe("buildField", () => {
 	it("counts agents per cell", () => {

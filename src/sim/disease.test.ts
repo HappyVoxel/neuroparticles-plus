@@ -19,18 +19,10 @@ import {
 	targetRadius,
 } from "./disease";
 import { buildField } from "./field";
+import { spawn } from "./evolution";
 import type { Agent, Disease, Field } from "./types";
 
-const at = (x: number, y: number): Agent => ({
-	genome: [],
-	hp: 1,
-	x,
-	y,
-	prevX: x,
-	prevY: y,
-	lifetime: 0,
-	kills: 0,
-});
+const at = (x: number, y: number): Agent => ({ ...spawn({ id: 0, genome: [] }, { x, y }), hp: 1 });
 
 const crowd = (n: number, x: number, y: number): Field =>
 	buildField(Array.from({ length: n }, () => at(x, y)));

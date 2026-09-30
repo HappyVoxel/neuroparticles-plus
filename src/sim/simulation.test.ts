@@ -12,6 +12,7 @@ import {
 	startHp,
 } from "./config";
 import { diseaseBirthRadius } from "./disease";
+import { spawn } from "./evolution";
 import { buildField } from "./field";
 import { hiddenWeightsFrom } from "./network";
 import { createSim, extinctSpecies, moveAgent, recreate, step } from "./simulation";
@@ -20,16 +21,7 @@ import type { Agent } from "./types";
 const mutation = { percent: 5, genes: 1 };
 
 describe("moveAgent", () => {
-	const at = (x: number, y: number): Agent => ({
-		genome: [],
-		hp: startHp,
-		x,
-		y,
-		prevX: x,
-		prevY: y,
-		lifetime: 0,
-		kills: 0,
-	});
+	const at = (x: number, y: number): Agent => spawn({ id: 0, genome: [] }, { x, y });
 
 	it("moves without HP cost on open ground", () => {
 		expect(moveAgent(at(10, 10), 5, hpPenaltyFromWall)).toMatchObject({
@@ -46,6 +38,15 @@ describe("moveAgent", () => {
 		const moved = moveAgent(agent, 5, 250);
 		expect(moved).toMatchObject({ x: gridWidth - 2, y: 10, hp: startHp - 250 });
 		expect(agent.hp).toBe(startHp);
+	});
+
+	it("counts stays, one-cell steps, jumps and wall bumps", () => {
+		const stay = moveAgent(at(10, 10), 4, 0);
+		const east = moveAgent(stay, 5, 0);
+		const jump = moveAgent(east, 16, 0);
+		const bump = moveAgent(at(0, 10), 3, 250);
+		expect(jump).toMatchObject({ stays: 1, steps: 1, jumps: 1, wallBumps: 0 });
+		expect(bump).toMatchObject({ steps: 1, wallBumps: 1, hpLostWall: 250 });
 	});
 
 	it("costs nothing to stand next to a wall or walk along it", () => {
@@ -184,13 +185,77 @@ describe("simulation", () => {
 		expect(after).toMatchObject({ prevX: before.x, prevY: before.y });
 	});
 
-	it("recreate swaps brains only", () => {
+	it("gives every dot a unique id and hands out the next one", () => {
+		const sim = createSim(mutation);
+		const ids = sim.species.flatMap((s) => s.agents.map((a) => a.id));
+		expect(new Set(ids).size).toBe(ids.length);
+		expect(sim.nextId).toBe(Math.max(...ids) + 1);
+	});
+
+	it("sends the dead to their species' hall of fame and lastDeaths", () => {
+		const sim = createSim(mutation);
+		const hunter = { ...sim.species[0].agents[0], x: 50, y: 50 };
+		const prey = { ...sim.species[1].agents[0], x: 50, y: 50 };
+		const world = {
+			...sim,
+			species: sim.species.map((s, i) => {
+				const agents = i === 0 ? [hunter] : i === 1 ? [prey] : [];
+				return { ...s, agents, field: buildField(agents) };
+			}),
+		};
+		const next = step(world);
+		const cause = { kind: "caught", by: "R", killers: [hunter.id] };
+		expect(next.species[1].lastDeaths).toEqual([{ ...prey, diedStep: 1, cause }]);
+		expect(next.species[1].hallOfFame.kills.map((a) => a.id)).toEqual([prey.id]);
+		expect(step(next).species[1].lastDeaths).toEqual([]);
+	});
+
+	it("gives children ids from nextId on", () => {
+		const sim = createSim(mutation);
+		const [a, b] = sim.species[0].agents;
+		const pair = [
+			{ ...a, x: 10, y: 10, lifetime: matureAge },
+			{ ...b, x: 12, y: 10, lifetime: matureAge },
+		];
+		const world = {
+			...sim,
+			species: sim.species.map((s, i) => {
+				const agents = i === 0 ? pair : [];
+				return { ...s, agents, field: buildField(agents) };
+			}),
+		};
+		const next = step(world);
+		const children = next.species[0].agents.filter((c) => c.parents !== null);
+		expect(children.length).toBeGreaterThan(0);
+		expect(children.map((c) => c.id)).toEqual(children.map((_, k) => sim.nextId + k));
+		expect(next.nextId).toBe(sim.nextId + children.length);
+	});
+
+	it("recreate makes new dots in the old places", () => {
 		const sim = step(createSim(mutation));
 		const fresh = recreate(sim);
-		const a = sim.species[1].agents[3];
-		const b = fresh.species[1].agents[3];
+		const a = { ...sim.species[1].agents[3], kills: 4, stays: 9 };
+		const b = recreate({
+			...sim,
+			species: sim.species.map((s, i) =>
+				i === 1 ? { ...s, agents: s.agents.map((x, k) => (k === 3 ? a : x)) } : s,
+			),
+		}).species[1].agents[3];
 		expect(b.genome).not.toBe(a.genome);
-		expect({ ...b, genome: null }).toEqual({ ...a, genome: null });
+		expect(b.id).toBeGreaterThanOrEqual(sim.nextId);
+		expect(b).toMatchObject({
+			x: a.x,
+			y: a.y,
+			prevX: a.prevX,
+			prevY: a.prevY,
+			hp: a.hp,
+			lifetime: a.lifetime,
+			bornStep: a.bornStep,
+			parents: null,
+			kills: 0,
+			stays: 0,
+		});
+		expect(fresh.nextId).toBe(sim.nextId + fresh.species.reduce((n, s) => n + s.agents.length, 0));
 	});
 
 	it("lists species with no agents left", () => {
