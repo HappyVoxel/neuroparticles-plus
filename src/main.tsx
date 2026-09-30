@@ -2,6 +2,7 @@ import "./style.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "@/App";
+import "@/lib/posthog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const root = document.getElementById("root");

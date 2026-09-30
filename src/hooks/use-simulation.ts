@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Area, agentsIn } from "@/sim/area";
 import { loadSimSettings, saveSimSettings } from "@/hooks/sim-settings";
+import { posthog, isPostHogEnabled } from "@/lib/posthog";
+import { simulationLogger } from "@/lib/simulation-logger";
 import { readSetting, writeSetting } from "@/lib/storage";
 import {
 	cellPixels,
@@ -129,6 +131,10 @@ const noDotsYet: SimView = {
 };
 
 const isOver = (sim: SimView): boolean => extinctSpecies(sim).length > 0;
+
+function captureSimulationEvent(event: string, properties: Record<string, number>) {
+	if (isPostHogEnabled) posthog.capture(event, properties);
+}
 
 /**
  * Runs the simulation in a worker (`sim/worker.ts`) and draws it on one animation-frame loop.
@@ -297,6 +303,8 @@ export function useSimulation() {
 
 	const run = useCallback(() => {
 		if (frameRef.current !== undefined || isOver(viewRef.current)) return;
+		captureSimulationEvent("simulation_started", { step: viewRef.current.step });
+		simulationLogger.info("simulation run started", { step: viewRef.current.step });
 		lastFrameRef.current = performance.now();
 		frameRef.current = window.requestAnimationFrame(frame);
 		setRunning(true);
@@ -304,6 +312,8 @@ export function useSimulation() {
 
 	/** Stops the loop and sends the worker back to the step on the canvas. */
 	const pause = useCallback(() => {
+		captureSimulationEvent("simulation_paused", { step: viewRef.current.step });
+		simulationLogger.info("simulation run paused", { step: viewRef.current.step });
 		cancelFrame();
 		send({ type: "rewind", epoch: discard(), step: viewRef.current.step });
 		setRunning(false);
@@ -312,16 +322,19 @@ export function useSimulation() {
 	/** Asks for one step; it shows when it comes back. Ignored while one is on its way. */
 	const stepOnce = useCallback(() => {
 		if (isOver(viewRef.current) || inFlightRef.current > 0) return;
+		captureSimulationEvent("simulation_step_advanced", { step: viewRef.current.step });
 		askSteps(1);
 	}, [askSteps]);
 
 	const setSpeed = useCallback((next: number) => {
+		captureSimulationEvent("simulation_speed_changed", { steps_per_second: next });
 		speedRef.current = next;
 		setStepsPerSecond(next);
 	}, []);
 
 	/** New brains make new dots with new ids, so the followed dot is let go. */
 	const randomizeBrains = useCallback(() => {
+		captureSimulationEvent("simulation_brains_randomized", { step: viewRef.current.step });
 		followRef.current = null;
 		followedGenomeRef.current = null;
 		send({ type: "recreate", epoch: discard(), step: viewRef.current.step });
@@ -329,6 +342,8 @@ export function useSimulation() {
 
 	/** Starts a new run at step 0 with fresh random dots; keeps the mutation and wall settings. */
 	const reset = useCallback(() => {
+		captureSimulationEvent("simulation_reset", { step: viewRef.current.step });
+		simulationLogger.info("simulation run reset", { step: viewRef.current.step });
 		cancelFrame();
 		send({ type: "reset", epoch: discard(), ...settingsRef.current });
 		dueRef.current = 0;
@@ -341,6 +356,12 @@ export function useSimulation() {
 	/** Sets the area every snapshot carries, with its stats in `areaSpecies`; null clears it. */
 	const inspect = useCallback(
 		(next: Area | null) => {
+			if (next) {
+				captureSimulationEvent("simulation_area_inspected", {
+					area_width: next.x1 - next.x0 + 1,
+					area_height: next.y1 - next.y0 + 1,
+				});
+			}
 			areaRef.current = next;
 			publish();
 		},
@@ -361,6 +382,9 @@ export function useSimulation() {
 	const follow = useCallback(
 		(id: number | null) => {
 			const found = id === null ? null : findDot(viewRef.current, id);
+			if (found) {
+				captureSimulationEvent("simulation_top_dot_followed", { species: found.species });
+			}
 			followRef.current = found;
 			followedGenomeRef.current = null;
 			if (found) send({ type: "follow", id: found.agent.id });
@@ -388,6 +412,10 @@ export function useSimulation() {
 
 	const setMutation = useCallback(
 		(next: MutationParams) => {
+			captureSimulationEvent("simulation_mutation_changed", {
+				mutation_percent: next.percent,
+				mutation_genes: next.genes,
+			});
 			settingsRef.current = { ...settingsRef.current, mutation: next };
 			send({ type: "settings", ...settingsRef.current });
 			setMutationState(next);
@@ -397,6 +425,7 @@ export function useSimulation() {
 
 	const setWallPenalty = useCallback(
 		(next: number) => {
+			captureSimulationEvent("simulation_wall_penalty_changed", { wall_penalty: next });
 			settingsRef.current = { ...settingsRef.current, wallPenalty: next };
 			send({ type: "settings", ...settingsRef.current });
 			setWallPenaltyState(next);
