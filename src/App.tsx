@@ -17,6 +17,7 @@ import { WallControls } from "@/components/wall-controls";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Kbd } from "@/components/ui/kbd";
 import { useLoupe } from "@/hooks/use-loupe";
 import { type RunStatus, useSimulation } from "@/hooks/use-simulation";
 import { useSound } from "@/hooks/use-sound";
@@ -114,11 +115,11 @@ export function App() {
 							</Alert>
 						)}
 					</div>
-					<div className="flex justify-between gap-4 text-sm text-muted-foreground tabular-nums">
-						<span>Step {formatCount(snap.step)}</span>
+					<div className="flex justify-between gap-4 text-xs text-muted-foreground tabular-nums">
+						<span>Step: {formatCount(snap.step)}</span>
 						<span>
-							Space runs · S steps · drag an area · click a dot · Z zooms · {gridWidth} ×{" "}
-							{gridHeight} grid
+							<Kbd>Space</Kbd> runs · <Kbd>S</Kbd> steps · <Kbd>Z</Kbd> zooms · drag an area · click
+							a dot · {gridWidth} × {gridHeight} grid
 						</span>
 					</div>
 				</section>

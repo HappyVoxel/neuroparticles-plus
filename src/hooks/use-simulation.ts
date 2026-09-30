@@ -3,6 +3,8 @@ import { type Area, agentsIn } from "@/sim/area";
 import { loadSimSettings, saveSimSettings } from "@/hooks/sim-settings";
 import { readSetting, writeSetting } from "@/lib/storage";
 import {
+	cellPixels,
+	gridWidth,
 	loupePickCells,
 	maxSlidingStepsPerSecond,
 	pickCells,
@@ -134,6 +136,8 @@ export function useSimulation() {
 	/** The followed dot as last seen: alive, or at its death once it is gone. */
 	const followRef = useRef<DotRef | null>(null);
 	const topFilterRef = useRef(saved.topDots);
+	/** How far through the last move the canvas was last painted, to repaint it the same. */
+	const paintedTRef = useRef(1);
 
 	const [snap, setSnap] = useState(() => snapshot(initialSim, null, null, saved.topDots));
 	const [running, setRunning] = useState(false);
@@ -149,9 +153,14 @@ export function useSimulation() {
 	const status: RunStatus = snap.extinct.length > 0 ? "stopped" : running ? "running" : "paused";
 
 	const paint = useCallback((t: number) => {
-		const ctx = canvasRef.current?.getContext("2d");
+		const canvas = canvasRef.current;
+		const ctx = canvas?.getContext("2d");
 		const sim = simRef.current;
-		if (!ctx) return;
+		if (!canvas || !ctx) return;
+		paintedTRef.current = t;
+		// `draw` works in `cellPixels` per cell; this maps that onto the canvas' real pixels.
+		const scale = canvas.width / (gridWidth * cellPixels);
+		ctx.setTransform(scale, 0, 0, scale, 0, 0);
 		const followId = followRef.current?.agent.id ?? null;
 		const glowIds = leaderIds(sim, "lifetime");
 		const swordsIds = leaderIds(sim, "kills");
@@ -318,6 +327,22 @@ export function useSimulation() {
 		paint(1);
 		return cancelFrame;
 	}, [paint, cancelFrame]);
+
+	// Keeps the canvas at one pixel per screen pixel, so it stays sharp at any size. Resizing
+	// clears it, so it repaints at once, paused or not.
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		const observer = new ResizeObserver(([entry]) => {
+			const size = Math.round(entry.contentBoxSize[0].inlineSize * window.devicePixelRatio);
+			if (size === 0 || size === canvas.width) return;
+			canvas.width = size;
+			canvas.height = size;
+			paint(paintedTRef.current);
+		});
+		observer.observe(canvas);
+		return () => observer.disconnect();
+	}, [paint]);
 
 	return {
 		canvasRef,

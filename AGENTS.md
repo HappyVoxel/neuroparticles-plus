@@ -35,15 +35,13 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `movement.ts` — `Move` (0–16), `stepMoves`, `bounce`, `hitsWall`, `moveBy`, `moveCount`, `slide`.
   - `color.ts` — `shadeAt` (age → shade), `hpOpacity`, `oklchCss`.
   - `field.ts` — `buildField`, `senseAt` (the network input).
-  - `area.ts` — `Area` (a box of cells), `areaFromCorners`, `agentsIn`.
-  - `math.ts` — `clamp`.
+  - `area.ts` — `Area` (a box of cells), `areaFromCorners`, `agentsIn`. `math.ts` — `clamp`.
   - `capture.ts` — `preyOf` (who eats whom), `capture` (who gets caught this step and how much HP each
     hunter takes).
   - `disease.ts` — `emptyDisease`, `spreadDisease` (one step of disease), `diseaseCostAt`, `circleCounts`.
   - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
-  - `records.ts` — `addToHallOfFame`, `findDot`, `topDots`, `nearestDot`, `isDead`.
-  - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
-    new values.
+  - `records.ts` — `addToHallOfFame`, `findDot`, `topDots`, `leaderIds`, `nearestDot`, `isDead`.
+  - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies` (all pure).
   - `render.ts` — canvas drawing.
   - `*.test.ts` — Vitest unit tests next to each module.
 - `src/hooks/use-simulation.ts` — owns the sim in a ref and runs one `requestAnimationFrame` loop:
@@ -139,8 +137,10 @@ positions, fields and disease from the previous step, so moves within a step don
 - Up to `maxSlidingStepsPerSecond`, `draw` slides each dot from its previous cell to its current one
   (`slide` in `movement.ts`); above it, dots are drawn at their cell.
 - `draw` paints each dot in its species' Tailwind shades 300 → 700 by age (lightest at birth,
-  darkest for the species' oldest living dot) and at HP ÷ `startHp` opacity (capped at 100%). It
-  blends additively, so overlapping dots show as brighter, whiter spots. The sidebar uses shade 500.
+  darkest for the species' oldest living dot) and at HP ÷ `startHp` opacity (capped at 100%),
+  blending additively: overlapping dots show brighter and whiter. The sidebar uses shade 500.
+- The canvas has one pixel per screen pixel (CSS size × `devicePixelRatio`, kept by a
+  `ResizeObserver` in the hook); `draw` works in `cellPixels` per cell and `paint` scales it.
 
 ## Canvas and sidebar tools
 
