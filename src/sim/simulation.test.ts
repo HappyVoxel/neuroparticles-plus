@@ -110,7 +110,16 @@ describe("simulation", () => {
 	it("charges last step's disease and rebuilds it after the moves", () => {
 		const sim = createSim(mutation);
 		const loner = { ...sim.species[0].agents[0], x: 50, y: 50, hp: startHp };
-		const area = { x: 50, y: 50, radius: diseaseBirthRadius, species: 0, emptySteps: 0 };
+		const area = {
+			id: 0,
+			x: 50,
+			y: 50,
+			radius: diseaseBirthRadius,
+			species: 0,
+			emptySteps: 0,
+			bornStep: 0,
+			pandemicStep: null,
+		};
 		const disease = { ...sim.disease, areas: [area] };
 		disease.cost = disease.cost.map((column) => column.slice());
 		disease.cost[50][50] = diseaseHpAtCenter;

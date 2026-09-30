@@ -21,6 +21,18 @@ How the canvas and sidebar tools behave. `AGENTS.md` links here.
   No glow while a species has no kills. `paint` passes `performance.now()`, so the pulse runs with
   the frame loop and holds still while paused.
 
+## Disease labels (`disease-labels.tsx`)
+
+- A "Disease!" label shows above an area from its `bornStep`, a "Pandemic!" one from its
+  `pandemicStep`, in the species' 500 shade with a white outline, in Offside. HTML over the canvas,
+  not canvas text, so it stays sharp; the loupe doesn't magnify it.
+- A label lives `diseaseLabelMs` at the current speed, counted in steps, so it holds still while
+  paused and moves on one step per S. It fades over its last `diseaseLabelFade`.
+- Its font is `diseaseLabelSizeRatio` cells per cell of radius (at least `diseaseLabelMinCells`), in
+  `cqw`, so it scales with the area and the canvas. It stays inside the grid near walls.
+- A crowd often starts several areas at once, so `diseaseLabels` places pandemics first, then older
+  labels, and leaves out any label within `diseaseLabelGap` of one already placed, of any species.
+
 ## Area inspector (`area-inspector.tsx`)
 
 - A layer over the canvas turns a drag into an `Area` and passes it to `inspect` in the hook. Every

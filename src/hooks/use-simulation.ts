@@ -16,6 +16,7 @@ import { createSim, extinctSpecies, recreate, step } from "@/sim/simulation";
 import type {
 	Agent,
 	DeadAgent,
+	DiseaseArea,
 	Genome,
 	MutationParams,
 	Ranking,
@@ -62,6 +63,8 @@ export interface SimSnapshot {
 	followed: DotView | null;
 	/** The best `topDotsShown` dots the top-dots filter lets through, per ranking. */
 	top: Record<Ranking, DotView[]>;
+	/** The disease areas on the field, for their labels. */
+	diseaseAreas: readonly DiseaseArea[];
 }
 
 function speciesStats({ id, name, shades }: Species, agents: readonly Agent[]): SpeciesStats {
@@ -109,6 +112,7 @@ function snapshot(
 			kills: topDots(sim, "kills", topDotsShown, filter).map(dotView),
 			lifetime: topDots(sim, "lifetime", topDotsShown, filter).map(dotView),
 		},
+		diseaseAreas: sim.disease.areas,
 	};
 }
 

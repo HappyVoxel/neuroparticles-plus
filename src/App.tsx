@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { AreaInspector } from "@/components/area-inspector";
+import { DiseaseLabels } from "@/components/disease-labels";
 import { CanvasLoupe } from "@/components/canvas-loupe";
 import { DotRecord } from "@/components/dot-record";
 import { FoodCycle } from "@/components/food-cycle";
@@ -51,7 +52,7 @@ export function App() {
 		<div className="mx-auto flex min-h-svh w-full flex-col gap-2 p-4 lg:w-fit lg:justify-center">
 			<header className="flex items-start justify-between gap-6">
 				<div className="flex max-w-prose flex-col gap-2">
-					<h1 className="text-2xl font-semibold tracking-tight">Neuroparticles+</h1>
+					<h1 className="font-display text-2xl">Neuroparticles+</h1>
 				</div>
 				<div className="flex shrink-0 items-center gap-4">
 					<Badge variant={status === "running" ? "default" : "secondary"} aria-live="polite">
@@ -82,6 +83,12 @@ export function App() {
 				>
 					<div className="relative">
 						<SimCanvas canvasRef={sim.canvasRef} />
+						<DiseaseLabels
+							areas={snap.diseaseAreas}
+							species={snap.species}
+							step={snap.step}
+							stepsPerSecond={sim.stepsPerSecond}
+						/>
 						<AreaInspector
 							area={snap.area}
 							species={snap.areaSpecies}

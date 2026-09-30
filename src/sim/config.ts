@@ -138,6 +138,19 @@ export const diseaseHpAtEdge = 50;
 export const diseaseHpAtCenter = 100;
 export const diseaseMinRadius = 1;
 export const diseaseMaxRadius = 12;
+// An area that reaches this radius becomes a pandemic and stays one.
+export const pandemicRadius = 10;
+// An area's label over the canvas, "Disease!" at birth or "Pandemic!", shows for `diseaseLabelMs`
+// at the current speed and fades out over its last `diseaseLabelFade` of that. Its font is
+// `diseaseLabelSizeRatio` cells per cell of radius, at least `diseaseLabelMinCells`, and a letter
+// takes about `diseaseLabelEmPerChar` of that; a label that would come within `diseaseLabelGap`
+// of its size of one already showing is left out.
+export const diseaseLabelMs = 2500;
+export const diseaseLabelFade = 0.4;
+export const diseaseLabelSizeRatio = 0.8;
+export const diseaseLabelMinCells = 4;
+export const diseaseLabelEmPerChar = 0.62;
+export const diseaseLabelGap = 0.5;
 // An area is painted in the 300 shade (lightest) of the species that crowded it, at this opacity, no border.
 export const diseaseOpacity = 0.2;
 

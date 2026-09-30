@@ -83,6 +83,8 @@ export interface MutationParams {
 
 /** A circle centered on a cell that costs HP to stand in. */
 export interface DiseaseArea {
+	/** Unique in a run, from `Disease.nextId`. */
+	id: number;
 	x: number;
 	y: number;
 	/** In cells; grows and shrinks with its own species' dots inside. */
@@ -91,10 +93,16 @@ export interface DiseaseArea {
 	species: number;
 	/** Steps in a row with no dot inside; the area clears after `diseaseAfterSteps`. */
 	emptySteps: number;
+	/** The step it was born. */
+	bornStep: number;
+	/** The step it first reached `pandemicRadius`, kept as it shrinks; null while it never has. */
+	pandemicStep: number | null;
 }
 
 export interface Disease {
 	areas: DiseaseArea[];
+	/** The id the next new area gets. */
+	nextId: number;
 	/** Steps in a row the circle around each cell held a crowd of one species, `x * gridHeight + y`. */
 	crowdedSteps: Uint16Array;
 	/** HP a dot on each cell loses per step, `[x][y]`; 0 outside every area. */

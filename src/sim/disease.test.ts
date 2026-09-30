@@ -7,6 +7,7 @@ import {
 	diseaseMaxRadius,
 	diseaseMinRadius,
 	gridHeight,
+	pandemicRadius,
 	visionRadiusSquared,
 } from "./config";
 import {
@@ -32,7 +33,7 @@ const cell = (x: number, y: number): number => x * gridHeight + y;
 
 function run(disease: Disease, fields: readonly Field[], steps: number): Disease {
 	let next = disease;
-	for (let s = 0; s < steps; s++) next = spreadDisease(next, fields);
+	for (let s = 0; s < steps; s++) next = spreadDisease(next, fields, s + 1);
 	return next;
 }
 
@@ -89,13 +90,16 @@ describe("spreadDisease", () => {
 		expect(before.areas).toEqual([]);
 		expect(before.crowdedSteps[cell(50, 50)]).toBe(diseaseAfterSteps);
 
-		const after = spreadDisease(before, crowded);
+		const after = spreadDisease(before, crowded, diseaseAfterSteps + 1);
 		expect(after.areas).toContainEqual({
+			id: expect.any(Number),
 			x: 50,
 			y: 50,
 			radius: diseaseBirthRadius,
 			species: 0,
 			emptySteps: 0,
+			bornStep: diseaseAfterSteps + 1,
+			pandemicStep: null,
 		});
 		expect(after.cost[50][50]).toBe(diseaseHpAtCenter);
 		expect(after.crowdedSteps[cell(50, 50)]).toBe(0);
@@ -115,17 +119,20 @@ describe("spreadDisease", () => {
 		const both = [crowd(diseaseCrowd + 1, 50, 50), crowd(diseaseCrowd + 2, 50, 50), empty];
 		const disease = run(emptyDisease(), both, diseaseAfterSteps + 1);
 		expect(disease.areas).toContainEqual({
+			id: expect.any(Number),
 			x: 50,
 			y: 50,
 			radius: diseaseBirthRadius,
 			species: 1,
 			emptySteps: 0,
+			bornStep: diseaseAfterSteps + 1,
+			pandemicStep: null,
 		});
 	});
 
 	it("starts counting over once the crowd leaves", () => {
 		const half = run(emptyDisease(), crowded, 50);
-		expect(spreadDisease(half, [empty, empty, empty]).crowdedSteps[cell(50, 50)]).toBe(0);
+		expect(spreadDisease(half, [empty, empty, empty], 1).crowdedSteps[cell(50, 50)]).toBe(0);
 	});
 
 	it("uses the worst cost where areas overlap, never the sum", () => {
@@ -137,30 +144,41 @@ describe("spreadDisease", () => {
 	});
 
 	const oneArea = (radius: number, emptySteps = 0): Disease => {
-		const areas = [{ x: 50, y: 50, radius, species: 0, emptySteps }];
-		return { ...emptyDisease(), areas, cost: costGrid(areas) };
+		const areas = [
+			{ id: 0, x: 50, y: 50, radius, species: 0, emptySteps, bornStep: 0, pandemicStep: null },
+		];
+		return { ...emptyDisease(), areas, nextId: 1, cost: costGrid(areas) };
 	};
 	const nobody = [empty, empty, empty];
 
 	it("clears an area once it has stayed empty long enough", () => {
 		const lingering = run(oneArea(diseaseBirthRadius), nobody, diseaseAfterSteps);
 		expect(lingering.areas).toEqual([
-			{ x: 50, y: 50, radius: diseaseMinRadius, species: 0, emptySteps: diseaseAfterSteps },
+			{
+				id: 0,
+				x: 50,
+				y: 50,
+				radius: diseaseMinRadius,
+				species: 0,
+				emptySteps: diseaseAfterSteps,
+				bornStep: 0,
+				pandemicStep: null,
+			},
 		]);
 
-		const cleared = spreadDisease(lingering, nobody);
+		const cleared = spreadDisease(lingering, nobody, 1);
 		expect(cleared.areas).toEqual([]);
 		expect(cleared.cost[50][50]).toBe(0);
 	});
 
 	it("keeps an area while any dot is inside it", () => {
-		const next = spreadDisease(oneArea(diseaseBirthRadius, 7), [empty, crowd(1, 54, 54), empty]);
+		const next = spreadDisease(oneArea(diseaseBirthRadius, 7), [empty, crowd(1, 54, 54), empty], 1);
 		expect(next.areas[0].emptySteps).toBe(0);
 	});
 
 	it("grows by at most one cell per step while more of its own dots are inside", () => {
 		const packed = [crowd(4 * (diseaseCrowd + 1), 50, 50), empty, empty];
-		const once = spreadDisease(oneArea(diseaseBirthRadius), packed);
+		const once = spreadDisease(oneArea(diseaseBirthRadius), packed, 1);
 		expect(once.areas[0].radius).toBeCloseTo(diseaseBirthRadius + 1);
 		expect(once.cost[57][50]).toBeGreaterThan(0);
 
@@ -171,14 +189,28 @@ describe("spreadDisease", () => {
 	});
 
 	it("shrinks by at most one cell per step once its own dots leave or die", () => {
-		const once = spreadDisease(oneArea(diseaseMaxRadius), nobody);
+		const once = spreadDisease(oneArea(diseaseMaxRadius), nobody, 1);
 		expect(once.areas[0].radius).toBe(diseaseMaxRadius - 1);
 		expect(once.cost[50 + diseaseMaxRadius][50]).toBe(0);
 	});
 
+	it("turns into a pandemic at pandemicRadius and keeps that step as it shrinks", () => {
+		const packed = [crowd(4 * (diseaseCrowd + 1), 50, 50), empty, empty];
+		const small = spreadDisease(oneArea(pandemicRadius - 2), packed, 1);
+		expect(small.areas[0].pandemicStep).toBeNull();
+
+		const big = spreadDisease(small, packed, 2);
+		expect(big.areas[0].radius).toBe(pandemicRadius);
+		expect(big.areas[0].pandemicStep).toBe(2);
+
+		const shrunk = spreadDisease(big, [empty, crowd(1, 50, 50), empty], 3);
+		expect(shrunk.areas[0].radius).toBeLessThan(pandemicRadius);
+		expect(shrunk.areas[0].pandemicStep).toBe(2);
+	});
+
 	it("doesn't grow for another species' dots", () => {
 		const others = [empty, crowd(4 * (diseaseCrowd + 1), 50, 50), empty];
-		const next = spreadDisease(oneArea(diseaseBirthRadius), others);
+		const next = spreadDisease(oneArea(diseaseBirthRadius), others, 1);
 		expect(next.areas[0].radius).toBeCloseTo(diseaseBirthRadius - 1);
 	});
 
@@ -190,10 +222,20 @@ describe("spreadDisease", () => {
 		expect(disease.crowdedSteps[cell(58, 50)]).toBe(0);
 	});
 
+	it("gives each new area its own id and keeps it from step to step", () => {
+		const born = run(emptyDisease(), crowded, diseaseAfterSteps + 1);
+		const ids = born.areas.map((a) => a.id);
+		expect(new Set(ids).size).toBe(ids.length);
+		expect(born.nextId).toBe(Math.max(...ids) + 1);
+
+		const later = spreadDisease(born, crowded, 1);
+		expect(later.areas.slice(0, ids.length).map((a) => a.id)).toEqual(ids);
+	});
+
 	it("leaves the previous disease alone", () => {
 		const before = run(emptyDisease(), crowded, 3);
 		const counter = before.crowdedSteps[cell(50, 50)];
-		spreadDisease(before, crowded);
+		spreadDisease(before, crowded, 1);
 		expect(before.crowdedSteps[cell(50, 50)]).toBe(counter);
 	});
 });

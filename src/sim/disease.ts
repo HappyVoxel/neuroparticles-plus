@@ -7,6 +7,7 @@ import {
 	diseaseMinRadius,
 	gridHeight,
 	gridWidth,
+	pandemicRadius,
 	visionCells,
 	visionRadius,
 	visionRadiusSquared,
@@ -19,6 +20,7 @@ const cellCount = gridWidth * gridHeight;
 export function emptyDisease(): Disease {
 	return {
 		areas: [],
+		nextId: 0,
 		crowdedSteps: new Uint16Array(cellCount),
 		cost: costGrid([]),
 	};
@@ -111,14 +113,15 @@ export function costGrid(areas: readonly DiseaseArea[]): Float32Array[] {
 }
 
 /**
- * One step of disease, read from this step's fields (one per species). An area with no dot inside
+ * Step `now` of disease, read from this step's fields (one per species). An area with no dot inside
  * for more than `diseaseAfterSteps` steps clears; otherwise its radius moves by at most one cell
  * toward `targetRadius` of its own species' dots inside. A circle holding more than `diseaseCrowd`
  * dots of one species counts a crowded step; past `diseaseAfterSteps` in a row it becomes an area
- * of the species with the most dots in it. Dots inside an area don't count toward a crowd, and a
+ * of the species with the most dots in it. An area that reaches `pandemicRadius` is a pandemic from
+ * then on and keeps that step in `pandemicStep`. Dots inside an area don't count toward a crowd, and a
  * cell inside an area doesn't count a crowded step, so areas don't pile up on one crowd.
  */
-export function spreadDisease(disease: Disease, fields: readonly Field[]): Disease {
+export function spreadDisease(disease: Disease, fields: readonly Field[], now: number): Disease {
 	const areas: DiseaseArea[] = [];
 	let changed = false;
 	for (const area of disease.areas) {
@@ -136,7 +139,8 @@ export function spreadDisease(disease: Disease, fields: readonly Field[]): Disea
 		}
 		const radius = area.radius + Math.max(-1, Math.min(1, targetRadius(own) - area.radius));
 		if (radius !== area.radius) changed = true;
-		areas.push({ ...area, radius, emptySteps });
+		const pandemicStep = area.pandemicStep ?? (radius >= pandemicRadius ? now : null);
+		areas.push({ ...area, radius, emptySteps, pandemicStep });
 	}
 	const cost = changed ? costGrid(areas) : disease.cost;
 
@@ -154,6 +158,7 @@ export function spreadDisease(disease: Disease, fields: readonly Field[]): Disea
 	}
 
 	const kept = areas.length;
+	let nextId = disease.nextId;
 	const crowdedSteps = new Uint16Array(cellCount);
 	for (let x = 0; x < gridWidth; x++) {
 		for (let y = 0; y < gridHeight; y++) {
@@ -161,12 +166,22 @@ export function spreadDisease(disease: Disease, fields: readonly Field[]): Disea
 			if (most[i] <= diseaseCrowd || cost[x][y] > 0) continue;
 			const steps = disease.crowdedSteps[i] + 1;
 			if (steps > diseaseAfterSteps) {
-				areas.push({ x, y, radius: diseaseBirthRadius, species: mostSpecies[i], emptySteps: 0 });
+				const species = mostSpecies[i];
+				areas.push({
+					id: nextId++,
+					x,
+					y,
+					radius: diseaseBirthRadius,
+					species,
+					emptySteps: 0,
+					bornStep: now,
+					pandemicStep: null,
+				});
 			} else {
 				crowdedSteps[i] = steps;
 			}
 		}
 	}
 
-	return { areas, crowdedSteps, cost: areas.length > kept ? costGrid(areas) : cost };
+	return { areas, nextId, crowdedSteps, cost: areas.length > kept ? costGrid(areas) : cost };
 }

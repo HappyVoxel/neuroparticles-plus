@@ -57,12 +57,12 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   squared into gain). `src/assets/` holds Opus/WebM files made by `scripts/encode-audio.sh`; re-run
   it to change a sound, never hand-convert.
 - `src/components/` — app components: `sim-canvas`, `area-inspector`, `run-controls`, `food-cycle`, `species-stats`,
-  `wall-controls`, `mutation-controls`, `dot-record`, `top-dots`, `top-dots-filter`, `canvas-loupe`, `info-popover`, `theme-toggle`, `sound-menu`, `sidebar-section` (title + `InfoPopover`),
+  `wall-controls`, `mutation-controls`, `dot-record`, `top-dots`, `top-dots-filter`, `canvas-loupe`, `disease-labels`, `info-popover`, `theme-toggle`, `sound-menu`, `sidebar-section` (title + `InfoPopover`),
   `labeled-slider` (label, value and Slider; every sidebar slider uses it). `src/App.tsx` lays them out; `src/main.tsx` mounts it.
 - `src/components/ui/` — vendored shadcn/ui components. Add with `npx shadcn@latest add <name>`;
   don't hand-edit them. Biome and Prettier skip this folder.
 - `src/style.css` — Tailwind + shadcn theme tokens (preset `b1oVxsfY`: radix-sera, neutral, Inter,
-  lucide).
+  lucide). Offside (`font-display`) sets the app title and the disease labels on the canvas.
 
 ## Conventions
 
@@ -74,8 +74,9 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   sidebar width; change them together with those classes and re-measure the gaps in the browser.
 - Explanations of a sidebar section sit behind `InfoPopover` at the end of its title, not as text
   under the controls, so the sidebar stays short.
-- The only colors beyond the neutral theme are the species colors, used for data, disease areas
-  and the top-hunter glow, never for text, and `yellow-400` for the inspected area's frame and the followed dot's ring.
+- The only colors beyond the neutral theme are the species colors, used for data, disease areas,
+  the top-hunter glow and the disease labels (white-outlined), never for other text, and
+  `yellow-400` for the inspected area's frame and the followed dot's ring.
 - Global shortcuts: Space runs/pauses (`use-run-shortcut`), S steps, Z toggles the loupe and Esc
   turns it off (`use-loupe`). Every shortcut goes through `useShortcut`: it skips modifiers, held
   keys, fields and confirm dialogs (`isShortcut`), is off when its button would be disabled, and
@@ -138,8 +139,8 @@ positions, fields and disease from the previous step, so moves within a step don
 
 ## Canvas and sidebar tools
 
-Following a dot, the loupe, the top-dots board and its filter, and the area inspector:
-see `docs/ui.md`.
+Following a dot, the loupe, the top-dots board and its filter, the area inspector, the top-hunter
+glow and the disease labels: see `docs/ui.md`.
 
 ## Rules that are easy to miss
 
@@ -150,17 +151,18 @@ see `docs/ui.md`.
   the same positions, so a dot caught this step still catches.
 - HP per step: −`hpPenaltyFromCrowding` if the cell has another of your kind, −`baseDecayPerStep`
   always. Dead at `hp <= 0`.
-- Disease (`disease.ts`): the circle of view size around a cell counts a crowded step while it holds
-  more than `diseaseCrowd` dots of one species outside disease, and resets otherwise. Past
-  `diseaseAfterSteps` in a row it becomes a `DiseaseArea` of that species, born at view size. Dots
-  inside an area and cells inside one never count a crowd, so areas don't pile up. Each step an
-  area's `radius` moves at most one cell toward `targetRadius` of its own species' dots inside (the
-  size that keeps its birth density), between `diseaseMinRadius` and `diseaseMaxRadius`: it grows as
-  its dots walk in and shrinks as they leave or die. Every dot inside, of any species, loses
-  `diseaseHpAtCenter` HP per step on the center, falling linearly to `diseaseHpAtEdge` at the
-  area's own edge. Overlaps never stack: a cell costs its worst area. An area clears after more than
-  `diseaseAfterSteps` steps with no dot inside. `draw` fills each area in its species' 300 shade at
-  `diseaseOpacity`, one shape per species, under the dots.
+- Disease (`disease.ts`): the circle of view size around a cell counts a crowded step while it
+  holds more than `diseaseCrowd` dots of one species outside disease, and resets otherwise. Past
+  `diseaseAfterSteps` in a row it becomes a `DiseaseArea` of that species, born at view size. At
+  `pandemicRadius` it becomes a pandemic for good (`pandemicStep`). Dots inside an area and cells
+  inside one never count a crowd, so areas don't pile up. Each step an area's `radius` moves at
+  most one cell toward `targetRadius` of its own species' dots inside (the size that keeps its
+  birth density), between `diseaseMinRadius` and `diseaseMaxRadius`: it grows as its dots walk in
+  and shrinks as they leave or die. Every dot inside, of any species, loses `diseaseHpAtCenter` HP
+  per step on the center, falling linearly to `diseaseHpAtEdge` at the area's own edge. Overlaps
+  never stack: a cell costs its worst area. An area clears after more than `diseaseAfterSteps`
+  steps with no dot inside. `draw` fills each area in its species' 300 shade at `diseaseOpacity`,
+  one shape per species, under the dots.
 - A move into a wall costs `sim.wallPenalty` HP (`moveAgent` in `simulation.ts`); standing next to a
   wall or walking along it is free. The value starts at `hpPenaltyFromWall` and comes live from the
   Walls control (0 to `maxWallPenalty`). This is what makes evolution select against wall bumps.

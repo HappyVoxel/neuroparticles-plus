@@ -85,6 +85,7 @@ export function step(sim: Sim): Sim {
 		disease: spreadDisease(
 			disease,
 			next.map((s) => s.field),
+			now,
 		),
 	};
 }
