@@ -40,8 +40,11 @@ function effectFor(target: EventTarget | null): Effect | null {
 
 const enabledSlider = '[data-slot="slider"]:not([data-disabled])';
 
-function isSlider(target: EventTarget | null, selector: string): boolean {
-	return target instanceof Element && target.closest(selector) !== null;
+/** Gap between drag ticks, so a fast drag across many steps doesn't pile up into a buzz. */
+const dragTickMs = 50;
+
+function closestTo(target: EventTarget | null, selector: string): Element | null {
+	return target instanceof Element ? target.closest(selector) : null;
 }
 
 export interface Sound {
@@ -96,24 +99,47 @@ export function useSound(): Sound {
 			const effect = effectFor(e.target);
 			if (effect && effectsRef.current) playEffect(effect);
 		};
-		// A slider clicks once as it is pressed, not again while dragged.
+		// A dragged slider ticks each time its value moves a step. The press (even when it jumps the
+		// value to the pointer) and the release stay silent: ticks count only after the pointer moves.
+		let moved = false;
+		let lastTick = 0;
+		const drag = new MutationObserver(() => {
+			const now = performance.now();
+			if (!moved || !effectsRef.current || now - lastTick < dragTickMs) return;
+			lastTick = now;
+			playEffect("click");
+		});
 		const onPointerDown = (e: PointerEvent) => {
-			if (e.button === 0 && effectsRef.current && isSlider(e.target, enabledSlider)) {
-				playEffect("click");
-			}
+			const slider = e.button === 0 ? closestTo(e.target, enabledSlider) : null;
+			if (!slider) return;
+			moved = false;
+			drag.observe(slider, { subtree: true, attributeFilter: ["aria-valuenow"] });
 		};
-		// And once per key step; a held key's repeats stay silent.
+		const onPointerMove = () => {
+			moved = true;
+		};
+		const onPointerUp = () => drag.disconnect();
+		// A key step clicks once; a held key's repeats stay silent.
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.repeat || !sliderKeys.has(e.key) || !effectsRef.current) return;
-			if (isSlider(e.target, '[role="slider"]')) playEffect("click");
+			if (closestTo(e.target, '[role="slider"]')) playEffect("click");
 		};
-		document.addEventListener("click", onClick, true);
-		document.addEventListener("pointerdown", onPointerDown, true);
-		document.addEventListener("keydown", onKeyDown, true);
+		const listeners = [
+			["click", onClick],
+			["pointerdown", onPointerDown],
+			["pointermove", onPointerMove],
+			["pointerup", onPointerUp],
+			["pointercancel", onPointerUp],
+			["keydown", onKeyDown],
+		] as const;
+		for (const [type, listener] of listeners) {
+			document.addEventListener(type, listener as EventListener, true);
+		}
 		return () => {
-			document.removeEventListener("click", onClick, true);
-			document.removeEventListener("pointerdown", onPointerDown, true);
-			document.removeEventListener("keydown", onKeyDown, true);
+			drag.disconnect();
+			for (const [type, listener] of listeners) {
+				document.removeEventListener(type, listener as EventListener, true);
+			}
 		};
 	}, []);
 
