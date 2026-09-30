@@ -10,7 +10,7 @@ import {
 	PopoverTitle,
 } from "@/components/ui/popover";
 import type { DotView, SpeciesStats } from "@/hooks/use-simulation";
-import { formatCount } from "@/lib/format";
+import { formatCount, percent } from "@/lib/format";
 import { gridHeight, gridWidth } from "@/sim/config";
 
 interface DotRecordProps {
@@ -25,8 +25,6 @@ interface DotRecordProps {
 
 /** How long the Copy button says "Copied". */
 const copiedMs = 1500;
-
-const percent = (cells: number, total: number): string => `${(cells / total) * 100}%`;
 
 const share = (part: number, total: number): string =>
 	total > 0 ? `${Math.round((part / total) * 100)}%` : "–";

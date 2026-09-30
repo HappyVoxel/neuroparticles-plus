@@ -10,7 +10,7 @@ import {
 	PopoverTitle,
 } from "@/components/ui/popover";
 import type { SpeciesStats } from "@/hooks/use-simulation";
-import { formatCount } from "@/lib/format";
+import { formatCount, percent } from "@/lib/format";
 import { type Area, type Cell, areaFromCorners } from "@/sim/area";
 import { gridHeight, gridWidth } from "@/sim/config";
 
@@ -33,8 +33,6 @@ function cellAt(e: PointerEvent<HTMLElement>): Cell {
 		Math.floor(((e.clientY - box.top) / box.height) * gridHeight),
 	];
 }
-
-const percent = (cells: number, total: number): string => `${(cells / total) * 100}%`;
 
 /**
  * Sits on top of the canvas. Dragging frames an area in yellow and opens its live stats beside it.
