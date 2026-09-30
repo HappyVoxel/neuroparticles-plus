@@ -10,6 +10,7 @@ import {
 	gridHeight,
 	gridWidth,
 } from "@/sim/config";
+import { clamp } from "@/sim/math";
 import type { DiseaseArea } from "@/sim/types";
 
 /** A label to show, in cells: centered on `x`, its bottom edge on `bottom`, `size` cells tall. */
@@ -62,8 +63,8 @@ export function diseaseLabels(
 		const text = area.pandemicStep === null ? "Disease!" : "Pandemic!";
 		const size = Math.max(diseaseLabelMinCells, area.radius * diseaseLabelSizeRatio);
 		const half = (text.length * diseaseLabelEmPerChar * size) / 2;
-		const x = Math.min(Math.max(area.x + 0.5, half), gridWidth - half);
-		const bottom = Math.min(Math.max(area.y - area.radius, size), gridHeight);
+		const x = clamp(area.x + 0.5, half, gridWidth - half);
+		const bottom = clamp(area.y - area.radius, size, gridHeight);
 		const gap = diseaseLabelGap * size;
 		const box = {
 			left: x - half - gap,

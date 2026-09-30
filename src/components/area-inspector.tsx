@@ -5,8 +5,9 @@ import { Popover, PopoverAnchor } from "@/components/ui/popover";
 import type { SpeciesStats } from "@/hooks/use-simulation";
 import { formatCount } from "@/lib/format";
 import { speciesDisplay } from "@/lib/species";
-import { type Area, type Cell, areaFromCorners } from "@/sim/area";
+import { type Area, areaFromCorners } from "@/sim/area";
 import { gridHeight, gridWidth } from "@/sim/config";
+import type { Cell } from "@/sim/types";
 
 interface AreaInspectorProps {
 	area: Area | null;
@@ -22,10 +23,10 @@ interface AreaInspectorProps {
 /** The grid cell under the pointer; may fall outside the grid while a drag leaves the canvas. */
 function cellAt(e: PointerEvent<HTMLElement>): Cell {
 	const box = e.currentTarget.getBoundingClientRect();
-	return [
-		Math.floor(((e.clientX - box.left) / box.width) * gridWidth),
-		Math.floor(((e.clientY - box.top) / box.height) * gridHeight),
-	];
+	return {
+		x: Math.floor(((e.clientX - box.left) / box.width) * gridWidth),
+		y: Math.floor(((e.clientY - box.top) / box.height) * gridHeight),
+	};
 }
 
 /**

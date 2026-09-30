@@ -29,13 +29,14 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 - `src/sim/` — the simulation, framework-free plain TypeScript (no React imports):
   - `config.ts` — every tunable constant and the species list (`speciesDefs`: id, name, shades).
-  - `types.ts` — `Agent`, `DeadAgent`, `HallOfFame`, `Species`, `Genome`, `Field`, `MutationParams`,
+  - `types.ts` — `Agent`, `DeadAgent`, `HallOfFame`, `Species`, `Genome`, `Cell`, `Field`, `MutationParams`,
     `Disease`, `Sim`.
   - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
   - `movement.ts` — `Move` (0–16), `stepMoves`, `bounce`, `hitsWall`, `moveBy`, `moveCount`, `slide`.
   - `color.ts` — `shadeAt` (age → shade), `hpOpacity`, `oklchCss`.
   - `field.ts` — `buildField`, `senseAt` (the network input).
   - `area.ts` — `Area` (a box of cells), `areaFromCorners`, `agentsIn`.
+  - `math.ts` — `clamp`.
   - `capture.ts` — `preyOf` (who eats whom), `capture` (who gets caught this step and how much HP each
     hunter takes).
   - `disease.ts` — `emptyDisease`, `spreadDisease` (one step of disease), `diseaseCostAt`, `circleCounts`.

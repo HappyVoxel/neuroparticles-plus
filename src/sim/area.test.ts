@@ -12,13 +12,13 @@ const agent = (x: number, y: number): Agent => ({
 describe("areaFromCorners", () => {
 	it("spans the two cells in either order", () => {
 		const area = { x0: 3, y0: 4, x1: 10, y1: 20 };
-		expect(areaFromCorners([3, 4], [10, 20])).toEqual(area);
-		expect(areaFromCorners([10, 20], [3, 4])).toEqual(area);
-		expect(areaFromCorners([10, 4], [3, 20])).toEqual(area);
+		expect(areaFromCorners({ x: 3, y: 4 }, { x: 10, y: 20 })).toEqual(area);
+		expect(areaFromCorners({ x: 10, y: 20 }, { x: 3, y: 4 })).toEqual(area);
+		expect(areaFromCorners({ x: 10, y: 4 }, { x: 3, y: 20 })).toEqual(area);
 	});
 
 	it("cuts corners past the edges to the grid", () => {
-		expect(areaFromCorners([-5, -1], [gridWidth + 3, gridHeight])).toEqual({
+		expect(areaFromCorners({ x: -5, y: -1 }, { x: gridWidth + 3, y: gridHeight })).toEqual({
 			x0: 0,
 			y0: 0,
 			x1: gridWidth - 1,

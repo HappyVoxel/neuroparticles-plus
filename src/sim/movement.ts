@@ -1,4 +1,5 @@
 import { gridHeight, gridWidth, matureAge, oldAge, outputSize } from "./config";
+import type { Cell } from "./types";
 
 /**
  * Network output index → move. 0–8 step to a neighbor: 0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW,
@@ -63,7 +64,7 @@ export function moveY(y: number, move: Move): number {
 	return bounce(y + offsets[move][1], gridHeight);
 }
 
-export function moveBy(x: number, y: number, move: Move): { x: number; y: number } {
+export function moveBy(x: number, y: number, move: Move): Cell {
 	return { x: moveX(x, move), y: moveY(y, move) };
 }
 

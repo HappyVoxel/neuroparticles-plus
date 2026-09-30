@@ -13,12 +13,7 @@ import {
 import type { Capture } from "./capture";
 import { type Move, moveBy, stayMove } from "./movement";
 import { genomeSize, randomGene } from "./network";
-import type { Agent, DeadAgent, Genome, MutationParams, Species } from "./types";
-
-interface Cell {
-	x: number;
-	y: number;
-}
+import type { Agent, Cell, DeadAgent, Genome, MutationParams, Species } from "./types";
 
 function randomCell(): Cell {
 	return {

@@ -12,6 +12,7 @@ import {
 	visionRadius,
 	visionRadiusSquared,
 } from "./config";
+import { clamp } from "./math";
 import type { Disease, DiseaseArea, Field } from "./types";
 
 const cellCount = gridWidth * gridHeight;
@@ -137,7 +138,7 @@ export function spreadDisease(disease: Disease, fields: readonly Field[], now: n
 			changed = true;
 			continue;
 		}
-		const radius = area.radius + Math.max(-1, Math.min(1, targetRadius(own) - area.radius));
+		const radius = area.radius + clamp(targetRadius(own) - area.radius, -1, 1);
 		if (radius !== area.radius) changed = true;
 		const pandemicStep = area.pandemicStep ?? (radius >= pandemicRadius ? now : null);
 		areas.push({ ...area, radius, emptySteps, pandemicStep });

@@ -1,5 +1,6 @@
 import { gridHeight, gridWidth } from "./config";
-import type { Agent } from "./types";
+import { clamp } from "./math";
+import type { Agent, Cell } from "./types";
 
 /** A box of grid cells; the cells on both corners are inside it. */
 export interface Area {
@@ -9,17 +10,13 @@ export interface Area {
 	y1: number;
 }
 
-export type Cell = readonly [x: number, y: number];
-
-const clamp = (v: number, max: number): number => Math.min(Math.max(v, 0), max);
-
 /** The box between two cells given in any order, cut to the grid. */
-export function areaFromCorners([ax, ay]: Cell, [bx, by]: Cell): Area {
+export function areaFromCorners(a: Cell, b: Cell): Area {
 	return {
-		x0: clamp(Math.min(ax, bx), gridWidth - 1),
-		y0: clamp(Math.min(ay, by), gridHeight - 1),
-		x1: clamp(Math.max(ax, bx), gridWidth - 1),
-		y1: clamp(Math.max(ay, by), gridHeight - 1),
+		x0: clamp(Math.min(a.x, b.x), 0, gridWidth - 1),
+		y0: clamp(Math.min(a.y, b.y), 0, gridHeight - 1),
+		x1: clamp(Math.max(a.x, b.x), 0, gridWidth - 1),
+		y1: clamp(Math.max(a.y, b.y), 0, gridHeight - 1),
 	};
 }
 

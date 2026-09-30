@@ -1,6 +1,12 @@
 /** Flat array of network weights and biases; layout lives in network.ts. */
 export type Genome = number[];
 
+/** A grid cell. */
+export interface Cell {
+	x: number;
+	y: number;
+}
+
 /** Agent count per cell, indexed `field[x][y]`. */
 export type Field = Int8Array[];
 

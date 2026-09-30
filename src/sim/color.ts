@@ -1,10 +1,11 @@
 import { startHp } from "./config";
+import { clamp } from "./math";
 import type { Oklch } from "./types";
 
 /** The color `t` (0–1) of the way along `shades`, blending the two nearest shades. */
 export function shadeAt(shades: readonly Oklch[], t: number): Oklch {
 	const last = shades.length - 1;
-	const pos = Math.min(Math.max(t, 0), 1) * last;
+	const pos = clamp(t, 0, 1) * last;
 	const i = Math.min(Math.floor(pos), last - 1);
 	const f = pos - i;
 	const mix = (a: number, b: number) => a * (1 - f) + b * f;
@@ -15,7 +16,7 @@ export function shadeAt(shades: readonly Oklch[], t: number): Oklch {
 
 /** Full HP (or more) draws solid; a dot fades out as its HP runs down to 0. */
 export function hpOpacity(hp: number): number {
-	return Math.min(Math.max(hp / startHp, 0), 1);
+	return clamp(hp / startHp, 0, 1);
 }
 
 export function oklchCss([l, c, h]: Oklch, alpha = 1): string {
