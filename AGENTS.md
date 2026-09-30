@@ -77,8 +77,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   never for text, and `yellow-400` for the inspected area's frame and the followed dot's ring.
 - Global shortcuts: Space runs/pauses (`use-run-shortcut`), Z toggles the loupe (`use-loupe`). Both
   skip keys typed into fields (`isTyping` in `src/lib/keyboard.ts`); Space never presses a focused button.
-- Every button and menu item clicks through one document listener in `use-sound`; set
-  `data-sound="pop"` (selects a dot) or `data-sound="none"` on the element to change that.
+- Buttons, menu items and sliders (on press and per key step) click through document listeners in
+  `use-sound`; `data-sound="pop"` (selects a dot) or `"none"` on a button changes that.
 - Simulation functions don't mutate their inputs; `step` and `recreate` return a new `Sim`, and the
   hook reassigns its ref. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.
 - Constants live in `sim/config.ts`; nothing else hardcodes a size or rate.

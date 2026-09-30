@@ -7,6 +7,7 @@ import {
 	stopMusic,
 	unlockAudio,
 } from "@/lib/sound";
+import { sliderKeys } from "@/lib/keyboard";
 import { readSetting, writeSetting } from "@/lib/storage";
 
 const musicKey = "music";
@@ -37,6 +38,12 @@ function effectFor(target: EventTarget | null): Effect | null {
 	return sound === "pop" ? "pop" : "click";
 }
 
+const enabledSlider = '[data-slot="slider"]:not([data-disabled])';
+
+function isSlider(target: EventTarget | null, selector: string): boolean {
+	return target instanceof Element && target.closest(selector) !== null;
+}
+
 export interface Sound {
 	music: boolean;
 	effects: boolean;
@@ -52,8 +59,8 @@ export interface Sound {
 /**
  * Music (off by default), UI effects (on by default) and a master volume, remembered in
  * `localStorage`. Audio starts on the first pointer or key press, since browsers block it before
- * a gesture. Every button and menu item on the page plays its effect through one document click
- * listener.
+ * a gesture. Every button, menu item and slider on the page plays its effect through document
+ * listeners.
  */
 export function useSound(): Sound {
 	const [music, setMusicState] = useState(() => storedOn(musicKey, false));
@@ -89,8 +96,25 @@ export function useSound(): Sound {
 			const effect = effectFor(e.target);
 			if (effect && effectsRef.current) playEffect(effect);
 		};
+		// A slider clicks once as it is pressed, not again while dragged.
+		const onPointerDown = (e: PointerEvent) => {
+			if (e.button === 0 && effectsRef.current && isSlider(e.target, enabledSlider)) {
+				playEffect("click");
+			}
+		};
+		// And once per key step; a held key's repeats stay silent.
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.repeat || !sliderKeys.has(e.key) || !effectsRef.current) return;
+			if (isSlider(e.target, '[role="slider"]')) playEffect("click");
+		};
 		document.addEventListener("click", onClick, true);
-		return () => document.removeEventListener("click", onClick, true);
+		document.addEventListener("pointerdown", onPointerDown, true);
+		document.addEventListener("keydown", onKeyDown, true);
+		return () => {
+			document.removeEventListener("click", onClick, true);
+			document.removeEventListener("pointerdown", onPointerDown, true);
+			document.removeEventListener("keydown", onKeyDown, true);
+		};
 	}, []);
 
 	const setMusic = useCallback((on: boolean) => {

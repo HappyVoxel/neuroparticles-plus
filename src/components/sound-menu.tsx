@@ -10,6 +10,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { sliderKeys } from "@/lib/keyboard";
 
 interface SoundMenuProps {
 	music: boolean;
@@ -28,16 +29,6 @@ interface SoundMenuProps {
 // Keeps the menu open after a toggle, so both can be set in one visit.
 const stayOpen = (e: Event) => e.preventDefault();
 
-const sliderKeys = new Set([
-	"ArrowUp",
-	"ArrowDown",
-	"ArrowLeft",
-	"ArrowRight",
-	"Home",
-	"End",
-	"PageUp",
-	"PageDown",
-]);
 // The menu moves focus between items on arrow keys; keep them on the slider instead.
 const keepSliderKeys = (e: KeyboardEvent) => {
 	if (sliderKeys.has(e.key)) e.stopPropagation();

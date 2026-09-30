@@ -4,3 +4,15 @@ export function isTyping(target: EventTarget | null): boolean {
 	const tag = target.tagName;
 	return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
 }
+
+/** Keys a focused slider uses to change its value. */
+export const sliderKeys: ReadonlySet<string> = new Set([
+	"ArrowUp",
+	"ArrowDown",
+	"ArrowLeft",
+	"ArrowRight",
+	"Home",
+	"End",
+	"PageUp",
+	"PageDown",
+]);
