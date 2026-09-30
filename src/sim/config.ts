@@ -25,12 +25,16 @@ export const loupeZoom = 4;
 export const loupeDiameterPx = 160;
 // The ring around the followed dot: Tailwind's yellow-400, like the inspected area's frame.
 export const followRingColor: Oklch = [0.852, 0.199, 91.936];
-// The glow around each species' top living hunter: its radius swings from `glowMinCells` to
-// `glowMaxCells` and back once every `glowPeriodMs`, its center opacity with it from
-// `glowMinOpacity` to `glowMaxOpacity`.
+// The star glow on each species' top living hunter: a soft core `glowCoreCells` wide and eight
+// rays, `glowRayWidthCells` wide at the base. The four straight rays swing from `glowMinCells` to
+// `glowMaxCells` long and back once every `glowPeriodMs`, the diagonals `glowDiagonalRatio` of
+// that, and the opacity at the center swings with them from `glowMinOpacity` to `glowMaxOpacity`.
 export const glowPeriodMs = 1200;
-export const glowMinCells = 3;
-export const glowMaxCells = 6;
+export const glowMinCells = 4;
+export const glowMaxCells = 8;
+export const glowDiagonalRatio = 0.5;
+export const glowCoreCells = 1.5;
+export const glowRayWidthCells = 0.5;
 export const glowMinOpacity = 0.4;
 export const glowMaxOpacity = 0.9;
 // Dead dots kept per species and ranking (kills, lifetime), each with its genome (about 100 KB).

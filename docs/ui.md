@@ -16,10 +16,10 @@ How the canvas and sidebar tools behave. `AGENTS.md` links here.
 
 ## Top-hunter glow (`render.ts`)
 
-- Each species' living dot with the most kills (ties to the longer life, `topHunterIds`) gets a
-  halo in its species' 300 shade that swells and brightens once every `glowPeriodMs`. No glow while
-  a species has no kills. `paint` passes `performance.now()`, so the pulse runs with the frame loop
-  and holds still while paused.
+- Each species' living dot with the most kills (ties to the longer life, `topHunterIds`) gets an
+  eight-ray star in its species' 300 shade whose rays grow and brighten once every `glowPeriodMs`.
+  No glow while a species has no kills. `paint` passes `performance.now()`, so the pulse runs with
+  the frame loop and holds still while paused.
 
 ## Area inspector (`area-inspector.tsx`)
 

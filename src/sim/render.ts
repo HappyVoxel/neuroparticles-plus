@@ -4,11 +4,14 @@ import {
 	cellPixels,
 	diseaseOpacity,
 	followRingColor,
+	glowCoreCells,
+	glowDiagonalRatio,
 	glowMaxCells,
 	glowMaxOpacity,
 	glowMinCells,
 	glowMinOpacity,
 	glowPeriodMs,
+	glowRayWidthCells,
 	gridHeight,
 	gridWidth,
 } from "./config";
@@ -20,7 +23,7 @@ import type { DiseaseArea, Oklch, Species } from "./types";
  * areas are filled as one shape, so their overlaps don't darken. Then paints every agent
  * `t` (0–1) of the way through its last move. A dot's shade tracks its age, from the species'
  * lightest shade at birth to its darkest for the species' oldest living dot, and its opacity
- * tracks HP. Colors add up where dots overlap. Then a pulsing glow in its species' lightest shade
+ * tracks HP. Colors add up where dots overlap. Then a pulsing star in its species' lightest shade
  * lights each dot in `glowIds` (one id or null per species), timed by `now` in ms. Last, rings the
  * dot with id `followId` while it lives.
  */
@@ -79,18 +82,19 @@ export function draw(
 	}
 	ctx.globalAlpha = 1;
 
-	// 0 at the narrowest, 1 at the widest.
+	// 0 at the shortest rays, 1 at the longest.
 	const pulse = (1 - Math.cos((2 * Math.PI * now) / glowPeriodMs)) / 2;
-	const radius = (glowMinCells + (glowMaxCells - glowMinCells) * pulse) * cellPixels;
+	const length = (glowMinCells + (glowMaxCells - glowMinCells) * pulse) * cellPixels;
 	const opacity = glowMinOpacity + (glowMaxOpacity - glowMinOpacity) * pulse;
 	for (const { x, y, color } of glows) {
-		const cx = x + cellPixels / 2;
-		const cy = y + cellPixels / 2;
-		const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-		gradient.addColorStop(0, oklchCss(color, opacity));
-		gradient.addColorStop(1, oklchCss(color, 0));
-		ctx.fillStyle = gradient;
-		ctx.fillRect(cx - radius, cy - radius, 2 * radius, 2 * radius);
+		drawStar(
+			ctx,
+			x + cellPixels / 2,
+			y + cellPixels / 2,
+			length,
+			oklchCss(color, opacity),
+			oklchCss(color, 0),
+		);
 	}
 
 	if (followed) {
@@ -107,4 +111,44 @@ export function draw(
 		);
 		ctx.stroke();
 	}
+}
+
+/**
+ * A twinkle centered on (cx, cy): a soft round core and eight rays that fade from `bright` at the
+ * center to `clear` at their tips, the straight ones `length` long, the diagonals shorter.
+ */
+function drawStar(
+	ctx: CanvasRenderingContext2D,
+	cx: number,
+	cy: number,
+	length: number,
+	bright: string,
+	clear: string,
+): void {
+	const core = glowCoreCells * cellPixels;
+	const coreGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, core);
+	coreGradient.addColorStop(0, bright);
+	coreGradient.addColorStop(1, clear);
+	ctx.fillStyle = coreGradient;
+	ctx.fillRect(cx - core, cy - core, 2 * core, 2 * core);
+
+	const halfWidth = (glowRayWidthCells * cellPixels) / 2;
+	ctx.save();
+	ctx.translate(cx, cy);
+	for (let k = 0; k < 8; k++) {
+		// Rays point along +x before turning; even k are straight, odd k diagonal.
+		const ray = k % 2 === 0 ? length : length * glowDiagonalRatio;
+		const gradient = ctx.createLinearGradient(0, 0, ray, 0);
+		gradient.addColorStop(0, bright);
+		gradient.addColorStop(1, clear);
+		ctx.fillStyle = gradient;
+		ctx.beginPath();
+		ctx.moveTo(0, -halfWidth);
+		ctx.lineTo(ray, 0);
+		ctx.lineTo(0, halfWidth);
+		ctx.closePath();
+		ctx.fill();
+		ctx.rotate(Math.PI / 4);
+	}
+	ctx.restore();
 }
