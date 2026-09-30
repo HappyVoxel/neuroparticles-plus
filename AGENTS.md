@@ -92,6 +92,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - `tsconfig` is `strict` without `noUncheckedIndexedAccess`, so grid and genome indexing stays readable.
 - Browser checks use the Playwright MCP (Firefox) against `npm run build && npm run preview`.
 - Work and commit directly on `master`; this repo has no `sang-dev` branch.
+- Findings we chose to skip, with why and when to revisit, live in `docs/backlog.md`; read it
+  before proposing a cleanup.
 
 ## Core data model
 
