@@ -91,16 +91,18 @@ describe("spreadDisease", () => {
 		expect(before.crowdedSteps[cell(50, 50)]).toBe(diseaseAfterSteps);
 
 		const after = spreadDisease(before, crowded, diseaseAfterSteps + 1);
-		expect(after.areas).toContainEqual({
-			id: expect.any(Number),
-			x: 50,
-			y: 50,
-			radius: diseaseBirthRadius,
-			species: 0,
-			emptySteps: 0,
-			bornStep: diseaseAfterSteps + 1,
-			pandemicStep: null,
-		});
+		expect(after.areas).toEqual([
+			{
+				id: expect.any(Number),
+				x: 50,
+				y: 50,
+				radius: diseaseBirthRadius,
+				species: 0,
+				emptySteps: 0,
+				bornStep: diseaseAfterSteps + 1,
+				pandemicStep: null,
+			},
+		]);
 		expect(after.cost[50][50]).toBe(diseaseHpAtCenter);
 		expect(after.crowdedSteps[cell(50, 50)]).toBe(0);
 	});
@@ -118,16 +120,45 @@ describe("spreadDisease", () => {
 	it("gives the area to the species with the biggest crowd", () => {
 		const both = [crowd(diseaseCrowd + 1, 50, 50), crowd(diseaseCrowd + 2, 50, 50), empty];
 		const disease = run(emptyDisease(), both, diseaseAfterSteps + 1);
-		expect(disease.areas).toContainEqual({
-			id: expect.any(Number),
-			x: 50,
-			y: 50,
-			radius: diseaseBirthRadius,
-			species: 1,
-			emptySteps: 0,
-			bornStep: diseaseAfterSteps + 1,
-			pandemicStep: null,
-		});
+		expect(disease.areas).toEqual([
+			{
+				id: expect.any(Number),
+				x: 50,
+				y: 50,
+				radius: diseaseBirthRadius,
+				species: 1,
+				emptySteps: 0,
+				bornStep: diseaseAfterSteps + 1,
+				pandemicStep: null,
+			},
+		]);
+	});
+
+	it("starts one area per crowd, on the middle of it", () => {
+		const split = [
+			buildField([
+				...Array.from({ length: 7 }, () => at(48, 50)),
+				...Array.from({ length: 7 }, () => at(52, 50)),
+			]),
+			empty,
+			empty,
+		];
+		const one = run(emptyDisease(), split, diseaseAfterSteps + 1);
+		expect(one.areas.map(({ x, y }) => [x, y])).toEqual([[50, 50]]);
+
+		const two = [
+			buildField([
+				...Array.from({ length: diseaseCrowd + 1 }, () => at(50, 50)),
+				...Array.from({ length: diseaseCrowd + 1 }, () => at(150, 150)),
+			]),
+			empty,
+			empty,
+		];
+		const apart = run(emptyDisease(), two, diseaseAfterSteps + 1);
+		expect(apart.areas.map(({ x, y }) => [x, y])).toEqual([
+			[50, 50],
+			[150, 150],
+		]);
 	});
 
 	it("starts counting over once the crowd leaves", () => {
@@ -136,11 +167,13 @@ describe("spreadDisease", () => {
 	});
 
 	it("uses the worst cost where areas overlap, never the sum", () => {
-		const disease = run(emptyDisease(), crowded, diseaseAfterSteps + 1);
-		expect(disease.areas.length).toBeGreaterThan(1);
-		let worst = 0;
-		for (const column of disease.cost) for (const c of column) worst = Math.max(worst, c);
-		expect(worst).toBe(diseaseHpAtCenter);
+		const area = { radius: diseaseBirthRadius, species: 0, emptySteps: 0, bornStep: 0 };
+		const cost = costGrid([
+			{ ...area, id: 0, x: 50, y: 50, pandemicStep: null },
+			{ ...area, id: 1, x: 52, y: 50, pandemicStep: null },
+		]);
+		expect(cost[50][50]).toBe(diseaseHpAtCenter);
+		expect(cost[51][50]).toBeCloseTo(diseaseCostAt(1, diseaseBirthRadius), 4);
 	});
 
 	const oneArea = (radius: number, emptySteps = 0): Disease => {

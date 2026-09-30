@@ -38,7 +38,7 @@ const overlap = (a: Box, b: Box): boolean =>
  * became one, each for `diseaseLabelMs` at `stepsPerSecond`, fading over the last part. Its size
  * follows the area's radius, and it sits just above the area, kept inside the grid. Pandemics go
  * first, then the older labels, and a label that would come within `diseaseLabelGap` of one
- * already placed is left out, so a burst of areas in one spot shows one label.
+ * already placed is left out, so areas close together show one label.
  */
 export function diseaseLabels(
 	areas: readonly DiseaseArea[],

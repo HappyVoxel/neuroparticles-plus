@@ -116,8 +116,8 @@ export function costGrid(areas: readonly DiseaseArea[]): Float32Array[] {
  * Step `now` of disease, read from this step's fields (one per species). An area with no dot inside
  * for more than `diseaseAfterSteps` steps clears; otherwise its radius moves by at most one cell
  * toward `targetRadius` of its own species' dots inside. A circle holding more than `diseaseCrowd`
- * dots of one species counts a crowded step; past `diseaseAfterSteps` in a row it becomes an area
- * of the species with the most dots in it. An area that reaches `pandemicRadius` is a pandemic from
+ * dots of one species counts a crowded step; past `diseaseAfterSteps` in a row it joins a crowd
+ * that starts one area, centered on the crowd, of the species with the most dots in it. An area that reaches `pandemicRadius` is a pandemic from
  * then on and keeps that step in `pandemicStep`. Dots inside an area don't count toward a crowd, and a
  * cell inside an area doesn't count a crowded step, so areas don't pile up on one crowd.
  */
@@ -160,27 +160,55 @@ export function spreadDisease(disease: Disease, fields: readonly Field[], now: n
 	const kept = areas.length;
 	let nextId = disease.nextId;
 	const crowdedSteps = new Uint16Array(cellCount);
+	// Cells crowded long enough to start an area, in scan order.
+	const due: number[] = [];
 	for (let x = 0; x < gridWidth; x++) {
 		for (let y = 0; y < gridHeight; y++) {
 			const i = x * gridHeight + y;
 			if (most[i] <= diseaseCrowd || cost[x][y] > 0) continue;
 			const steps = disease.crowdedSteps[i] + 1;
-			if (steps > diseaseAfterSteps) {
-				const species = mostSpecies[i];
-				areas.push({
-					id: nextId++,
-					x,
-					y,
-					radius: diseaseBirthRadius,
-					species,
-					emptySteps: 0,
-					bornStep: now,
-					pandemicStep: null,
-				});
-			} else {
-				crowdedSteps[i] = steps;
-			}
+			if (steps > diseaseAfterSteps) due.push(i);
+			else crowdedSteps[i] = steps;
 		}
+	}
+
+	// One area per crowd: the most crowded due cell picks its species, the due cells of that
+	// species near it are the crowd, and the area starts on their middle. Due cells it then covers
+	// are used up.
+	const seeds = [...due].sort((a, b) => most[b] - most[a]);
+	const used = new Set<number>();
+	const reachSquared = (2 * diseaseBirthRadius) ** 2;
+	const distanceSquared = (a: number, bx: number, by: number) =>
+		(Math.floor(a / gridHeight) - bx) ** 2 + ((a % gridHeight) - by) ** 2;
+	for (const seed of seeds) {
+		if (used.has(seed)) continue;
+		const species = mostSpecies[seed];
+		const sx = Math.floor(seed / gridHeight);
+		const sy = seed % gridHeight;
+		const crowd = due.filter(
+			(i) =>
+				!used.has(i) && mostSpecies[i] === species && distanceSquared(i, sx, sy) <= reachSquared,
+		);
+		let sumX = 0;
+		let sumY = 0;
+		for (const i of crowd) {
+			sumX += Math.floor(i / gridHeight);
+			sumY += i % gridHeight;
+		}
+		const x = Math.round(sumX / crowd.length);
+		const y = Math.round(sumY / crowd.length);
+		for (const i of crowd) used.add(i);
+		for (const i of due) if (inside(distanceSquared(i, x, y), diseaseBirthRadius)) used.add(i);
+		areas.push({
+			id: nextId++,
+			x,
+			y,
+			radius: diseaseBirthRadius,
+			species,
+			emptySteps: 0,
+			bornStep: now,
+			pandemicStep: null,
+		});
 	}
 
 	return { areas, nextId, crowdedSteps, cost: areas.length > kept ? costGrid(areas) : cost };

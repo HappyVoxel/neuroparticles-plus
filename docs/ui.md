@@ -30,8 +30,9 @@ How the canvas and sidebar tools behave. `AGENTS.md` links here.
   paused and moves on one step per S. It fades over its last `diseaseLabelFade`.
 - Its font is `diseaseLabelSizeRatio` cells per cell of radius (at least `diseaseLabelMinCells`), in
   `cqw`, so it scales with the area and the canvas. It stays inside the grid near walls.
-- A crowd often starts several areas at once, so `diseaseLabels` places pandemics first, then older
-  labels, and leaves out any label within `diseaseLabelGap` of one already placed, of any species.
+- Areas of nearby crowds, of any species, would stack their labels, so `diseaseLabels` places
+  pandemics first, then older labels, and leaves out any label within `diseaseLabelGap` of one
+  already placed.
 
 ## Area inspector (`area-inspector.tsx`)
 
