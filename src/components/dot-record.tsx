@@ -33,14 +33,14 @@ const share = (part: number, total: number): string =>
 
 const ids = (list: readonly number[]): string => list.map((id) => `#${id}`).join(", ");
 
-/** Label and value rows, two columns. */
+/** Label and value rows, two columns, one line each so the popover keeps its height. */
 function Rows({ rows }: { rows: readonly (readonly [string, string])[] }) {
 	return (
 		<dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 tabular-nums">
 			{rows.map(([label, value]) => (
 				<div key={label} className="contents">
-					<dt className="text-muted-foreground">{label}</dt>
-					<dd className="text-right">{value}</dd>
+					<dt className="whitespace-nowrap text-muted-foreground">{label}</dt>
+					<dd className="text-right whitespace-nowrap">{value}</dd>
 				</div>
 			))}
 		</dl>
@@ -82,9 +82,14 @@ export function DotRecord({ followed, species, step, onClose, onCopyGenome }: Do
 			}}
 		>
 			<PopoverAnchor asChild>
+				{/*
+				 * The anchor eases toward the dot's cell, so the popover trails the dot smoothly instead
+				 * of jumping a cell every step. Keyed by id: a newly followed dot starts in place.
+				 */}
 				<div
+					key={agent.id}
 					aria-hidden
-					className="pointer-events-none absolute"
+					className="pointer-events-none absolute transition-[left,top] duration-500 ease-out motion-reduce:transition-none"
 					style={{
 						left: percent(agent.x, gridWidth),
 						top: percent(agent.y, gridHeight),
@@ -98,8 +103,10 @@ export function DotRecord({ followed, species, step, onClose, onCopyGenome }: Do
 				align="start"
 				sideOffset={8}
 				collisionPadding={16}
+				// Follow the easing anchor every frame, not only when the layout changes.
+				updatePositionStrategy="always"
 				aria-label="Dot record"
-				className="w-64 gap-3 text-xs"
+				className="w-72 gap-3 text-xs"
 				onOpenAutoFocus={(e) => e.preventDefault()}
 				onInteractOutside={(e) => e.preventDefault()}
 			>
