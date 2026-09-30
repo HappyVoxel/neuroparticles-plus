@@ -32,7 +32,7 @@ export function TopDots({ top, species, followedId, onFollow }: TopDotsProps) {
 				const empty = Array.from({ length: topDotsShown - dots.length }, (_, k) => k);
 				return (
 					<div key={ranking} className="flex flex-col gap-1">
-						<h3 className="px-2 text-xs text-muted-foreground">{label}</h3>
+						<h3 className="text-xs text-muted-foreground">{label}</h3>
 						<ol className="flex flex-col">
 							{dots.map(({ species: index, agent, death }) => {
 								const s = species[index];
@@ -41,13 +41,13 @@ export function TopDots({ top, species, followedId, onFollow }: TopDotsProps) {
 									<li key={agent.id}>
 										<Button
 											variant="ghost"
-											size="sm"
+											size="xs"
 											aria-pressed={followed}
 											data-sound="pop"
 											onClick={() => onFollow(agent.id)}
 											// Rows read as data, not as the uppercase labels buttons carry elsewhere.
 											className={cn(
-												"h-7 w-full justify-start gap-2 px-2 text-sm font-normal tracking-normal normal-case tabular-nums",
+												"h-7 w-full justify-start gap-2 px-2 text-xs font-normal tracking-normal normal-case tabular-nums",
 												followed && "bg-muted",
 											)}
 										>
