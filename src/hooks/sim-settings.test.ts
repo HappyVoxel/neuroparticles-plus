@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	allTopDots,
 	defaultMutation,
 	defaultStepsPerSecond,
 	hpPenaltyFromWall,
@@ -13,6 +14,7 @@ const defaults = {
 	mutation: defaultMutation,
 	wallPenalty: hpPenaltyFromWall,
 	stepsPerSecond: defaultStepsPerSecond,
+	topDots: allTopDots,
 };
 
 const from =
@@ -30,6 +32,7 @@ describe("loadSimSettings", () => {
 			mutation: { percent: 40, genes: 7 },
 			wallPenalty: 300,
 			stepsPerSecond: 55,
+			topDots: { dead: false, species: [true, false, true] },
 		};
 		const store: Record<string, string> = {};
 		saveSimSettings(saved, (key, value) => {
@@ -51,7 +54,13 @@ describe("loadSimSettings", () => {
 			mutation: { percent: 0, genes: genomeSize },
 			wallPenalty: maxWallPenalty,
 			stepsPerSecond: maxStepsPerSecond,
+			topDots: allTopDots,
 		});
+	});
+
+	it("hides every species when none was saved as shown", () => {
+		const { topDots } = loadSimSettings(from({ "top-dots-species": "" }));
+		expect(topDots.species).toEqual([false, false, false]);
 	});
 
 	it.each([

@@ -52,6 +52,12 @@ export interface DeadAgent extends Agent {
 /** What a hall of fame ranks by. */
 export type Ranking = "kills" | "lifetime";
 
+/** Which dots the top-dots board lists: the dead or not, and each species by its index. */
+export interface TopDotsFilter {
+	dead: boolean;
+	species: readonly boolean[];
+}
+
 /** The best dead dots of a species, best first, at most `hallOfFameSize` per ranking. */
 export type HallOfFame = Readonly<Record<Ranking, readonly DeadAgent[]>>;
 

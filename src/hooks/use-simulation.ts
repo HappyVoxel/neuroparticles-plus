@@ -13,7 +13,16 @@ import { oklchCss, shadeAt } from "@/sim/color";
 import { type DotRef, findDot, isDead, nearestDot, topDots } from "@/sim/records";
 import { draw } from "@/sim/render";
 import { createSim, extinctSpecies, recreate, step } from "@/sim/simulation";
-import type { Agent, DeadAgent, Genome, MutationParams, Ranking, Sim, Species } from "@/sim/types";
+import type {
+	Agent,
+	DeadAgent,
+	Genome,
+	MutationParams,
+	Ranking,
+	Sim,
+	Species,
+	TopDotsFilter,
+} from "@/sim/types";
 
 export type RunStatus = "paused" | "running" | "stopped";
 
@@ -51,7 +60,7 @@ export interface SimSnapshot {
 	area: Area | null;
 	/** The dot being followed, last seen alive or at its death; null when none. */
 	followed: DotView | null;
-	/** The best `topDotsShown` dots of all species, living and dead, per ranking. */
+	/** The best `topDotsShown` dots the top-dots filter lets through, per ranking. */
 	top: Record<Ranking, DotView[]>;
 }
 
@@ -84,7 +93,12 @@ function dotView({ species, agent }: DotRef): DotView {
 	return { species, agent: rest, death: isDead(agent) ? agent : null };
 }
 
-function snapshot(sim: Sim, area: Area | null, followed: DotRef | null): SimSnapshot {
+function snapshot(
+	sim: Sim,
+	area: Area | null,
+	followed: DotRef | null,
+	filter: TopDotsFilter,
+): SimSnapshot {
 	return {
 		step: sim.step,
 		species: sim.species.map((s) => speciesStats(s, s.agents)),
@@ -92,8 +106,8 @@ function snapshot(sim: Sim, area: Area | null, followed: DotRef | null): SimSnap
 		area,
 		followed: followed && dotView(followed),
 		top: {
-			kills: topDots(sim, "kills", topDotsShown).map(dotView),
-			lifetime: topDots(sim, "lifetime", topDotsShown).map(dotView),
+			kills: topDots(sim, "kills", topDotsShown, filter).map(dotView),
+			lifetime: topDots(sim, "lifetime", topDotsShown, filter).map(dotView),
 		},
 	};
 }
@@ -103,7 +117,8 @@ const isOver = (sim: Sim): boolean => extinctSpecies(sim).length > 0;
 /**
  * Runs the simulation outside React on one animation-frame loop: each frame runs the steps that
  * are due at the chosen speed, draws the canvas once and hands React a fresh snapshot. Speed,
- * walls and mutation start from the values saved in `localStorage` and are saved on every change.
+ * walls, mutation and the top-dots filter start from the values saved in `localStorage` and are
+ * saved on every change.
  */
 export function useSimulation() {
 	const [saved] = useState(() => loadSimSettings(readSetting));
@@ -118,16 +133,18 @@ export function useSimulation() {
 	const areaRef = useRef<Area | null>(null);
 	/** The followed dot as last seen: alive, or at its death once it is gone. */
 	const followRef = useRef<DotRef | null>(null);
+	const topFilterRef = useRef(saved.topDots);
 
-	const [snap, setSnap] = useState(() => snapshot(initialSim, null, null));
+	const [snap, setSnap] = useState(() => snapshot(initialSim, null, null, saved.topDots));
 	const [running, setRunning] = useState(false);
 	const [mutation, setMutationState] = useState(saved.mutation);
 	const [wallPenalty, setWallPenaltyState] = useState(initialSim.wallPenalty);
 	const [stepsPerSecond, setStepsPerSecond] = useState(saved.stepsPerSecond);
+	const [topFilter, setTopFilterState] = useState(saved.topDots);
 
 	useEffect(() => {
-		saveSimSettings({ mutation, wallPenalty, stepsPerSecond }, writeSetting);
-	}, [mutation, wallPenalty, stepsPerSecond]);
+		saveSimSettings({ mutation, wallPenalty, stepsPerSecond, topDots: topFilter }, writeSetting);
+	}, [mutation, wallPenalty, stepsPerSecond, topFilter]);
 
 	const over = snap.species.some((s) => s.population === 0);
 	const status: RunStatus = over ? "stopped" : running ? "running" : "paused";
@@ -148,7 +165,7 @@ export function useSimulation() {
 	}, []);
 
 	const publish = useCallback(() => {
-		setSnap(snapshot(simRef.current, areaRef.current, followRef.current));
+		setSnap(snapshot(simRef.current, areaRef.current, followRef.current, topFilterRef.current));
 	}, []);
 
 	const cancelFrame = useCallback(() => {
@@ -246,6 +263,16 @@ export function useSimulation() {
 		[publish],
 	);
 
+	/** Sets which dots the top-dots board lists; the snapshot follows at once, paused or not. */
+	const setTopFilter = useCallback(
+		(next: TopDotsFilter) => {
+			topFilterRef.current = next;
+			setTopFilterState(next);
+			publish();
+		},
+		[publish],
+	);
+
 	/** Follows the dot with this id (living or dead); null or an unknown id stops following. */
 	const follow = useCallback(
 		(id: number | null) => {
@@ -296,6 +323,7 @@ export function useSimulation() {
 		mutation,
 		wallPenalty,
 		stepsPerSecond,
+		topFilter,
 		run,
 		pause,
 		stepOnce,
@@ -303,6 +331,7 @@ export function useSimulation() {
 		randomizeBrains,
 		reset,
 		inspect,
+		setTopFilter,
 		follow,
 		pick,
 		followedGenome,

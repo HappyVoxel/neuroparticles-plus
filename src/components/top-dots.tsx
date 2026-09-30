@@ -5,7 +5,7 @@ import { formatCount } from "@/lib/format";
 import { hallOfFameSize, topDotsShown } from "@/sim/config";
 import type { Ranking } from "@/sim/types";
 
-export const topDotsInfo = `The best hunters and the longest lives among the living dots and the ${hallOfFameSize} best dead of each species; † marks a dead one. Click a row to follow that dot on the canvas. Or press Z over the canvas to zoom in and click a dot to follow it.`;
+export const topDotsInfo = `The best hunters and the longest lives among the living dots and the ${hallOfFameSize} best dead of each species; † marks a dead one. The filter icon hides the dead or a species. Click a row to follow that dot on the canvas. Or press Z over the canvas to zoom in and click a dot to follow it.`;
 
 const columns: readonly { ranking: Ranking; label: string }[] = [
 	{ ranking: "kills", label: "Kills" },

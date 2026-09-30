@@ -1,5 +1,5 @@
-import { hallOfFameSize } from "./config";
-import type { Agent, DeadAgent, HallOfFame, Ranking, Sim } from "./types";
+import { allTopDots, hallOfFameSize } from "./config";
+import type { Agent, DeadAgent, HallOfFame, Ranking, Sim, TopDotsFilter } from "./types";
 
 /** A dot, living or dead, with the index of its species in `Sim.species`. */
 export interface DotRef {
@@ -44,11 +44,21 @@ export function findDot(sim: Sim, id: number): DotRef | null {
 	return null;
 }
 
-/** The best `n` dots of every species, living and dead, on one ranking. */
-export function topDots(sim: Sim, ranking: Ranking, n: number): DotRef[] {
+/**
+ * The best `n` dots on one ranking among those `filter` lets through (every species, living and
+ * dead, by default). Filtering comes before the cut, so hidden dots never leave a slot empty.
+ */
+export function topDots(
+	sim: Sim,
+	ranking: Ranking,
+	n: number,
+	filter: TopDotsFilter = allTopDots,
+): DotRef[] {
 	const all: DotRef[] = [];
 	sim.species.forEach((s, species) => {
+		if (!filter.species[species]) return;
 		for (const agent of s.agents) all.push({ species, agent });
+		if (!filter.dead) return;
 		for (const agent of s.hallOfFame[ranking]) all.push({ species, agent });
 	});
 	const order = compare(ranking);

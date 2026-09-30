@@ -84,6 +84,31 @@ describe("topDots", () => {
 			{ species: 0, agent: third },
 		]);
 	});
+
+	it("fills the slots from the living when the dead are hidden", () => {
+		const living = [dot({ kills: 3 }), dot({ kills: 2 }), dot({ kills: 1 })];
+		const sim = world(living);
+		const withDead = {
+			...sim,
+			species: sim.species.map((s) => ({
+				...s,
+				hallOfFame: addToHallOfFame(s.hallOfFame, [dead({ kills: 9 }), dead({ kills: 8 })]),
+			})),
+		};
+		const filter = { dead: false, species: [true, true, true] };
+		expect(topDots(withDead, "kills", 3, filter).map((d) => d.agent)).toEqual(living);
+	});
+
+	it("leaves out hidden species", () => {
+		const red = dot({ kills: 9 });
+		const green = dot({ kills: 5 });
+		const blue = dot({ kills: 1 });
+		const filter = { dead: true, species: [false, true, true] };
+		expect(topDots(world([red], [green], [blue]), "kills", 3, filter)).toEqual([
+			{ species: 1, agent: green },
+			{ species: 2, agent: blue },
+		]);
+	});
 });
 
 describe("nearestDot", () => {

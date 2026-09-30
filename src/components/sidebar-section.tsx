@@ -5,11 +5,13 @@ interface SidebarSectionProps {
 	title: string;
 	/** The explanation behind the info icon at the end of the title. */
 	info: ReactNode;
+	/** A control in the title row, before the info icon (a filter, say). */
+	action?: ReactNode;
 	children: ReactNode;
 }
 
 /** A titled sidebar section with its explanation behind an info icon. */
-export function SidebarSection({ title, info, children }: SidebarSectionProps) {
+export function SidebarSection({ title, info, action, children }: SidebarSectionProps) {
 	const topic = title.toLowerCase();
 	const headingId = `${topic}-heading`;
 
@@ -19,7 +21,10 @@ export function SidebarSection({ title, info, children }: SidebarSectionProps) {
 				<h2 id={headingId} className="text-sm font-medium">
 					{title}
 				</h2>
-				<InfoPopover topic={topic}>{info}</InfoPopover>
+				<div className="flex items-center gap-1">
+					{action}
+					<InfoPopover topic={topic}>{info}</InfoPopover>
+				</div>
 			</div>
 			{children}
 		</section>

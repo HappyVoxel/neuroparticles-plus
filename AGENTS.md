@@ -56,7 +56,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   squared into gain). `src/assets/` holds Opus/WebM files made by `scripts/encode-audio.sh`; re-run
   it to change a sound, never hand-convert.
 - `src/components/` — app components: `sim-canvas`, `area-inspector`, `run-controls`, `food-cycle`, `species-stats`,
-  `wall-controls`, `mutation-controls`, `dot-record`, `top-dots`, `canvas-loupe`, `info-popover`, `theme-toggle`, `sound-menu`, `sidebar-section` (title + `InfoPopover`),
+  `wall-controls`, `mutation-controls`, `dot-record`, `top-dots`, `top-dots-filter`, `canvas-loupe`, `info-popover`, `theme-toggle`, `sound-menu`, `sidebar-section` (title + `InfoPopover`),
   `labeled-slider` (label, value and Slider; every sidebar slider uses it). `src/App.tsx` lays them out; `src/main.tsx` mounts it.
 - `src/components/ui/` — vendored shadcn/ui components. Add with `npx shadcn@latest add <name>`;
   don't hand-edit them. Biome and Prettier skip this folder.
@@ -132,22 +132,10 @@ positions, fields and disease from the previous step, so moves within a step don
   darkest for the species' oldest living dot) and at HP ÷ `startHp` opacity (capped at 100%). It
   blends additively, so overlapping dots show as brighter, whiter spots. The sidebar uses shade 500.
 
-## Following a dot (`dot-record.tsx`, `top-dots.tsx`, `canvas-loupe.tsx`)
+## Canvas and sidebar tools
 
-- A click on the canvas without a drag follows the nearest living dot within `pickCells` (3); with the
-  loupe on (Z, a `loupeZoom`× circle at the pointer) within `loupePickCells` (1). A click on empty
-  ground stops following. The top-dots list in the sidebar follows a dot by id, dead ones included.
-- The hook keeps the followed record after every step (`findDot`), so its popover shows the death
-  and stays until closed. Snapshots carry records without genomes; "Copy genome" reads it from the
-  hook. Randomize and Reset stop following.
-
-## Area inspector (`area-inspector.tsx`)
-
-- A layer over the canvas turns a drag into an `Area` and passes it to `inspect` in the hook. Every
-  snapshot then carries `areaSpecies`: the same `SpeciesStats` as the sidebar, for the dots inside it,
-  so the popover beside the frame updates live.
-- Only a click on the canvas, the X button or Esc closes it; clicks in the sidebar keep it open so
-  Run and Step work while it's up. A confirmed Reset clears it.
+Following a dot, the loupe, the top-dots board and its filter, and the area inspector:
+see `docs/ui.md`.
 
 ## Rules that are easy to miss
 

@@ -1,4 +1,4 @@
-import type { MutationParams, Oklch, Species } from "./types";
+import type { MutationParams, Oklch, Species, TopDotsFilter } from "./types";
 
 // World
 export const gridWidth = 200;
@@ -90,6 +90,8 @@ export const speciesDefs: readonly Pick<Species, "id" | "name" | "shades">[] = [
 	},
 ];
 export const speciesCount = speciesDefs.length;
+// The top-dots board lists every dot until the filter hides some.
+export const allTopDots: TopDotsFilter = { dead: true, species: speciesDefs.map(() => true) };
 
 // Network: input → hidden (sigmoid) → output (linear), one output per move. Each cell in view reads
 // one channel per species plus one for disease.

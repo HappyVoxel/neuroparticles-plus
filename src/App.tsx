@@ -11,6 +11,7 @@ import { SoundMenu } from "@/components/sound-menu";
 import { SpeciesStats } from "@/components/species-stats";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TopDots, topDotsInfo } from "@/components/top-dots";
+import { TopDotsFilterMenu } from "@/components/top-dots-filter";
 import { WallControls } from "@/components/wall-controls";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -141,7 +142,18 @@ export function App() {
 
 					<Separator />
 
-					<SidebarSection title="Top dots" info={topDotsInfo}>
+					<SidebarSection
+						title="Top dots"
+						info={topDotsInfo}
+						action={
+							<TopDotsFilterMenu
+								filter={sim.topFilter}
+								species={snap.species}
+								onChange={sim.setTopFilter}
+								onOpen={playClick}
+							/>
+						}
+					>
 						<TopDots
 							top={snap.top}
 							species={snap.species}
