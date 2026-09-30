@@ -22,8 +22,10 @@ export function SpeciesStats({ species }: SpeciesStatsProps) {
 							{formatCount(s.population)}
 							<span className="text-muted-foreground"> alive</span>
 						</span>
-						<span className="ml-auto text-xs text-muted-foreground">
-							{s.population === 0 ? "died out" : `oldest ${formatCount(s.oldest)} steps`}
+						<span className="ml-auto text-xs whitespace-nowrap text-muted-foreground">
+							{s.population === 0
+								? "died out"
+								: `oldest ${formatCount(s.oldest)} · best ${formatCount(s.topKills)} kills`}
 						</span>
 					</div>
 					<Progress

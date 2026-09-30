@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Area, agentsIn } from "@/sim/area";
-import { defaultStepsPerSecond, maxSlidingStepsPerSecond, stepBudgetMs } from "@/sim/config";
+import {
+	defaultStepsPerSecond,
+	loupePickCells,
+	maxSlidingStepsPerSecond,
+	pickCells,
+	stepBudgetMs,
+	topDotsShown,
+} from "@/sim/config";
 import { oklchCss, shadeAt } from "@/sim/color";
+import { type DotRef, findDot, isDead, nearestDot, topDots } from "@/sim/records";
 import { draw } from "@/sim/render";
 import { createSim, extinctSpecies, recreate, step } from "@/sim/simulation";
-import type { Agent, MutationParams, Sim, Species } from "@/sim/types";
+import type { Agent, DeadAgent, Genome, MutationParams, Ranking, Sim, Species } from "@/sim/types";
 
 export type RunStatus = "paused" | "running" | "stopped";
 
@@ -20,6 +28,17 @@ export interface SpeciesStats {
 	averageAge: number;
 	/** Mean HP; 0 with no agents. */
 	averageHp: number;
+	/** Most kills among living agents. */
+	topKills: number;
+}
+
+/** A dot's record for React, without its genome (about 100 KB). */
+export interface DotView {
+	/** Index in `Sim.species`. */
+	species: number;
+	agent: Omit<Agent, "genome">;
+	/** When and how it died; null while it lives. */
+	death: Pick<DeadAgent, "diedStep" | "cause"> | null;
 }
 
 export interface SimSnapshot {
@@ -29,14 +48,20 @@ export interface SimSnapshot {
 	areaSpecies: SpeciesStats[] | null;
 	/** The inspected area, or null. */
 	area: Area | null;
+	/** The dot being followed, last seen alive or at its death; null when none. */
+	followed: DotView | null;
+	/** The best `topDotsShown` dots of all species, living and dead, per ranking. */
+	top: Record<Ranking, DotView[]>;
 }
 
 function speciesStats({ id, name, shades }: Species, agents: readonly Agent[]): SpeciesStats {
 	let oldest = 0;
+	let topKills = 0;
 	let ageSum = 0;
 	let hpSum = 0;
 	for (let i = 0; i < agents.length; i++) {
 		oldest = Math.max(oldest, agents[i].lifetime);
+		topKills = Math.max(topKills, agents[i].kills);
 		ageSum += agents[i].lifetime;
 		hpSum += agents[i].hp;
 	}
@@ -49,15 +74,26 @@ function speciesStats({ id, name, shades }: Species, agents: readonly Agent[]): 
 		oldest,
 		averageAge: n > 0 ? ageSum / n : 0,
 		averageHp: n > 0 ? hpSum / n : 0,
+		topKills,
 	};
 }
 
-function snapshot(sim: Sim, area: Area | null): SimSnapshot {
+function dotView({ species, agent }: DotRef): DotView {
+	const { genome: _, ...rest } = agent;
+	return { species, agent: rest, death: isDead(agent) ? agent : null };
+}
+
+function snapshot(sim: Sim, area: Area | null, followed: DotRef | null): SimSnapshot {
 	return {
 		step: sim.step,
 		species: sim.species.map((s) => speciesStats(s, s.agents)),
 		areaSpecies: area && sim.species.map((s) => speciesStats(s, agentsIn(s.agents, area))),
 		area,
+		followed: followed && dotView(followed),
+		top: {
+			kills: topDots(sim, "kills", topDotsShown).map(dotView),
+			lifetime: topDots(sim, "lifetime", topDotsShown).map(dotView),
+		},
 	};
 }
 
@@ -77,8 +113,10 @@ export function useSimulation(initialMutation: MutationParams) {
 	const dueRef = useRef(0);
 	const speedRef = useRef(defaultStepsPerSecond);
 	const areaRef = useRef<Area | null>(null);
+	/** The followed dot as last seen: alive, or at its death once it is gone. */
+	const followRef = useRef<DotRef | null>(null);
 
-	const [snap, setSnap] = useState(() => snapshot(initialSim, null));
+	const [snap, setSnap] = useState(() => snapshot(initialSim, null, null));
 	const [running, setRunning] = useState(false);
 	const [mutation, setMutationState] = useState(initialMutation);
 	const [wallPenalty, setWallPenaltyState] = useState(initialSim.wallPenalty);
@@ -89,7 +127,21 @@ export function useSimulation(initialMutation: MutationParams) {
 
 	const paint = useCallback((t: number) => {
 		const ctx = canvasRef.current?.getContext("2d");
-		if (ctx) draw(ctx, simRef.current.species, simRef.current.disease.areas, t);
+		const { species, disease } = simRef.current;
+		if (ctx) draw(ctx, species, disease.areas, t, followRef.current?.agent.id ?? null);
+	}, []);
+
+	/** Runs one step and keeps the followed dot's record current, including its death. */
+	const advance = useCallback(() => {
+		simRef.current = step(simRef.current);
+		const followed = followRef.current;
+		if (followed && !isDead(followed.agent)) {
+			followRef.current = findDot(simRef.current, followed.agent.id) ?? followed;
+		}
+	}, []);
+
+	const publish = useCallback(() => {
+		setSnap(snapshot(simRef.current, areaRef.current, followRef.current));
 	}, []);
 
 	const cancelFrame = useCallback(() => {
@@ -112,13 +164,13 @@ export function useSimulation(initialMutation: MutationParams) {
 					dueRef.current = 0;
 					break;
 				}
-				simRef.current = step(simRef.current);
+				advance();
 				dueRef.current -= 1;
 				stepped = true;
 				extinct = isOver(simRef.current);
 			}
 
-			if (stepped) setSnap(snapshot(simRef.current, areaRef.current));
+			if (stepped) publish();
 			if (extinct) {
 				frameRef.current = undefined;
 				paint(1);
@@ -128,7 +180,7 @@ export function useSimulation(initialMutation: MutationParams) {
 			paint(speedRef.current <= maxSlidingStepsPerSecond ? dueRef.current : 1);
 			frameRef.current = window.requestAnimationFrame(frame);
 		},
-		[paint],
+		[paint, advance, publish],
 	);
 
 	const run = useCallback(() => {
@@ -145,21 +197,25 @@ export function useSimulation(initialMutation: MutationParams) {
 
 	const stepOnce = useCallback(() => {
 		if (isOver(simRef.current)) return;
-		simRef.current = step(simRef.current);
+		advance();
 		// A whole step is shown, so the next Run starts its slide from these cells.
 		dueRef.current = 1;
 		paint(1);
-		setSnap(snapshot(simRef.current, areaRef.current));
-	}, [paint]);
+		publish();
+	}, [paint, advance, publish]);
 
 	const setSpeed = useCallback((next: number) => {
 		speedRef.current = next;
 		setStepsPerSecond(next);
 	}, []);
 
+	/** New brains make new dots with new ids, so the followed dot is let go. */
 	const randomizeBrains = useCallback(() => {
 		simRef.current = recreate(simRef.current);
-	}, []);
+		followRef.current = null;
+		paint(1);
+		publish();
+	}, [paint, publish]);
 
 	/** Starts a new run at step 0 with fresh random dots; keeps the mutation and wall settings. */
 	const reset = useCallback(() => {
@@ -168,15 +224,46 @@ export function useSimulation(initialMutation: MutationParams) {
 		simRef.current = createSim(mutation, wallPenalty);
 		dueRef.current = 0;
 		areaRef.current = null;
+		followRef.current = null;
 		paint(1);
-		setSnap(snapshot(simRef.current, null));
+		publish();
 		setRunning(false);
-	}, [cancelFrame, paint]);
+	}, [cancelFrame, paint, publish]);
 
 	/** Sets the area every snapshot carries, with its stats in `areaSpecies`; null clears it. */
-	const inspect = useCallback((next: Area | null) => {
-		areaRef.current = next;
-		setSnap(snapshot(simRef.current, next));
+	const inspect = useCallback(
+		(next: Area | null) => {
+			areaRef.current = next;
+			publish();
+		},
+		[publish],
+	);
+
+	/** Follows the dot with this id (living or dead); null or an unknown id stops following. */
+	const follow = useCallback(
+		(id: number | null) => {
+			followRef.current = id === null ? null : findDot(simRef.current, id);
+			paint(1);
+			publish();
+		},
+		[paint, publish],
+	);
+
+	/**
+	 * Follows the living dot nearest to a cell: within `loupePickCells` when `precise` (the loupe
+	 * is on), `pickCells` otherwise. With none that close it stops following.
+	 */
+	const pick = useCallback(
+		(x: number, y: number, precise: boolean) => {
+			const found = nearestDot(simRef.current, x, y, precise ? loupePickCells : pickCells);
+			follow(found?.agent.id ?? null);
+		},
+		[follow],
+	);
+
+	/** The followed dot's genome, for copying; null when none is followed. */
+	const followedGenome = useCallback((): Genome | null => {
+		return followRef.current?.agent.genome ?? null;
 	}, []);
 
 	const setMutation = useCallback((next: MutationParams) => {
@@ -208,6 +295,9 @@ export function useSimulation(initialMutation: MutationParams) {
 		randomizeBrains,
 		reset,
 		inspect,
+		follow,
+		pick,
+		followedGenome,
 		setMutation,
 		setWallPenalty,
 	};

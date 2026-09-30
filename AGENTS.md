@@ -29,7 +29,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 - `src/sim/` — the simulation, framework-free plain TypeScript (no React imports):
   - `config.ts` — every tunable constant and the species list (`speciesDefs`: id, name, shades).
-  - `types.ts` — `Agent`, `Species`, `Genome`, `Field`, `MutationParams`, `Disease`, `Sim`.
+  - `types.ts` — `Agent`, `DeadAgent`, `HallOfFame`, `Species`, `Genome`, `Field`, `MutationParams`,
+    `Disease`, `Sim`.
   - `network.ts` — genome layout offsets, `randomGenome`, `evaluate` (forward pass), `pickMove`.
   - `movement.ts` — `Move` (0–16), `stepMoves`, `bounce`, `hitsWall`, `moveBy`, `moveCount`, `slide`.
   - `color.ts` — `shadeAt` (age → shade), `hpOpacity`, `oklchCss`.
@@ -39,6 +40,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
     hunter takes).
   - `disease.ts` — `emptyDisease`, `spreadDisease` (one step of disease), `diseaseCostAt`, `circleCounts`.
   - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
+  - `records.ts` — `addToHallOfFame`, `findDot`, `topDots`, `nearestDot`, `isDead`.
   - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
     new values.
   - `render.ts` — canvas drawing.
@@ -46,10 +48,11 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - `src/hooks/use-simulation.ts` — owns the sim in a ref and runs one `requestAnimationFrame` loop:
   each frame runs the steps that are due at the chosen speed, draws the canvas once and pushes a
   stats snapshot to React.
+- `src/hooks/use-loupe.ts` — Z toggles the canvas loupe, Esc turns it off.
 - `src/hooks/use-theme.ts` — light/dark, from `localStorage` key `theme` or the system setting.
   `index.html` has an inline script that applies the same key before first paint.
 - `src/components/` — app components: `sim-canvas`, `area-inspector`, `run-controls`, `food-cycle`, `species-stats`,
-  `wall-controls`, `mutation-controls`, `info-popover`, `theme-toggle`, `sidebar-section` (title + `InfoPopover`),
+  `wall-controls`, `mutation-controls`, `dot-record`, `top-dots`, `canvas-loupe`, `info-popover`, `theme-toggle`, `sidebar-section` (title + `InfoPopover`),
   `labeled-slider` (label, value and Slider; every sidebar slider uses it). `src/App.tsx` lays them out; `src/main.tsx` mounts it.
 - `src/components/ui/` — vendored shadcn/ui components. Add with `npx shadcn@latest add <name>`;
   don't hand-edit them. Biome and Prettier skip this folder.
@@ -67,7 +70,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - Explanations of a sidebar section sit behind `InfoPopover` at the end of its title, not as text
   under the controls, so the sidebar stays short.
 - The only colors beyond the neutral theme are the species colors, used for data and disease areas,
-  never for text, and the thin `yellow-400` frame of the inspected area.
+  never for text, and `yellow-400` for the inspected area's frame and the followed dot's ring.
 - Simulation functions don't mutate their inputs; `step` and `recreate` return a new `Sim`, and the
   hook reassigns its ref. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.
 - Constants live in `sim/config.ts`; nothing else hardcodes a size or rate.
@@ -77,9 +80,14 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 
 ## Core data model
 
-- **Agent:** `{ genome, hp, x, y, prevX, prevY, lifetime, kills }`. Genome and position live on the
-  same object; `prevX`/`prevY` is the cell before the last move, used only for drawing; `kills`
-  counts the prey it caught and decides who breeds first.
+- **Agent:** `{ id, genome, hp, x, y, prevX, prevY, lifetime, kills, ... }`. The record of a dot lives
+  on the agent itself: `id` (unique in a run, from `Sim.nextId`), `bornStep`, `parents`, `children`,
+  move counts (`stays`, `steps`, `jumps`, `wallBumps`) and an HP ledger (`hpEaten`,
+  `hpLostCrowding`, `hpLostDisease`, `hpLostWall`). `prevX`/`prevY` is the cell before the last move,
+  used only for drawing; `kills` counts the prey it caught and decides who breeds first.
+- **Dead dots:** `ageAndCull` returns the dead as `DeadAgent` (`diedStep`, `cause`: caught by which
+  species and hunter ids, or out of HP). Each species keeps the last step's dead in `lastDeaths` and
+  the best `hallOfFameSize` dead per ranking (kills, lifetime) in `hallOfFame`, genome included.
 - **Field:** `field[x][y]` is an `Int8Array` count of one species' agents per cell, rebuilt every step.
 - **Grid:** 200×200 with walls; every move goes through `bounce`, which reflects a step past a wall
   back inside (E at the east wall lands one cell W, a 2-cell jump lands two cells W; only the axis
@@ -115,6 +123,15 @@ positions, fields and disease from the previous step, so moves within a step don
 - `draw` paints each dot in its species' Tailwind shades 300 → 700 by age (lightest at birth,
   darkest for the species' oldest living dot) and at HP ÷ `startHp` opacity (capped at 100%). It
   blends additively, so overlapping dots show as brighter, whiter spots. The sidebar uses shade 500.
+
+## Following a dot (`dot-record.tsx`, `top-dots.tsx`, `canvas-loupe.tsx`)
+
+- A click on the canvas without a drag follows the nearest living dot within `pickCells` (3); with the
+  loupe on (Z, a `loupeZoom`× circle at the pointer) within `loupePickCells` (1). A click on empty
+  ground stops following. The top-dots list in the sidebar follows a dot by id, dead ones included.
+- The hook keeps the followed record after every step (`findDot`), so its popover shows the death
+  and stays until closed. Snapshots carry records without genomes; "Copy genome" reads it from the
+  hook. Randomize and Reset stop following.
 
 ## Area inspector (`area-inspector.tsx`)
 
@@ -164,7 +181,8 @@ positions, fields and disease from the previous step, so moves within a step don
   all 17 moves.
 - Mutation: with `percent`% odds a child gets exactly `genes` random genes replaced by values in
   `[-2, 2)`. Both values come live from the Mutation controls.
-- Recreate gives every living agent a new random genome and keeps position, HP and lifetime.
+- Recreate gives every living agent a new random genome, a new id and zeroed counters, and keeps
+  position, HP, lifetime and birth step: a new brain is a new dot.
 - Reset (`reset` in the hook) builds a new sim at step 0 with fresh random dots and pauses; it keeps
   the Walls, Mutation and Speed settings.
 - A species that dies out stays extinct (`breed` returns nothing for zero survivors). The hook stops

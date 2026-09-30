@@ -1,4 +1,6 @@
 import { AreaInspector } from "@/components/area-inspector";
+import { CanvasLoupe } from "@/components/canvas-loupe";
+import { DotRecord } from "@/components/dot-record";
 import { FoodCycle } from "@/components/food-cycle";
 import { MutationControls } from "@/components/mutation-controls";
 import { RunControls } from "@/components/run-controls";
@@ -6,10 +8,12 @@ import { SidebarSection } from "@/components/sidebar-section";
 import { SimCanvas } from "@/components/sim-canvas";
 import { SpeciesStats } from "@/components/species-stats";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { TopDots, topDotsInfo } from "@/components/top-dots";
 import { WallControls } from "@/components/wall-controls";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useLoupe } from "@/hooks/use-loupe";
 import { type RunStatus, useSimulation } from "@/hooks/use-simulation";
 import { formatCount } from "@/lib/format";
 import { defaultMutation, gridHeight, gridWidth } from "@/sim/config";
@@ -23,17 +27,20 @@ const statusLabel: Record<RunStatus, string> = {
 export function App() {
 	const sim = useSimulation(defaultMutation);
 	const { snap, status } = sim;
+	const loupeOn = useLoupe();
 	const extinct = snap.species.filter((s) => s.population === 0).map((s) => s.name);
+
+	const copyGenome = () => {
+		const genome = sim.followedGenome();
+		// Clipboard access can be refused (no focus, no permission); the button then does nothing.
+		if (genome) navigator.clipboard.writeText(JSON.stringify(genome)).catch(() => {});
+	};
 
 	return (
 		<div className="mx-auto flex min-h-svh w-full flex-col gap-2 p-4 lg:w-fit lg:justify-center">
 			<header className="flex items-start justify-between gap-6">
 				<div className="flex max-w-prose flex-col gap-2">
 					<h1 className="text-2xl font-semibold tracking-tight">Neuroparticles+</h1>
-					<p className="text-sm text-muted-foreground">
-						Each dot is a small neural net that sees a circle of 121 cells around it and picks a
-						move. Red eats green, green eats blue, blue eats red. The best hunters breed first.
-					</p>
 				</div>
 				<div className="flex shrink-0 items-center gap-4">
 					<Badge variant={status === "running" ? "default" : "secondary"} aria-live="polite">
@@ -55,7 +62,21 @@ export function App() {
 				>
 					<div className="relative">
 						<SimCanvas canvasRef={sim.canvasRef} />
-						<AreaInspector area={snap.area} species={snap.areaSpecies} onInspect={sim.inspect} />
+						<AreaInspector
+							area={snap.area}
+							species={snap.areaSpecies}
+							onInspect={sim.inspect}
+							onPick={(x, y) => sim.pick(x, y, loupeOn)}
+							precise={loupeOn}
+						/>
+						<DotRecord
+							followed={snap.followed}
+							species={snap.species}
+							step={snap.step}
+							onClose={() => sim.follow(null)}
+							onCopyGenome={copyGenome}
+						/>
+						<CanvasLoupe canvasRef={sim.canvasRef} on={loupeOn} />
 						{extinct.length > 0 && (
 							<Alert variant="destructive" className="absolute inset-x-3 bottom-3 w-auto">
 								<AlertTitle>
@@ -68,7 +89,7 @@ export function App() {
 					<div className="flex justify-between gap-4 text-sm text-muted-foreground tabular-nums">
 						<span>Step {formatCount(snap.step)}</span>
 						<span>
-							{gridWidth} × {gridHeight} grid, walled edges
+							Drag an area · click a dot · Z zooms · {gridWidth} × {gridHeight} grid
 						</span>
 					</div>
 				</section>
@@ -97,6 +118,17 @@ export function App() {
 						}
 					>
 						<SpeciesStats species={snap.species} />
+					</SidebarSection>
+
+					<Separator />
+
+					<SidebarSection title="Top dots" info={topDotsInfo}>
+						<TopDots
+							top={snap.top}
+							species={snap.species}
+							followedId={snap.followed?.agent.id ?? null}
+							onFollow={sim.follow}
+						/>
 					</SidebarSection>
 
 					{/* Pinned to the bottom so the sidebar lines up with the canvas caption. */}

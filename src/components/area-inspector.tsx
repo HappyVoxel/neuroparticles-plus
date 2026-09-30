@@ -19,6 +19,10 @@ interface AreaInspectorProps {
 	/** Stats for the agents inside `area`, one entry per species. */
 	species: readonly SpeciesStats[] | null;
 	onInspect: (area: Area | null) => void;
+	/** A click without a drag, with the clicked cell: follows the dot nearest to it. */
+	onPick: (x: number, y: number) => void;
+	/** True while the loupe is on; it draws its own crosshair, so the cursor hides. */
+	precise: boolean;
 }
 
 /** The grid cell under the pointer; may fall outside the grid while a drag leaves the canvas. */
@@ -34,10 +38,11 @@ const percent = (cells: number, total: number): string => `${(cells / total) * 1
 
 /**
  * Sits on top of the canvas. Dragging frames an area in yellow and opens its live stats beside it.
- * A click on the canvas, the X button or Escape closes it; clicks elsewhere on the page don't, so
- * Run, Pause and Step keep working while the stats are open.
+ * A click without a drag picks the dot under it through `onPick`. A click on the canvas, the X
+ * button or Escape closes the area; clicks elsewhere on the page don't, so Run, Pause and Step
+ * keep working while the stats are open.
  */
-export function AreaInspector({ area, species, onInspect }: AreaInspectorProps) {
+export function AreaInspector({ area, species, onInspect, onPick, precise }: AreaInspectorProps) {
 	const startRef = useRef<Cell | null>(null);
 	const [draft, setDraft] = useState<Area | null>(null);
 	const shown = draft ?? area;
@@ -61,8 +66,9 @@ export function AreaInspector({ area, species, onInspect }: AreaInspectorProps) 
 		const next = areaFromCorners(startRef.current, cellAt(e));
 		startRef.current = null;
 		setDraft(null);
-		// A click without a drag only closes what was open.
+		// A click without a drag closed the area on pointer down; now it picks a dot.
 		if (next.x0 !== next.x1 || next.y0 !== next.y1) onInspect(next);
+		else onPick(next.x0, next.y0);
 	};
 
 	const onPointerCancel = () => {
@@ -81,7 +87,7 @@ export function AreaInspector({ area, species, onInspect }: AreaInspectorProps) 
 		>
 			<div
 				aria-hidden
-				className="absolute inset-0 cursor-crosshair touch-none"
+				className={`absolute inset-0 touch-none ${precise ? "cursor-none" : "cursor-crosshair"}`}
 				onPointerDown={onPointerDown}
 				onPointerMove={onPointerMove}
 				onPointerUp={onPointerUp}
@@ -107,7 +113,7 @@ export function AreaInspector({ area, species, onInspect }: AreaInspectorProps) 
 					align="start"
 					sideOffset={8}
 					aria-label="Area stats"
-					className="w-60 gap-3 text-xs"
+					className="w-72 gap-3 text-xs"
 					onOpenAutoFocus={(e) => e.preventDefault()}
 					onInteractOutside={(e) => e.preventDefault()}
 				>
@@ -137,6 +143,7 @@ export function AreaInspector({ area, species, onInspect }: AreaInspectorProps) 
 								<th className="pb-1 text-right font-normal">Dots</th>
 								<th className="pb-1 text-right font-normal">Avg age</th>
 								<th className="pb-1 text-right font-normal">Avg HP</th>
+								<th className="pb-1 text-right font-normal">Top kills</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -158,6 +165,9 @@ export function AreaInspector({ area, species, onInspect }: AreaInspectorProps) 
 									</td>
 									<td className="py-0.5 text-right">
 										{s.population > 0 ? formatCount(Math.round(s.averageHp)) : "–"}
+									</td>
+									<td className="py-0.5 text-right">
+										{s.population > 0 ? formatCount(s.topKills) : "–"}
 									</td>
 								</tr>
 							))}
