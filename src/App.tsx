@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useLoupe } from "@/hooks/use-loupe";
 import { useRunShortcut } from "@/hooks/use-run-shortcut";
+import { useShortcut } from "@/hooks/use-shortcut";
 import { type RunStatus, useSimulation } from "@/hooks/use-simulation";
 import { useSound } from "@/hooks/use-sound";
 import { formatCount } from "@/lib/format";
@@ -36,7 +37,8 @@ export function App() {
 	const sound = useSound();
 	const { play } = sound;
 	const playClick = useCallback(() => play("click"), [play]);
-	useRunShortcut(status === "running" ? sim.pause : sim.run);
+	useRunShortcut(status === "running" ? sim.pause : sim.run, status !== "stopped");
+	useShortcut("s", sim.stepOnce, status === "paused");
 	const extinct = snap.species.filter((s) => s.population === 0).map((s) => s.name);
 
 	const copyGenome = () => {
@@ -109,7 +111,8 @@ export function App() {
 					<div className="flex justify-between gap-4 text-sm text-muted-foreground tabular-nums">
 						<span>Step {formatCount(snap.step)}</span>
 						<span>
-							Space runs · drag an area · click a dot · Z zooms · {gridWidth} × {gridHeight} grid
+							Space runs · S steps · drag an area · click a dot · Z zooms · {gridWidth} ×{" "}
+							{gridHeight} grid
 						</span>
 					</div>
 				</section>

@@ -49,6 +49,7 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   each frame runs the steps that are due at the chosen speed, draws the canvas once and pushes a
   stats snapshot to React.
 - `src/hooks/use-loupe.ts` — Z toggles the canvas loupe, Esc turns it off.
+- `src/hooks/use-shortcut.ts` — `useShortcut(key, onPress, enabled)`, the one way to add a key shortcut.
 - `src/hooks/use-theme.ts` — light/dark, from `localStorage` key `theme` or the system setting.
   `index.html` has an inline script that applies the same key before first paint.
 - `src/hooks/use-sound.ts` + `src/lib/sound.ts` — Web Audio effects and shuffled music loops under one
@@ -75,10 +76,12 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   under the controls, so the sidebar stays short.
 - The only colors beyond the neutral theme are the species colors, used for data and disease areas,
   never for text, and `yellow-400` for the inspected area's frame and the followed dot's ring.
-- Global shortcuts: Space runs/pauses (`use-run-shortcut`), Z toggles the loupe (`use-loupe`). Both
-  skip keys typed into fields (`isTyping` in `src/lib/keyboard.ts`); Space never presses a focused button.
-- Buttons, menu items and sliders (per step while dragged, never on press or release, and per key
-  step) click through document listeners in `use-sound`; `data-sound="pop"` (selects a dot) or
+- Global shortcuts: Space runs/pauses (`use-run-shortcut`), S steps, Z toggles the loupe and Esc
+  turns it off (`use-loupe`). Every shortcut goes through `useShortcut`: it skips modifiers, held
+  keys, fields and confirm dialogs (`isShortcut`), is off when its button would be disabled, and
+  clicks. Space never presses a focused button.
+- Buttons, menu items, shortcuts and sliders (per step while dragged, never on press or release,
+  and per key step) click through document listeners in `use-sound`; `data-sound="pop"` (selects a dot) or
   `"none"` on a button changes that.
 - Simulation functions don't mutate their inputs; `step` and `recreate` return a new `Sim`, and the
   hook reassigns its ref. Hot loops (`evaluate`, `senseAt`, `draw`) use plain indexed loops.

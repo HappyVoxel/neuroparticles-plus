@@ -7,7 +7,7 @@ import {
 	stopMusic,
 	unlockAudio,
 } from "@/lib/sound";
-import { sliderKeys } from "@/lib/keyboard";
+import { shortcutEvent, sliderKeys } from "@/lib/keyboard";
 import { readSetting, writeSetting } from "@/lib/storage";
 
 const musicKey = "music";
@@ -62,8 +62,8 @@ export interface Sound {
 /**
  * Music (off by default), UI effects (on by default) and a master volume, remembered in
  * `localStorage`. Audio starts on the first pointer or key press, since browsers block it before
- * a gesture. Every button, menu item and slider on the page plays its effect through document
- * listeners.
+ * a gesture. Every button, menu item, slider and keyboard shortcut on the page plays its effect
+ * through document listeners.
  */
 export function useSound(): Sound {
 	const [music, setMusicState] = useState(() => storedOn(musicKey, false));
@@ -124,6 +124,9 @@ export function useSound(): Sound {
 			if (e.repeat || !sliderKeys.has(e.key) || !effectsRef.current) return;
 			if (closestTo(e.target, '[role="slider"]')) playEffect("click");
 		};
+		const onShortcut = () => {
+			if (effectsRef.current) playEffect("click");
+		};
 		const listeners = [
 			["click", onClick],
 			["pointerdown", onPointerDown],
@@ -131,6 +134,7 @@ export function useSound(): Sound {
 			["pointerup", onPointerUp],
 			["pointercancel", onPointerUp],
 			["keydown", onKeyDown],
+			[shortcutEvent, onShortcut],
 		] as const;
 		for (const [type, listener] of listeners) {
 			document.addEventListener(type, listener as EventListener, true);
