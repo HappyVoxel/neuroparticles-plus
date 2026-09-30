@@ -192,7 +192,8 @@ positions, fields and disease from the previous step, so moves within a step don
 - Recreate gives every living agent a new random genome, a new id and zeroed counters, and keeps
   position, HP, lifetime and birth step: a new brain is a new dot.
 - Reset (`reset` in the hook) builds a new sim at step 0 with fresh random dots and pauses; it keeps
-  the Walls, Mutation and Speed settings.
+  the Walls, Mutation and Speed settings. `sim-settings.ts` also keeps them in `localStorage` across
+  a refresh; an invalid value falls back to its `config.ts` default, and a saved value hides a new one.
 - A species that dies out stays extinct (`breed` returns nothing for zero survivors). The hook stops
   the frame loop once `extinctSpecies` is non-empty; the page shows an Alert and disables Run, Step
   and Randomize. Reset stays enabled and starts a new run.

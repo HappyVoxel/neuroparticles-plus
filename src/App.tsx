@@ -20,7 +20,7 @@ import { useRunShortcut } from "@/hooks/use-run-shortcut";
 import { type RunStatus, useSimulation } from "@/hooks/use-simulation";
 import { useSound } from "@/hooks/use-sound";
 import { formatCount } from "@/lib/format";
-import { defaultMutation, gridHeight, gridWidth } from "@/sim/config";
+import { gridHeight, gridWidth } from "@/sim/config";
 
 const statusLabel: Record<RunStatus, string> = {
 	paused: "Paused",
@@ -29,7 +29,7 @@ const statusLabel: Record<RunStatus, string> = {
 };
 
 export function App() {
-	const sim = useSimulation(defaultMutation);
+	const sim = useSimulation();
 	const { snap, status } = sim;
 	const loupeOn = useLoupe();
 	const sound = useSound();

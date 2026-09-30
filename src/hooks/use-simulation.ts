@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type Area, agentsIn } from "@/sim/area";
+import { loadSimSettings, saveSimSettings } from "@/hooks/sim-settings";
+import { readSetting, writeSetting } from "@/lib/storage";
 import {
-	defaultStepsPerSecond,
 	loupePickCells,
 	maxSlidingStepsPerSecond,
 	pickCells,
@@ -101,26 +102,32 @@ const isOver = (sim: Sim): boolean => extinctSpecies(sim).length > 0;
 
 /**
  * Runs the simulation outside React on one animation-frame loop: each frame runs the steps that
- * are due at the chosen speed, draws the canvas once and hands React a fresh snapshot.
+ * are due at the chosen speed, draws the canvas once and hands React a fresh snapshot. Speed,
+ * walls and mutation start from the values saved in `localStorage` and are saved on every change.
  */
-export function useSimulation(initialMutation: MutationParams) {
-	const [initialSim] = useState(() => createSim(initialMutation));
+export function useSimulation() {
+	const [saved] = useState(() => loadSimSettings(readSetting));
+	const [initialSim] = useState(() => createSim(saved.mutation, saved.wallPenalty));
 	const simRef = useRef(initialSim);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const frameRef = useRef<number | undefined>(undefined);
 	const lastFrameRef = useRef(0);
 	/** Steps owed to the clock; the part below 1 is how far the frame is into the next step. */
 	const dueRef = useRef(0);
-	const speedRef = useRef(defaultStepsPerSecond);
+	const speedRef = useRef(saved.stepsPerSecond);
 	const areaRef = useRef<Area | null>(null);
 	/** The followed dot as last seen: alive, or at its death once it is gone. */
 	const followRef = useRef<DotRef | null>(null);
 
 	const [snap, setSnap] = useState(() => snapshot(initialSim, null, null));
 	const [running, setRunning] = useState(false);
-	const [mutation, setMutationState] = useState(initialMutation);
+	const [mutation, setMutationState] = useState(saved.mutation);
 	const [wallPenalty, setWallPenaltyState] = useState(initialSim.wallPenalty);
-	const [stepsPerSecond, setStepsPerSecond] = useState(defaultStepsPerSecond);
+	const [stepsPerSecond, setStepsPerSecond] = useState(saved.stepsPerSecond);
+
+	useEffect(() => {
+		saveSimSettings({ mutation, wallPenalty, stepsPerSecond }, writeSetting);
+	}, [mutation, wallPenalty, stepsPerSecond]);
 
 	const over = snap.species.some((s) => s.population === 0);
 	const status: RunStatus = over ? "stopped" : running ? "running" : "paused";

@@ -7,38 +7,21 @@ import {
 	stopMusic,
 	unlockAudio,
 } from "@/lib/sound";
+import { readSetting, writeSetting } from "@/lib/storage";
 
 const musicKey = "music";
 const effectsKey = "sound-effects";
 const volumeKey = "volume";
 
-function stored(key: string, fallback: boolean): boolean {
-	try {
-		const value = localStorage.getItem(key);
-		if (value === "on" || value === "off") return value === "on";
-	} catch {
-		// Storage blocked (private window, sandbox): use the default.
-	}
-	return fallback;
+function storedOn(key: string, fallback: boolean): boolean {
+	const value = readSetting(key);
+	return value === "on" || value === "off" ? value === "on" : fallback;
 }
 
 function storedVolume(): number {
-	try {
-		const value = localStorage.getItem(volumeKey);
-		const parsed = value === null ? Number.NaN : Number(value);
-		if (parsed >= 0 && parsed <= 1) return parsed;
-	} catch {
-		// Storage blocked: full volume.
-	}
-	return 1;
-}
-
-function save(key: string, value: string): void {
-	try {
-		localStorage.setItem(key, value);
-	} catch {
-		// Not saved; the setting still holds for this visit.
-	}
+	const value = readSetting(volumeKey);
+	const parsed = value === null ? Number.NaN : Number(value);
+	return parsed >= 0 && parsed <= 1 ? parsed : 1;
 }
 
 /**
@@ -73,8 +56,8 @@ export interface Sound {
  * listener.
  */
 export function useSound(): Sound {
-	const [music, setMusicState] = useState(() => stored(musicKey, false));
-	const [effects, setEffectsState] = useState(() => stored(effectsKey, true));
+	const [music, setMusicState] = useState(() => storedOn(musicKey, false));
+	const [effects, setEffectsState] = useState(() => storedOn(effectsKey, true));
 	const [volume, setVolumeState] = useState(storedVolume);
 	const [unlocked, setUnlocked] = useState(false);
 	const effectsRef = useRef(effects);
@@ -111,19 +94,19 @@ export function useSound(): Sound {
 	}, []);
 
 	const setMusic = useCallback((on: boolean) => {
-		save(musicKey, on ? "on" : "off");
+		writeSetting(musicKey, on ? "on" : "off");
 		setMusicState(on);
 	}, []);
 
 	const setEffects = useCallback((on: boolean) => {
-		save(effectsKey, on ? "on" : "off");
+		writeSetting(effectsKey, on ? "on" : "off");
 		setEffectsState(on);
 		// The menu item stays silent (it would click on the way off); confirm the way on instead.
 		if (on) playEffect("click");
 	}, []);
 
 	const setVolume = useCallback((next: number) => {
-		save(volumeKey, String(next));
+		writeSetting(volumeKey, String(next));
 		setVolumeState(next);
 	}, []);
 
