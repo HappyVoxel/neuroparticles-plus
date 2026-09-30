@@ -73,4 +73,13 @@ describe("senseAt", () => {
 		expect(input[cell(1, 1) * 4]).toBe(0);
 		expect(input).toHaveLength(inputSize);
 	});
+
+	it("writes into a given buffer, overwriting what was there", () => {
+		const red = buildField([at(50, 50)]);
+		const empty = buildField([]);
+		const buffer = new Array<number>(inputSize).fill(7);
+		const input = senseAt([red, empty, empty], noDisease, 50, 50, buffer);
+		expect(input).toBe(buffer);
+		expect(input).toEqual(senseAt([red, empty, empty], noDisease, 50, 50));
+	});
 });

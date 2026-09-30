@@ -20,20 +20,27 @@ export function randomGenome(): Genome {
 
 const sigmoid = (x: number): number => 1 / (1 + Math.exp(-x));
 
+// Scratch for `evaluate`, reused across calls: indexes of the non-zero inputs, and the hidden layer.
+const seen = new Int32Array(inputSize);
+const hidden = new Float64Array(hiddenSize);
+
 /**
- * Forward pass. Returns one raw score per move.
+ * Forward pass. Writes one raw score per move into `output` and returns it.
  * Most of the view is empty, so the hidden layer only sums the non-zero inputs.
  */
-export function evaluate(input: readonly number[], genome: Readonly<Genome>): number[] {
-	const seen: number[] = [];
+export function evaluate(
+	input: readonly number[],
+	genome: Readonly<Genome>,
+	output: number[] = new Array<number>(outputSize),
+): number[] {
+	let seenCount = 0;
 	for (let k = 0; k < inputSize; k++) {
-		if (input[k] !== 0) seen.push(k);
+		if (input[k] !== 0) seen[seenCount++] = k;
 	}
 
-	const hidden = new Array<number>(hiddenSize);
 	for (let j = 0; j < hiddenSize; j++) {
 		let sum = 0;
-		for (let n = 0; n < seen.length; n++) {
+		for (let n = 0; n < seenCount; n++) {
 			const k = seen[n];
 			sum += input[k] * genome[j * inputSize + k];
 		}
@@ -41,7 +48,6 @@ export function evaluate(input: readonly number[], genome: Readonly<Genome>): nu
 		hidden[j] = sigmoid(sum);
 	}
 
-	const output = new Array<number>(outputSize);
 	for (let j = 0; j < outputSize; j++) {
 		let sum = 0;
 		for (let k = 0; k < hiddenSize; k++) {

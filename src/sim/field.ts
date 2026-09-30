@@ -14,14 +14,15 @@ export function buildField(agents: readonly Agent[]): Field {
  * row, with the species counts and the disease cost interleaved per cell — [R, G, B, D, ...].
  * D is the cell's cost ÷ `diseaseHpAtCenter`: 0 outside disease, up to 1 at an area's center.
  * Cells outside the grid read `wallSense` on the first channel and 0 on the others.
+ * Writes into `input` and returns it, so a hot loop can pass one buffer for every agent.
  */
 export function senseAt(
 	fields: readonly Field[],
 	diseaseCost: readonly Float32Array[],
 	x: number,
 	y: number,
+	input: number[] = new Array<number>(visionCells.length * (fields.length + 1)),
 ): number[] {
-	const input = new Array<number>(visionCells.length * (fields.length + 1));
 	let k = 0;
 	for (let c = 0; c < visionCells.length; c++) {
 		const xx = x + visionCells[c][0];

@@ -1,5 +1,5 @@
 import { capture } from "./capture";
-import { hpPenaltyFromWall, populationSize, speciesDefs } from "./config";
+import { hpPenaltyFromWall, inputSize, outputSize, populationSize, speciesDefs } from "./config";
 import { emptyDisease, spreadDisease } from "./disease";
 import { ageAndCull, breed, spawn } from "./evolution";
 import { buildField, senseAt } from "./field";
@@ -41,13 +41,17 @@ export function moveAgent(agent: Agent, move: Move, wallPenalty: number): Agent 
 	};
 }
 
+// One input and one output buffer for every agent's turn; `think` uses them and lets go.
+const input = new Array<number>(inputSize).fill(0);
+const output = new Array<number>(outputSize).fill(0);
+
 function think(
 	agent: Agent,
 	fields: readonly Field[],
 	diseaseCost: readonly Float32Array[],
 	wallPenalty: number,
 ): Agent {
-	const output = evaluate(senseAt(fields, diseaseCost, agent.x, agent.y), agent.genome);
+	evaluate(senseAt(fields, diseaseCost, agent.x, agent.y, input), agent.genome, output);
 	const move = pickMove(output, moveCount(agent.lifetime));
 	return moveAgent(agent, move, wallPenalty);
 }

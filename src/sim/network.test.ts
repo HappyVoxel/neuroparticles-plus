@@ -68,6 +68,18 @@ describe("evaluate", () => {
 		genome[hiddenWeightsFrom + 5 * hiddenSize + 0] = 1;
 		expect(evaluate(new Array<number>(inputSize).fill(0), genome)[5]).toBeCloseTo(1);
 	});
+
+	it("writes into a given output and gives the same scores on every call", () => {
+		const genome = randomGenome();
+		const input = new Array<number>(inputSize).fill(0);
+		input[3] = 1;
+		input[200] = -1;
+		const expected = evaluate(input, genome);
+		evaluate(new Array<number>(inputSize).fill(1), randomGenome());
+		const output = new Array<number>(outputSize).fill(7);
+		expect(evaluate(input, genome, output)).toBe(output);
+		expect(output).toEqual(expected);
+	});
 });
 
 describe("pickMove", () => {
