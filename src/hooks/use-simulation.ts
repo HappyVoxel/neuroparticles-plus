@@ -9,7 +9,7 @@ import {
 	stepBudgetMs,
 	topDotsShown,
 } from "@/sim/config";
-import { type DotRef, findDot, isDead, nearestDot, topDots, topHunterIds } from "@/sim/records";
+import { type DotRef, findDot, isDead, leaderIds, nearestDot, topDots } from "@/sim/records";
 import { draw } from "@/sim/render";
 import { createSim, extinctSpecies, recreate, step } from "@/sim/simulation";
 import type {
@@ -150,8 +150,9 @@ export function useSimulation() {
 		const sim = simRef.current;
 		if (!ctx) return;
 		const followId = followRef.current?.agent.id ?? null;
-		const glowIds = topHunterIds(sim);
-		draw(ctx, sim.species, sim.disease.areas, t, followId, glowIds, performance.now());
+		const glowIds = leaderIds(sim, "lifetime");
+		const swordsIds = leaderIds(sim, "kills");
+		draw(ctx, sim.species, sim.disease.areas, t, followId, glowIds, swordsIds, performance.now());
 	}, []);
 
 	/** Runs one step and keeps the followed dot's record current, including its death. */

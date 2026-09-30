@@ -81,16 +81,17 @@ export function topDots(
 }
 
 /**
- * Per species, the id of its living dot with the most kills, a tie going to the longer life; null
- * while no living dot of that species has a kill. One pass, no sort, so it can run every frame.
+ * Per species, the id of its living dot highest on `ranking`, a tie going to the other ranking;
+ * null while no living dot of that species is above 0 on it. One pass, no sort, so it can run
+ * every frame.
  */
-export function topHunterIds(sim: Sim): (number | null)[] {
-	const order = compare("kills");
+export function leaderIds(sim: Sim, ranking: Ranking): (number | null)[] {
+	const order = compare(ranking);
 	return sim.species.map(({ agents }) => {
 		let best: Agent | null = null;
 		for (let i = 0; i < agents.length; i++) {
 			const agent = agents[i];
-			if (agent.kills > 0 && (best === null || order(agent, best) < 0)) best = agent;
+			if (agent[ranking] > 0 && (best === null || order(agent, best) < 0)) best = agent;
 		}
 		return best?.id ?? null;
 	});

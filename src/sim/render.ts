@@ -14,9 +14,21 @@ import {
 	glowRayWidthCells,
 	gridHeight,
 	gridWidth,
+	swordsCells,
+	swordsGapCells,
+	swordsOutline,
 } from "./config";
 import { slide } from "./movement";
 import type { DiseaseArea, Oklch, Species } from "./types";
+
+// Lucide's Swords icon (ISC license) on its 24-unit grid, drawn with a 2-unit round stroke.
+const swordsViewBox = 24;
+const swordsStroke = 2;
+const swordsPath =
+	"m13 19 6-6 M14.5 17.5 3.586 6.586A2 2 0 013 5.172V3h2.172a2 2 0 011.414.586L17.5 14.5 " +
+	"M14.828 6.172l2.586-2.586A2 2 0 0118.828 3H21v2.172a2 2 0 01-.586 1.414l-2.586 2.586 " +
+	"M16 16l4 4 M19 21l2-2 M5 14l4 4 M5 21l-2-2 M7.5 16.5 4 20";
+let swords: Path2D | null = null;
 
 /**
  * Paints the disease areas, each in the 300 shade of the species that crowded it; one species'
@@ -24,8 +36,9 @@ import type { DiseaseArea, Oklch, Species } from "./types";
  * `t` (0–1) of the way through its last move. A dot's shade tracks its age, from the species'
  * lightest shade at birth to its darkest for the species' oldest living dot, and its opacity
  * tracks HP. Colors add up where dots overlap. Then a pulsing star in its species' lightest shade
- * lights each dot in `glowIds` (one id or null per species), timed by `now` in ms. Last, rings the
- * dot with id `followId` while it lives.
+ * lights each dot in `glowIds` (one id or null per species), timed by `now` in ms, and swords in its
+ * species' middle shade stand over each dot in `swordsIds`. Last, rings the dot with id `followId`
+ * while it lives.
  */
 export function draw(
 	ctx: CanvasRenderingContext2D,
@@ -34,6 +47,7 @@ export function draw(
 	t: number,
 	followId: number | null,
 	glowIds: readonly (number | null)[],
+	swordsIds: readonly (number | null)[],
 	now: number,
 ): void {
 	ctx.globalCompositeOperation = "source-over";
@@ -60,6 +74,7 @@ export function draw(
 	ctx.globalCompositeOperation = "lighter";
 	let followed: { x: number; y: number } | null = null;
 	const glows: { x: number; y: number; color: Oklch }[] = [];
+	const swordsAt: { x: number; y: number; shades: readonly Oklch[] }[] = [];
 	for (let s = 0; s < species.length; s++) {
 		const { agents, shades } = species[s];
 		const colors = ageColors(shades);
@@ -76,6 +91,7 @@ export function draw(
 			ctx.fillRect(px, py, cellPixels, cellPixels);
 			if (id === followId) followed = { x: px, y: py };
 			if (id === glowIds[s]) glows.push({ x: px, y: py, color: shades[0] });
+			if (id === swordsIds[s]) swordsAt.push({ x: px, y: py, shades });
 		}
 	}
 	ctx.globalAlpha = 1;
@@ -95,8 +111,10 @@ export function draw(
 		);
 	}
 
+	ctx.globalCompositeOperation = "source-over";
+	for (const { x, y, shades } of swordsAt) drawSwords(ctx, x + cellPixels / 2, y, shades);
+
 	if (followed) {
-		ctx.globalCompositeOperation = "source-over";
 		ctx.strokeStyle = oklchCss(followRingColor);
 		ctx.lineWidth = 1;
 		ctx.beginPath();
@@ -162,5 +180,34 @@ function drawStar(
 		ctx.fill();
 		ctx.rotate(Math.PI / 4);
 	}
+	ctx.restore();
+}
+
+/**
+ * Lucide's Swords centered on `cx`, its bottom `swordsGapCells` above `top` and kept inside the
+ * canvas, stroked white and then in the species' middle shade.
+ */
+function drawSwords(
+	ctx: CanvasRenderingContext2D,
+	cx: number,
+	top: number,
+	shades: readonly Oklch[],
+): void {
+	swords ??= new Path2D(swordsPath);
+	const size = swordsCells * cellPixels;
+	const scale = size / swordsViewBox;
+	const left = Math.min(Math.max(cx - size / 2, 0), gridWidth * cellPixels - size);
+	const y = Math.max(top - swordsGapCells * cellPixels - size, 0);
+	ctx.save();
+	ctx.translate(left, y);
+	ctx.scale(scale, scale);
+	ctx.lineCap = "round";
+	ctx.lineJoin = "round";
+	ctx.strokeStyle = "white";
+	ctx.lineWidth = swordsStroke * swordsOutline;
+	ctx.stroke(swords);
+	ctx.strokeStyle = oklchCss(shadeAt(shades, 0.5));
+	ctx.lineWidth = swordsStroke;
+	ctx.stroke(swords);
 	ctx.restore();
 }

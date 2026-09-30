@@ -6,9 +6,9 @@ import {
 	emptyHallOfFame,
 	findDot,
 	isDead,
+	leaderIds,
 	nearestDot,
 	topDots,
-	topHunterIds,
 } from "./records";
 import { createSim } from "./simulation";
 import type { Agent, DeadAgent, Sim } from "./types";
@@ -144,24 +144,33 @@ describe("topDots", () => {
 	});
 });
 
-describe("topHunterIds", () => {
+describe("leaderIds", () => {
 	it("takes each species' living dot with the most kills", () => {
 		const red = dot({ kills: 4 });
 		const green = dot({ kills: 2 });
-		expect(topHunterIds(world([dot({ kills: 1 }), red], [green, dot({ kills: 1 })]))).toEqual([
-			red.id,
-			green.id,
-			null,
-		]);
+		expect(leaderIds(world([dot({ kills: 1 }), red], [green, dot({ kills: 1 })]), "kills")).toEqual(
+			[red.id, green.id, null],
+		);
 	});
 
-	it("breaks a tie on kills by the longer life", () => {
+	it("takes each species' oldest living dot", () => {
+		const red = dot({ lifetime: 90 });
+		const blue = dot({ lifetime: 5 });
+		expect(
+			leaderIds(world([dot({ lifetime: 10, kills: 9 }), red], [], [blue]), "lifetime"),
+		).toEqual([red.id, null, blue.id]);
+	});
+
+	it("breaks a tie by the other ranking", () => {
 		const older = dot({ kills: 3, lifetime: 90 });
-		expect(topHunterIds(world([dot({ kills: 3, lifetime: 10 }), older]))[0]).toBe(older.id);
+		expect(leaderIds(world([dot({ kills: 3, lifetime: 10 }), older]), "kills")[0]).toBe(older.id);
+		const hunter = dot({ kills: 2, lifetime: 50 });
+		expect(leaderIds(world([dot({ lifetime: 50 }), hunter]), "lifetime")[0]).toBe(hunter.id);
 	});
 
-	it("names no one while a species has no kills", () => {
-		expect(topHunterIds(world([dot(), dot()]))).toEqual([null, null, null]);
+	it("names no one while a species is at 0 on the ranking", () => {
+		expect(leaderIds(world([dot(), dot()]), "kills")).toEqual([null, null, null]);
+		expect(leaderIds(world([dot(), dot()]), "lifetime")).toEqual([null, null, null]);
 	});
 });
 

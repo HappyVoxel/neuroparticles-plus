@@ -77,7 +77,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - Explanations of a sidebar section sit behind `InfoPopover` at the end of its title, not as text
   under the controls, so the sidebar stays short.
 - The only colors beyond the neutral theme are the species colors, used for data, disease areas,
-  the top-hunter glow and the disease labels (white-outlined), never for other text, and
+  the oldest-dot glow, the top-hunter swords and the disease labels (both white-outlined), never
+  for other text, and
   `yellow-400` for the inspected area's frame and the followed dot's ring.
 - Global shortcuts: Space runs/pauses (`use-run-shortcut`) and S steps, both bound in `run-controls`
   beside their buttons; Z toggles the loupe and Esc turns it off (`use-loupe`). Every shortcut goes through `useShortcut`: it skips modifiers, held
@@ -143,8 +144,8 @@ positions, fields and disease from the previous step, so moves within a step don
 
 ## Canvas and sidebar tools
 
-Following a dot, the loupe, the top-dots board and its filter, the area inspector, the top-hunter
-glow and the disease labels: see `docs/ui.md`.
+Following a dot, the loupe, the top-dots board and its filter, the area inspector, the oldest-dot
+glow, the top-hunter swords and the disease labels: see `docs/ui.md`.
 
 ## Rules that are easy to miss
 

@@ -14,12 +14,15 @@ How the canvas and sidebar tools behave. `AGENTS.md` links here.
   and stays until closed. Snapshots carry records without genomes; "Copy genome" reads it from the
   hook. Randomize and Reset stop following.
 
-## Top-hunter glow (`render.ts`)
+## Oldest-dot glow and top-hunter swords (`render.ts`)
 
-- Each species' living dot with the most kills (ties to the longer life, `topHunterIds`) gets an
+- Each species' oldest living dot (ties to more kills, `leaderIds(sim, "lifetime")`) gets an
   eight-ray star in its species' 300 shade whose rays grow and brighten once every `glowPeriodMs`.
-  No glow while a species has no kills. `paint` passes `performance.now()`, so the pulse runs with
-  the frame loop and holds still while paused.
+  `paint` passes `performance.now()`, so the pulse runs with the frame loop and holds still while
+  paused.
+- Each species' living dot with the most kills (ties to the longer life, `leaderIds(sim, "kills")`)
+  wears Lucide's Swords icon above it, in its species' 500 shade with a white outline, drawn on the
+  canvas so it slides with the dot. No swords while a species has no kills.
 
 ## Disease labels (`disease-labels.tsx`)
 

@@ -27,7 +27,7 @@ export const loupeZoom = 4;
 export const loupeDiameterPx = 160;
 // The ring around the followed dot: Tailwind's yellow-400, like the inspected area's frame.
 export const followRingColor: Oklch = [0.852, 0.199, 91.936];
-// The star glow on each species' top living hunter: a soft core `glowCoreCells` wide and eight
+// The star glow on each species' oldest living dot: a soft core `glowCoreCells` wide and eight
 // rays, `glowRayWidthCells` wide at the base. The four straight rays swing from `glowMinCells` to
 // `glowMaxCells` long and back once every `glowPeriodMs`, the diagonals `glowDiagonalRatio` of
 // that, and the opacity at the center swings with them from `glowMinOpacity` to `glowMaxOpacity`.
@@ -39,6 +39,12 @@ export const glowCoreCells = 1.5;
 export const glowRayWidthCells = 0.5;
 export const glowMinOpacity = 0.4;
 export const glowMaxOpacity = 0.9;
+// The swords over each species' living dot with the most kills: Lucide's Swords icon,
+// `swordsCells` wide, its bottom `swordsGapCells` above the dot, in the species' 500 shade with a
+// white outline `swordsOutline` times the icon's stroke.
+export const swordsCells = 7;
+export const swordsGapCells = 1;
+export const swordsOutline = 2.5;
 // Dead dots kept per species and ranking (kills, lifetime), each with its genome (about 100 KB).
 export const hallOfFameSize = 20;
 // Dots shown in the sidebar's top list.
