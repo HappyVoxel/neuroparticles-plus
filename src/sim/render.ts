@@ -1,10 +1,7 @@
 import { hpOpacity, oklchCss, shadeAt } from "./color";
-import { cellPixels, diseaseOpacity, gridHeight, gridWidth } from "./config";
+import { ageColorSteps, cellPixels, diseaseOpacity, gridHeight, gridWidth } from "./config";
 import { slide } from "./movement";
 import type { DiseaseArea, Species } from "./types";
-
-// Ages are rounded to this many colors per species, so `fillStyle` repeats the same few strings.
-const ageSteps = 64;
 
 /**
  * Paints the disease areas, each in the 300 shade of the species that crowded it; one species'
@@ -42,8 +39,8 @@ export function draw(
 
 	ctx.globalCompositeOperation = "lighter";
 	for (const { agents, shades } of species) {
-		const colors = Array.from({ length: ageSteps }, (_, k) =>
-			oklchCss(shadeAt(shades, k / (ageSteps - 1))),
+		const colors = Array.from({ length: ageColorSteps }, (_, k) =>
+			oklchCss(shadeAt(shades, k / (ageColorSteps - 1))),
 		);
 		let oldest = 0;
 		for (let i = 0; i < agents.length; i++) oldest = Math.max(oldest, agents[i].lifetime);
@@ -51,7 +48,7 @@ export function draw(
 		for (let i = 0; i < agents.length; i++) {
 			const { x, y, prevX, prevY, lifetime, hp } = agents[i];
 			const age = oldest > 0 ? lifetime / oldest : 0;
-			ctx.fillStyle = colors[Math.round(age * (ageSteps - 1))];
+			ctx.fillStyle = colors[Math.round(age * (ageColorSteps - 1))];
 			ctx.globalAlpha = hpOpacity(hp);
 			ctx.fillRect(
 				slide(prevX, x, t) * cellPixels,

@@ -1,9 +1,11 @@
-import type { Species } from "./types";
+import type { MutationParams, Species } from "./types";
 
 // World
 export const gridWidth = 200;
 export const gridHeight = 200;
 export const cellPixels = 3;
+// Ages are rounded to this many colors per species, so `fillStyle` repeats the same few strings.
+export const ageColorSteps = 64;
 
 // Playback
 export const minStepsPerSecond = 5;
@@ -17,9 +19,10 @@ export const stepBudgetMs = 8;
 // Each agent sees every cell with dx² + dy² <= visionRadiusSquared around itself, one channel per
 // species. 37 makes a round view of 121 cells: 6 cells straight out, 4 along a diagonal.
 export const visionRadiusSquared = 37;
+export const visionRadius = Math.sqrt(visionRadiusSquared);
 // The cells in view as offsets from the agent, row by row. The network input follows this order.
 export const visionCells: readonly (readonly [dx: number, dy: number])[] = (() => {
-	const reach = Math.floor(Math.sqrt(visionRadiusSquared));
+	const reach = Math.floor(visionRadius);
 	const cells: [dx: number, dy: number][] = [];
 	for (let dy = -reach; dy <= reach; dy++) {
 		for (let dx = -reach; dx <= reach; dx++) {
@@ -124,3 +127,5 @@ export const litterOdds: readonly { children: number; percent: number }[] = [
 	{ children: 3, percent: 1 },
 ];
 export const geneRange = 4; // genes are random in [-2, 2)
+// What the Mutation controls start at.
+export const defaultMutation: MutationParams = { percent: 5, genes: 1 };

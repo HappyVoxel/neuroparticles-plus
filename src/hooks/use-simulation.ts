@@ -27,7 +27,8 @@ export interface SimSnapshot {
 	species: SpeciesStats[];
 	/** The same stats for the agents inside the inspected area, or null with no area. */
 	areaSpecies: SpeciesStats[] | null;
-	extinct: Species["name"][];
+	/** The inspected area, or null. */
+	area: Area | null;
 }
 
 function speciesStats({ id, name, shades }: Species, agents: readonly Agent[]): SpeciesStats {
@@ -56,9 +57,11 @@ function snapshot(sim: Sim, area: Area | null): SimSnapshot {
 		step: sim.step,
 		species: sim.species.map((s) => speciesStats(s, s.agents)),
 		areaSpecies: area && sim.species.map((s) => speciesStats(s, agentsIn(s.agents, area))),
-		extinct: sim.species.filter((s) => s.agents.length === 0).map((s) => s.name),
+		area,
 	};
 }
+
+const isOver = (sim: Sim): boolean => extinctSpecies(sim).length > 0;
 
 /**
  * Runs the simulation outside React on one animation-frame loop: each frame runs the steps that
@@ -76,11 +79,13 @@ export function useSimulation(initialMutation: MutationParams) {
 	const areaRef = useRef<Area | null>(null);
 
 	const [snap, setSnap] = useState(() => snapshot(initialSim, null));
-	const [status, setStatus] = useState<RunStatus>("paused");
+	const [running, setRunning] = useState(false);
 	const [mutation, setMutationState] = useState(initialMutation);
 	const [wallPenalty, setWallPenaltyState] = useState(initialSim.wallPenalty);
 	const [stepsPerSecond, setStepsPerSecond] = useState(defaultStepsPerSecond);
-	const [area, setAreaState] = useState<Area | null>(null);
+
+	const over = snap.species.some((s) => s.population === 0);
+	const status: RunStatus = over ? "stopped" : running ? "running" : "paused";
 
 	const paint = useCallback((t: number) => {
 		const ctx = canvasRef.current?.getContext("2d");
@@ -110,14 +115,14 @@ export function useSimulation(initialMutation: MutationParams) {
 				simRef.current = step(simRef.current);
 				dueRef.current -= 1;
 				stepped = true;
-				extinct = extinctSpecies(simRef.current).length > 0;
+				extinct = isOver(simRef.current);
 			}
 
 			if (stepped) setSnap(snapshot(simRef.current, areaRef.current));
 			if (extinct) {
 				frameRef.current = undefined;
 				paint(1);
-				setStatus("stopped");
+				setRunning(false);
 				return;
 			}
 			paint(speedRef.current <= maxSlidingStepsPerSecond ? dueRef.current : 1);
@@ -127,25 +132,24 @@ export function useSimulation(initialMutation: MutationParams) {
 	);
 
 	const run = useCallback(() => {
-		if (frameRef.current !== undefined || extinctSpecies(simRef.current).length > 0) return;
+		if (frameRef.current !== undefined || isOver(simRef.current)) return;
 		lastFrameRef.current = performance.now();
 		frameRef.current = window.requestAnimationFrame(frame);
-		setStatus("running");
+		setRunning(true);
 	}, [frame]);
 
 	const pause = useCallback(() => {
 		cancelFrame();
-		setStatus((s) => (s === "running" ? "paused" : s));
+		setRunning(false);
 	}, [cancelFrame]);
 
 	const stepOnce = useCallback(() => {
-		if (extinctSpecies(simRef.current).length > 0) return;
+		if (isOver(simRef.current)) return;
 		simRef.current = step(simRef.current);
 		// A whole step is shown, so the next Run starts its slide from these cells.
 		dueRef.current = 1;
 		paint(1);
 		setSnap(snapshot(simRef.current, areaRef.current));
-		if (extinctSpecies(simRef.current).length > 0) setStatus("stopped");
 	}, [paint]);
 
 	const setSpeed = useCallback((next: number) => {
@@ -161,19 +165,17 @@ export function useSimulation(initialMutation: MutationParams) {
 	const reset = useCallback(() => {
 		cancelFrame();
 		const { mutation, wallPenalty } = simRef.current;
-		simRef.current = { ...createSim(mutation), wallPenalty };
+		simRef.current = createSim(mutation, wallPenalty);
 		dueRef.current = 0;
 		areaRef.current = null;
 		paint(1);
 		setSnap(snapshot(simRef.current, null));
-		setAreaState(null);
-		setStatus("paused");
+		setRunning(false);
 	}, [cancelFrame, paint]);
 
-	/** Sets the area whose stats every snapshot carries in `areaSpecies`; null clears it. */
+	/** Sets the area every snapshot carries, with its stats in `areaSpecies`; null clears it. */
 	const inspect = useCallback((next: Area | null) => {
 		areaRef.current = next;
-		setAreaState(next);
 		setSnap(snapshot(simRef.current, next));
 	}, []);
 
@@ -199,7 +201,6 @@ export function useSimulation(initialMutation: MutationParams) {
 		mutation,
 		wallPenalty,
 		stepsPerSecond,
-		area,
 		run,
 		pause,
 		stepOnce,

@@ -35,7 +35,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
   - `color.ts` — `shadeAt` (age → shade), `hpOpacity`, `oklchCss`.
   - `field.ts` — `buildField`, `senseAt` (the network input).
   - `area.ts` — `Area` (a box of cells), `areaFromCorners`, `agentsIn`.
-  - `capture.ts` — `capture` (who gets caught this step and how much HP each hunter takes).
+  - `capture.ts` — `preyOf` (who eats whom), `capture` (who gets caught this step and how much HP each
+    hunter takes).
   - `disease.ts` — `emptyDisease`, `spreadDisease` (one step of disease), `diseaseCostAt`, `circleCounts`.
   - `evolution.ts` — `spawn`, `isNear`, `ageAndCull`, `crossover`, `mutate`, `litterSize`, `breed`.
   - `simulation.ts` — `createSim`, `step`, `moveAgent`, `recreate`, `extinctSpecies`; pure, return
@@ -48,7 +49,8 @@ ES modules don't load from `file://`; always go through `dev` or `preview`.
 - `src/hooks/use-theme.ts` — light/dark, from `localStorage` key `theme` or the system setting.
   `index.html` has an inline script that applies the same key before first paint.
 - `src/components/` — app components: `sim-canvas`, `area-inspector`, `run-controls`, `food-cycle`, `species-stats`,
-  `wall-controls`, `mutation-controls`, `info-popover`, `theme-toggle`. `src/App.tsx` lays them out; `src/main.tsx` mounts it.
+  `wall-controls`, `mutation-controls`, `info-popover`, `theme-toggle`, `sidebar-section` (title + `InfoPopover`),
+  `labeled-slider` (label, value and Slider; every sidebar slider uses it). `src/App.tsx` lays them out; `src/main.tsx` mounts it.
 - `src/components/ui/` — vendored shadcn/ui components. Add with `npx shadcn@latest add <name>`;
   don't hand-edit them. Biome and Prettier skip this folder.
 - `src/style.css` — Tailwind + shadcn theme tokens (preset `b1oVxsfY`: radix-sera, neutral, Inter,

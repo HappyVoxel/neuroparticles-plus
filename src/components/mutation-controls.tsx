@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { memo, useState } from "react";
+import { LabeledSlider } from "@/components/labeled-slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import type { MutationParams } from "@/sim/types";
 
 interface MutationControlsProps {
@@ -9,7 +9,10 @@ interface MutationControlsProps {
 	onChange: (next: MutationParams) => void;
 }
 
-export function MutationControls({ mutation, onChange }: MutationControlsProps) {
+export const MutationControls = memo(function MutationControls({
+	mutation,
+	onChange,
+}: MutationControlsProps) {
 	// Kept as text so the field can be cleared while typing; only whole numbers ≥ 1 are applied.
 	const [genesText, setGenesText] = useState(String(mutation.genes));
 
@@ -21,21 +24,16 @@ export function MutationControls({ mutation, onChange }: MutationControlsProps) 
 
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex flex-col gap-3">
-				<div className="flex items-baseline justify-between gap-3">
-					<Label htmlFor="mutation-chance">Chance per child</Label>
-					<span className="text-sm tabular-nums">{mutation.percent}%</span>
-				</div>
-				<Slider
-					id="mutation-chance"
-					min={0}
-					max={100}
-					step={1}
-					value={[mutation.percent]}
-					onValueChange={([percent]) => onChange({ ...mutation, percent })}
-					aria-label="Chance per child"
-				/>
-			</div>
+			<LabeledSlider
+				id="mutation-chance"
+				label="Chance per child"
+				display={`${mutation.percent}%`}
+				min={0}
+				max={100}
+				step={1}
+				value={mutation.percent}
+				onChange={(percent) => onChange({ ...mutation, percent })}
+			/>
 
 			<div className="flex items-center justify-between gap-3">
 				<Label htmlFor="mutation-genes">Genes changed</Label>
@@ -53,4 +51,4 @@ export function MutationControls({ mutation, onChange }: MutationControlsProps) 
 			</div>
 		</div>
 	);
-}
+});

@@ -1,4 +1,6 @@
 import { PauseIcon, PlayIcon, RotateCcwIcon, ShuffleIcon, StepForwardIcon } from "lucide-react";
+import { memo, type ReactNode } from "react";
+import { LabeledSlider } from "@/components/labeled-slider";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -11,11 +13,56 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { RunStatus } from "@/hooks/use-simulation";
 import { maxStepsPerSecond, minStepsPerSecond } from "@/sim/config";
+
+interface ConfirmButtonProps {
+	icon: ReactNode;
+	/** Names the button, its tooltip and the dialog's confirm action. */
+	label: string;
+	title: string;
+	description: string;
+	onConfirm: () => void;
+	disabled?: boolean;
+}
+
+/** An icon button that asks before it acts. */
+function ConfirmButton({
+	icon,
+	label,
+	title,
+	description,
+	onConfirm,
+	disabled,
+}: ConfirmButtonProps) {
+	return (
+		<AlertDialog>
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<AlertDialogTrigger asChild>
+						<Button variant="outline" size="icon-sm" disabled={disabled} aria-label={label}>
+							{icon}
+						</Button>
+					</AlertDialogTrigger>
+				</TooltipTrigger>
+				<TooltipContent>{label}</TooltipContent>
+			</Tooltip>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>{title}</AlertDialogTitle>
+					<AlertDialogDescription>{description}</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel>Cancel</AlertDialogCancel>
+					<AlertDialogAction variant="destructive" onClick={onConfirm}>
+						{label}
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
+	);
+}
 
 interface RunControlsProps {
 	status: RunStatus;
@@ -28,7 +75,7 @@ interface RunControlsProps {
 	onReset: () => void;
 }
 
-export function RunControls({
+export const RunControls = memo(function RunControls({
 	status,
 	stepsPerSecond,
 	onSpeedChange,
@@ -65,81 +112,33 @@ export function RunControls({
 					<TooltipContent>Advance one step</TooltipContent>
 				</Tooltip>
 
-				<AlertDialog>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<AlertDialogTrigger asChild>
-								<Button
-									variant="outline"
-									size="icon-sm"
-									disabled={stopped}
-									aria-label="Randomize brains"
-								>
-									<ShuffleIcon />
-								</Button>
-							</AlertDialogTrigger>
-						</TooltipTrigger>
-						<TooltipContent>Randomize brains</TooltipContent>
-					</Tooltip>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Randomize every brain?</AlertDialogTitle>
-							<AlertDialogDescription>
-								All evolved behavior is lost. Dots keep their position, health and age.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
-							<AlertDialogAction variant="destructive" onClick={onRandomize}>
-								Randomize brains
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
-
-				<AlertDialog>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<AlertDialogTrigger asChild>
-								<Button variant="outline" size="icon-sm" aria-label="Reset">
-									<RotateCcwIcon />
-								</Button>
-							</AlertDialogTrigger>
-						</TooltipTrigger>
-						<TooltipContent>Reset</TooltipContent>
-					</Tooltip>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogTitle>Start a new run?</AlertDialogTitle>
-							<AlertDialogDescription>
-								All dots and the step count are replaced. Walls, mutation and speed stay as set.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
-							<AlertDialogAction variant="destructive" onClick={onReset}>
-								Reset
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
-			</div>
-
-			<div className="flex flex-col gap-3">
-				<div className="flex items-baseline justify-between gap-3">
-					<Label htmlFor="speed">Speed</Label>
-					<span className="text-sm tabular-nums">{stepsPerSecond} steps/s</span>
-				</div>
-				<Slider
-					id="speed"
-					min={minStepsPerSecond}
-					max={maxStepsPerSecond}
-					step={minStepsPerSecond}
-					value={[stepsPerSecond]}
-					onValueChange={([next]) => onSpeedChange(next)}
-					aria-label="Speed"
+				<ConfirmButton
+					icon={<ShuffleIcon />}
+					label="Randomize brains"
+					title="Randomize every brain?"
+					description="All evolved behavior is lost. Dots keep their position, health and age."
+					onConfirm={onRandomize}
+					disabled={stopped}
+				/>
+				<ConfirmButton
+					icon={<RotateCcwIcon />}
+					label="Reset"
+					title="Start a new run?"
+					description="All dots and the step count are replaced. Walls, mutation and speed stay as set."
+					onConfirm={onReset}
 				/>
 			</div>
+
+			<LabeledSlider
+				id="speed"
+				label="Speed"
+				display={`${stepsPerSecond} steps/s`}
+				min={minStepsPerSecond}
+				max={maxStepsPerSecond}
+				step={minStepsPerSecond}
+				value={stepsPerSecond}
+				onChange={onSpeedChange}
+			/>
 		</div>
 	);
-}
+});

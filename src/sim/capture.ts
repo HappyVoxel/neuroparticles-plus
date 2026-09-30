@@ -8,6 +8,11 @@ export interface Capture {
 	gain: ReadonlyMap<Agent, number>;
 }
 
+/** Index of the species that species `i` of `n` catches: the next one around the cycle. */
+export function preyOf(i: number, n: number): number {
+	return (i + 1) % n;
+}
+
 /**
  * Who gets caught this step. A dot sharing a cell with hunters (the species before its own) dies,
  * and the hunters on that cell split its HP equally. Every species is read from the same
@@ -25,7 +30,7 @@ export function capture(species: readonly Species[]): Capture {
 			if (onCell) onCell.push(hunter);
 			else hunters.set(cell, [hunter]);
 		}
-		for (const prey of species[(i + 1) % n].agents) {
+		for (const prey of species[preyOf(i, n)].agents) {
 			const onCell = hunters.get(prey.x * gridHeight + prey.y);
 			if (!onCell) continue;
 			caught.add(prey);

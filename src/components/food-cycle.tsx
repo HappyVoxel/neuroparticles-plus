@@ -1,4 +1,5 @@
 import type { SpeciesStats } from "@/hooks/use-simulation";
+import { preyOf } from "@/sim/capture";
 import { populationSize } from "@/sim/config";
 
 interface FoodCycleProps {
@@ -30,7 +31,7 @@ function position(index: number, count: number): { x: number; y: number } {
 export function FoodCycle({ species }: FoodCycleProps) {
 	const n = species.length;
 	const summary = species
-		.map((s, i) => `${s.name} eats ${species[(i + 1) % n].name.toLowerCase()}`)
+		.map((s, i) => `${s.name} eats ${species[preyOf(i, n)].name.toLowerCase()}`)
 		.join(", ");
 
 	return (
@@ -56,7 +57,7 @@ export function FoodCycle({ species }: FoodCycleProps) {
 
 			{species.map((s, i) => {
 				const from = position(i, n);
-				const to = position((i + 1) % n, n);
+				const to = position(preyOf(i, n), n);
 				const dx = to.x - from.x;
 				const dy = to.y - from.y;
 				const length = Math.hypot(dx, dy);
@@ -84,7 +85,7 @@ export function FoodCycle({ species }: FoodCycleProps) {
 						<circle
 							cx={x}
 							cy={y}
-							r={extinct ? minRadius : nodeRadius(s.population)}
+							r={nodeRadius(s.population)}
 							fill={extinct ? "none" : s.color}
 							stroke={extinct ? "currentColor" : "none"}
 							strokeWidth="1.25"

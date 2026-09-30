@@ -1,4 +1,4 @@
-import { gridHeight, gridWidth, matureAge, oldAge } from "./config";
+import { gridHeight, gridWidth, matureAge, oldAge, outputSize } from "./config";
 
 /**
  * Network output index → move. 0–8 step to a neighbor: 0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW,
@@ -50,7 +50,7 @@ export function hitsWall(x: number, y: number, move: Move): boolean {
 
 /** How many moves, from 0, an agent this old may pick: young and old ones can't knight-jump. */
 export function moveCount(lifetime: number): number {
-	return lifetime < matureAge || lifetime >= oldAge ? stepMoves : offsets.length;
+	return lifetime < matureAge || lifetime >= oldAge ? stepMoves : outputSize;
 }
 
 export function moveBy(x: number, y: number, move: Move): { x: number; y: number } {

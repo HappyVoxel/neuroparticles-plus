@@ -1,8 +1,8 @@
 import { AreaInspector } from "@/components/area-inspector";
 import { FoodCycle } from "@/components/food-cycle";
-import { InfoPopover } from "@/components/info-popover";
 import { MutationControls } from "@/components/mutation-controls";
 import { RunControls } from "@/components/run-controls";
+import { SidebarSection } from "@/components/sidebar-section";
 import { SimCanvas } from "@/components/sim-canvas";
 import { SpeciesStats } from "@/components/species-stats";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { type RunStatus, useSimulation } from "@/hooks/use-simulation";
 import { formatCount } from "@/lib/format";
-import { gridHeight, gridWidth } from "@/sim/config";
+import { defaultMutation, gridHeight, gridWidth } from "@/sim/config";
 
 const statusLabel: Record<RunStatus, string> = {
 	paused: "Paused",
@@ -21,8 +21,9 @@ const statusLabel: Record<RunStatus, string> = {
 };
 
 export function App() {
-	const sim = useSimulation({ percent: 5, genes: 1 });
+	const sim = useSimulation(defaultMutation);
 	const { snap, status } = sim;
+	const extinct = snap.species.filter((s) => s.population === 0).map((s) => s.name);
 
 	return (
 		<div className="mx-auto flex min-h-svh w-full flex-col gap-2 p-4 lg:w-fit lg:justify-center">
@@ -54,11 +55,11 @@ export function App() {
 				>
 					<div className="relative">
 						<SimCanvas canvasRef={sim.canvasRef} />
-						<AreaInspector area={sim.area} species={snap.areaSpecies} onInspect={sim.inspect} />
-						{snap.extinct.length > 0 && (
+						<AreaInspector area={snap.area} species={snap.areaSpecies} onInspect={sim.inspect} />
+						{extinct.length > 0 && (
 							<Alert variant="destructive" className="absolute inset-x-3 bottom-3 w-auto">
 								<AlertTitle>
-									{snap.extinct.join(" and ")} died out at step {formatCount(snap.step)}.
+									{extinct.join(" and ")} died out at step {formatCount(snap.step)}.
 								</AlertTitle>
 								<AlertDescription>Press Reset to start a new run.</AlertDescription>
 							</Alert>
@@ -86,49 +87,36 @@ export function App() {
 
 					<Separator />
 
-					<section aria-labelledby="population-heading" className="flex flex-col gap-3">
-						<div className="flex items-center justify-between gap-3">
-							<h2 id="population-heading" className="text-sm font-medium">
-								Population
-							</h2>
-							<InfoPopover topic="population">
-								<div className="flex flex-col gap-2">
-									<FoodCycle species={snap.species} />
-									<p>Arrows point from hunter to prey. Dot size tracks population.</p>
-								</div>
-							</InfoPopover>
-						</div>
+					<SidebarSection
+						title="Population"
+						info={
+							<div className="flex flex-col gap-2">
+								<FoodCycle species={snap.species} />
+								<p>Arrows point from hunter to prey. Dot size tracks population.</p>
+							</div>
+						}
+					>
 						<SpeciesStats species={snap.species} />
-					</section>
+					</SidebarSection>
 
 					{/* Pinned to the bottom so the sidebar lines up with the canvas caption. */}
 					<Separator className="lg:mt-auto" />
 
-					<section aria-labelledby="walls-heading" className="flex flex-col gap-3">
-						<div className="flex items-center justify-between gap-3">
-							<h2 id="walls-heading" className="text-sm font-medium">
-								Walls
-							</h2>
-							<InfoPopover topic="walls">
-								HP a dot loses each time it moves into a wall. Behavior shifts as new dots are born.
-							</InfoPopover>
-						</div>
+					<SidebarSection
+						title="Walls"
+						info="HP a dot loses each time it moves into a wall. Behavior shifts as new dots are born."
+					>
 						<WallControls wallPenalty={sim.wallPenalty} onChange={sim.setWallPenalty} />
-					</section>
+					</SidebarSection>
 
 					<Separator />
 
-					<section aria-labelledby="mutation-heading" className="flex flex-col gap-3">
-						<div className="flex items-center justify-between gap-3">
-							<h2 id="mutation-heading" className="text-sm font-medium">
-								Mutation
-							</h2>
-							<InfoPopover topic="mutation">
-								How often a newborn gets random weights, and how many.
-							</InfoPopover>
-						</div>
+					<SidebarSection
+						title="Mutation"
+						info="How often a newborn gets random weights, and how many."
+					>
 						<MutationControls mutation={sim.mutation} onChange={sim.setMutation} />
-					</section>
+					</SidebarSection>
 				</aside>
 			</main>
 		</div>

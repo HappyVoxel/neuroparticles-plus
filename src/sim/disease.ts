@@ -8,6 +8,7 @@ import {
 	gridHeight,
 	gridWidth,
 	visionCells,
+	visionRadius,
 	visionRadiusSquared,
 } from "./config";
 import type { Disease, DiseaseArea, Field } from "./types";
@@ -19,12 +20,12 @@ export function emptyDisease(): Disease {
 	return {
 		areas: [],
 		crowdedSteps: new Uint16Array(cellCount),
-		cost: Array.from({ length: gridWidth }, () => new Float32Array(gridHeight)),
+		cost: costGrid([]),
 	};
 }
 
 /** A new area's radius: the view's. */
-export const diseaseBirthRadius = Math.sqrt(visionRadiusSquared);
+export const diseaseBirthRadius = visionRadius;
 
 /** Whether a cell `distanceSquared` from a center is inside a circle of `radius`. */
 function inside(distanceSquared: number, radius: number): boolean {

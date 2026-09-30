@@ -41,7 +41,7 @@ export function evaluate(input: readonly number[], genome: Readonly<Genome>): nu
 		hidden[j] = sigmoid(sum);
 	}
 
-	const output = new Array<number>(outputSize).fill(0);
+	const output = new Array<number>(outputSize);
 	for (let j = 0; j < outputSize; j++) {
 		let sum = 0;
 		for (let k = 0; k < hiddenSize; k++) {

@@ -7,12 +7,12 @@ import { hitsWall, type Move, moveBy, moveCount } from "./movement";
 import { evaluate, pickMove, randomGenome } from "./network";
 import type { Agent, Field, MutationParams, Sim, Species } from "./types";
 
-export function createSim(mutation: MutationParams): Sim {
+export function createSim(mutation: MutationParams, wallPenalty = hpPenaltyFromWall): Sim {
 	const species = speciesDefs.map((def): Species => {
 		const agents = Array.from({ length: populationSize }, () => spawn(randomGenome()));
 		return { ...def, agents, field: buildField(agents) };
 	});
-	return { species, step: 0, mutation, wallPenalty: hpPenaltyFromWall, disease: emptyDisease() };
+	return { species, step: 0, mutation, wallPenalty, disease: emptyDisease() };
 }
 
 /** Applies a move. Bumping into a wall bounces the agent back and costs `wallPenalty` HP. */

@@ -21,16 +21,17 @@ export function senseAt(
 	x: number,
 	y: number,
 ): number[] {
-	const input: number[] = [];
+	const input = new Array<number>(visionCells.length * (fields.length + 1));
+	let k = 0;
 	for (let c = 0; c < visionCells.length; c++) {
 		const xx = x + visionCells[c][0];
 		const yy = y + visionCells[c][1];
 		if (xx < 0 || xx >= gridWidth || yy < 0 || yy >= gridHeight) {
-			for (let s = 0; s < fields.length; s++) input.push(s === 0 ? wallSense : 0);
-			input.push(0);
+			for (let s = 0; s < fields.length; s++) input[k++] = s === 0 ? wallSense : 0;
+			input[k++] = 0;
 		} else {
-			for (let s = 0; s < fields.length; s++) input.push(fields[s][xx][yy]);
-			input.push(diseaseCost[xx][yy] / diseaseHpAtCenter);
+			for (let s = 0; s < fields.length; s++) input[k++] = fields[s][xx][yy];
+			input[k++] = diseaseCost[xx][yy] / diseaseHpAtCenter;
 		}
 	}
 	return input;

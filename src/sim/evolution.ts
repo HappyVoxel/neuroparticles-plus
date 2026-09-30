@@ -155,11 +155,10 @@ export function breed(survivors: readonly Agent[], mutation: MutationParams): Ag
 		paired.add(a).add(b);
 
 		const size = Math.min(litterSize(), gap - children.length);
-		const x = near ? Math.floor((a.x + b.x) / 2) : a.x;
-		const y = near ? Math.floor((a.y + b.y) / 2) : a.y;
+		const from = near ? { x: Math.floor((a.x + b.x) / 2), y: Math.floor((a.y + b.y) / 2) } : a;
 		const moves = near ? siblingMoves : besideMoves;
 		litterGenomes(a.genome, b.genome, size).forEach((genome, k) => {
-			children.push(spawn(mutate(genome, mutation), moveBy(x, y, moves[k])));
+			children.push(spawn(mutate(genome, mutation), moveBy(from.x, from.y, moves[k])));
 		});
 	}
 	return children;

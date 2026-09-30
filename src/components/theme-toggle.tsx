@@ -1,9 +1,10 @@
 import { MoonIcon, SunIcon } from "lucide-react";
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTheme } from "@/hooks/use-theme";
 
-export function ThemeToggle() {
+export const ThemeToggle = memo(function ThemeToggle() {
 	const { theme, toggleTheme } = useTheme();
 	const label = theme === "dark" ? "Switch to light theme" : "Switch to dark theme";
 
@@ -17,4 +18,4 @@ export function ThemeToggle() {
 			<TooltipContent>{label}</TooltipContent>
 		</Tooltip>
 	);
-}
+});
