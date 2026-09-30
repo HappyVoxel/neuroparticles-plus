@@ -22,8 +22,8 @@ TypeScript + Vite + React 19 + shadcn/ui (Radix) + Tailwind CSS v4.
 | `npm run lint`      | Biome lint on `src/`                         |
 | `npm run format`    | Prettier (tabs, width 100) on the whole repo |
 
-The build uses relative asset paths (`base: "./"`), so `dist/` can be hosted from any subfolder.
-ES modules don't load from `file://`; always go through `dev` or `preview`.
+The build uses relative asset paths (`base: "./"`); ES modules don't load from `file://`, so go through `dev` or `preview`.
+Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypanel): see `docs/deployment.md`.
 
 ## Layout
 

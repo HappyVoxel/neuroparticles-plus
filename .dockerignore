@@ -1,0 +1,45 @@
+# Version control
+.git
+.gitignore
+
+# Node / pnpm
+node_modules
+.pnpm-store
+
+# Build output (the image builds its own)
+dist
+
+# Env (never bake into image)
+.env
+.env.*
+
+# Editor / OS
+.DS_Store
+.vscode
+.idea
+*.swp
+
+# Logs / debug
+npm-debug.log*
+.pnpm-debug.log*
+
+# Test / browser artifacts and local experiments
+coverage
+test-results
+.playwright-mcp
+.exp
+
+# CI definitions — never build input
+.woodpecker
+
+# Docker (don't recurse)
+Dockerfile
+.dockerignore
+
+# Docs, screenshots and agent notes are not build input
+docs
+images
+*.md
+.claude
+.agents
+skills-lock.json

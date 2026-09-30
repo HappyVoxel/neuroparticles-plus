@@ -1,0 +1,60 @@
+# Builds master, pushes the image to GHCR, then tells Easypanel to redeploy.
+# Setup steps for Woodpecker, Easypanel and this repo: docs/deployment.md.
+#
+# Woodpecker settings this needs:
+#   Org secrets  ghcr_username     GitHub user that owns ghcr_token
+#                ghcr_token        classic PAT with write:packages
+#                easypanel_token   Easypanel API token, shared by every repo;
+#                                  allowed events: push, manual
+#   Repo     "Cancel previous pipelines" must NOT include push, or a new push
+#            kills a deploy mid-flight.
+#   Server   WOODPECKER_PLUGINS_PRIVILEGED lists woodpeckerci/plugin-docker-buildx.
+
+when:
+  - event: push
+    branch: master
+  - event: manual
+
+depends_on:
+  - test
+
+steps:
+  - name: build
+    image: woodpeckerci/plugin-docker-buildx:6
+    settings:
+      registry: ghcr.io
+      # GHCR image paths must be lowercase.
+      repo: ghcr.io/happyvoxel/neuroparticles-plus
+      username:
+        from_secret: ghcr_username
+      password:
+        from_secret: ghcr_token
+      platforms: linux/amd64
+      tags:
+        - latest
+        - sha-${CI_COMMIT_SHA}
+      # Registry-backed cache in the same GHCR repo. ignore-error keeps a cache
+      # hiccup from failing the deploy.
+      # The plugin splits cache_from on commas; `\,` keeps it one value. Single
+      # quotes so YAML passes the backslash through untouched.
+      cache_from: 'type=registry\,ref=ghcr.io/happyvoxel/neuroparticles-plus:buildcache'
+      cache_to: type=registry,ref=ghcr.io/happyvoxel/neuroparticles-plus:buildcache,mode=max,ignore-error=true
+
+  - name: deploy
+    image: curlimages/curl
+    environment:
+      EASYPANEL_URL: https://server.happyvoxel.com
+      EASYPANEL_TOKEN:
+        from_secret: easypanel_token
+      # The Easypanel service this repo deploys to.
+      EP_PROJECT: ideas
+      EP_SERVICE: neuroparticles
+    commands:
+      # `$$` stops Woodpecker substituting the variable before the shell sees it.
+      # --fail-with-body exits non-zero on >=400 and keeps Easypanel's reason in
+      # the log. A 2xx only means the redeploy was accepted; Easypanel pulls and
+      # restarts on its own afterwards.
+      - >
+        curl --fail-with-body -sS --max-time 60 -X POST "$${EASYPANEL_URL}/api/trpc/services.app.deployService"
+        -H "Authorization: Bearer $${EASYPANEL_TOKEN}" -H "Content-Type: application/json"
+        -d "{\"json\":{\"projectName\":\"$${EP_PROJECT}\",\"serviceName\":\"$${EP_SERVICE}\"}}"

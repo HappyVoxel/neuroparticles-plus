@@ -1,0 +1,20 @@
+# Shared check suite. production.yaml waits on this workflow (`depends_on`),
+# so its `when` must match every event production.yaml runs on.
+when:
+  - event: push
+    branch: master
+  - event: manual
+
+steps:
+  - name: check
+    # Major only, to track the node:24-alpine image the build runs on.
+    image: node:24
+    environment:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+    commands:
+      # corepack reads the pnpm version from package.json "packageManager".
+      - corepack enable pnpm
+      - pnpm install --frozen-lockfile
+      - pnpm lint
+      - pnpm typecheck
+      - pnpm test
