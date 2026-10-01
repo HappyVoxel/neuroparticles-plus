@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Browser-only artificial life sim with three species (Red, Green, Blue) in a rock-paper-scissors
 predator/prey loop. Each dot is an agent with its own small neural net that looks at a round view of
-121 cells around itself and picks a move. A genetic algorithm breeds
-mature dots that stand near each other.
+121 cells around itself and picks a move. A genetic algorithm breeds the best hunters of all
+species into one shared population. Read `docs/architecture.md` before changing how dots behave.
 TypeScript + Vite + React 19 + shadcn/ui (Radix) + Tailwind CSS v4.
 
 ## Commands
@@ -111,6 +111,9 @@ Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypa
   - `[0, hiddenWeightsFrom)` — input→hidden weights, index `j * inputSize + k`
   - `[hiddenWeightsFrom, biasFrom)` — hidden→output weights, index `hiddenWeightsFrom + j * hiddenSize + k`
   - `[biasFrom, genomeSize)` — hidden biases
+
+  It holds nothing else: no memory, no traits, no species marker (`docs/architecture.md`).
+
 - **Network:** 484 inputs → 25 sigmoid hidden → 17 linear outputs. Output index is the move.
   Steps to a neighbor: `0 NW, 1 N, 2 NE, 3 W, 4 stay, 5 E, 6 SW, 7 S, 8 SE`. Knight jumps
   (±1,±2)/(±2,±1) to the in-between directions: `9 NNW, 10 NNE, 11 WNW, 12 ENE, 13 WSW, 14 ESE`,
@@ -124,9 +127,10 @@ Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypa
 
 ## Step loop (`simulation.step`)
 
-`capture` runs once for all species. Then for each species: `ageAndCull` → `breed` → every agent
-`evaluate`s and moves → `buildField`. Then `spreadDisease` reads the new fields. All of it reads the
-positions, fields and disease from the previous step, so moves within a step don't see each other.
+`capture` runs once for all species, then `ageAndCull` per species, then one `breed` for all
+species. Then every agent `evaluate`s and moves, each species runs `buildField`, and `spreadDisease`
+reads the new fields. All of it reads the positions, fields and disease from the previous step, so
+moves within a step don't see each other.
 
 ## Playback (`use-simulation.ts`, `render.ts`)
 
@@ -156,31 +160,22 @@ glow, the top-hunter swords and the disease labels: see `docs/ui.md`.
   the same positions, so a dot caught this step still catches.
 - HP per step: −`hpPenaltyFromCrowding` if the cell has another of your kind, −`baseDecayPerStep`
   always. Dead at `hp <= 0`.
-- Disease (`disease.ts`): the circle of view size around a cell counts a crowded step while it
-  holds more than `diseaseCrowd` dots of one species outside disease, and resets otherwise. Cells
-  past `diseaseAfterSteps` in a row start one `DiseaseArea` per crowd, of the species with the
-  most dots, on the middle of the crowd, born at view size. An area that reaches `pandemicRadius`
-  is a pandemic for good (`pandemicStep`). Dots inside an area and cells inside one never count a
-  crowd, so areas don't pile up. Each step an area's `radius` moves at most one cell toward
-  `targetRadius` of its own species' dots inside (the size that keeps its birth density), between
-  `diseaseMinRadius` and `diseaseMaxRadius`: it grows as its dots walk in and shrinks as they
-  leave or die. Every dot inside, of any species, loses `diseaseHpAtCenter` HP per step on the
-  center, falling linearly to `diseaseHpAtEdge` at the area's own edge. Overlaps never stack: a
-  cell costs its worst area. An area clears after more than `diseaseAfterSteps` steps with no dot
-  inside. `draw` fills each area in its species' 300 shade at `diseaseOpacity`, one shape per
-  species, under the dots.
+- Disease (`disease.ts`): a view-sized circle crowded by one species for more than
+  `diseaseAfterSteps` steps becomes a `DiseaseArea` that drains HP from every dot inside and grows
+  or shrinks with its own species' dots. Overlaps never stack. Full rule: `docs/architecture.md`.
 - A move into a wall costs `sim.wallPenalty` HP (`moveAgent` in `simulation.ts`); standing next to a
   wall or walking along it is free. The value starts at `hpPenaltyFromWall` and comes live from the
   Walls control (0 to `maxWallPenalty`). This is what makes evolution select against wall bumps.
 - All species share one budget of `totalPopulation` dots. Each keeps `minPopulation` slots of its
   own; the rest is a pool any species can fill, so the species that breeds first grows and the
-  others shrink to their reserve. `breed` runs once for all species
-  and only fills the gap: a species breeds only when it starts the step with 2 or more open slots. Agents that lived `matureAge` steps, of every species, pair up in order of
-  `kills` ÷ `lifetime`, highest first, ties in random order. Each takes the best free mature agent
-  of its species inside its view (`isNear`), or the best free one anywhere when none is in view, so
-  a thinned-out species still breeds. A litter is cut to its species' open slots: its reserve room
-  plus what is left of the pool. An agent breeds once per step. Breeding by kills is what stops
-  dots from standing still; see `docs/hunting-research.md`. Reset splits the budget evenly.
+  others shrink to their reserve. `breed` runs once for all species and only fills the gap; a
+  species breeds only when it starts the step with 2 or more open slots. Agents that lived
+  `matureAge` steps, of every species, pair up in order of `kills` ÷ `lifetime`, highest first,
+  ties in random order. Each takes the best free mature agent of its species inside its view
+  (`isNear`), or the best free one anywhere when none is in view, so a thinned-out species still
+  breeds. A litter is cut to its species' open slots: its reserve room plus what is left of the
+  pool. An agent breeds once per step. Breeding by kills is what stops dots from standing still;
+  see `docs/hunting-research.md`. Reset splits the budget evenly.
 - A pair gets a litter sized by `litterOdds`: 2 children 90% of the time, 1 child 9%, 3 children 1%
   (`litterSize`), cut to the slots still open. Children start with full HP. The first lands on the
   cell halfway between the parents, the second one cell E, the third one cell S (`siblingMoves`),
