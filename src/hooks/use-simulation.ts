@@ -131,7 +131,9 @@ const noDotsYet: SimView = {
 	})),
 };
 
-const isOver = (sim: SimView): boolean => extinctSpecies(sim).length > 0;
+// The placeholder before the first frame has no dots but hasn't ended: a Run or Step pressed
+// then goes to the worker after its reset and plays as usual.
+const isOver = (sim: SimView): boolean => sim !== noDotsYet && extinctSpecies(sim).length > 0;
 
 function captureSimulationEvent(event: string, properties: Record<string, number>) {
 	if (isPostHogEnabled) posthog.capture(event, properties);
