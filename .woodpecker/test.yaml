@@ -1,6 +1,8 @@
-# Shared check suite. production.yaml waits on this workflow (`depends_on`),
-# so its `when` must match every event production.yaml runs on.
+# Shared check suite: every pull request, plus pushes to master and manual runs. production.yaml
+# waits on this workflow (`depends_on`), so its `when` must cover every event production.yaml runs
+# on. Pull requests never deploy: production.yaml doesn't run on them.
 when:
+  - event: pull_request
   - event: push
     branch: master
   - event: manual
@@ -18,3 +20,14 @@ steps:
       - pnpm lint
       - pnpm typecheck
       - pnpm test
+
+  - name: e2e
+    # The tag must match @playwright/test in package.json; the image ships its browsers. Steps
+    # share the workspace, so node_modules comes from `check`.
+    image: mcr.microsoft.com/playwright:v1.63.0-noble
+    environment:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+    commands:
+      - corepack enable pnpm
+      # Builds, serves with `vite preview` and runs e2e/*.e2e.ts in Chromium (playwright.config.ts).
+      - pnpm e2e

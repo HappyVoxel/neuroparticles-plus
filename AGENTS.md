@@ -17,13 +17,15 @@ TypeScript + Vite + React 19 + shadcn/ui (Radix) + Tailwind CSS v4.
 | `npm run dev`       | Vite dev server with live reload             |
 | `npm run build`     | `tsc --noEmit`, then static build to `dist/` |
 | `npm run preview`   | Serve `dist/` locally                        |
-| `npm test`          | Vitest, once                                 |
+| `npm test`          | Vitest unit tests (`src/**/*.test.ts`), once |
+| `npm run e2e`       | Playwright e2e (`e2e/*.e2e.ts`), own build   |
 | `npm run typecheck` | `tsc --noEmit`                               |
-| `npm run lint`      | Biome lint on `src/`                         |
+| `npm run lint`      | Biome lint on `src/` and `e2e/`              |
 | `npm run format`    | Prettier (tabs, width 100) on the whole repo |
 
 The build uses relative asset paths (`base: "./"`); ES modules don't load from `file://`, so go through `dev` or `preview`.
-Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypanel): see `docs/deployment.md`.
+Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypanel), and every PR runs lint,
+typecheck, unit and e2e (`.woodpecker/test.yaml`): see `docs/deployment.md`.
 
 ## Layout
 
