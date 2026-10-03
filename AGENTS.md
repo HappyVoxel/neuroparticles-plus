@@ -155,14 +155,14 @@ glow, the top-hunter swords and the disease labels: see `docs/ui.md`.
 
 - For species `i`, enemies are `species[(i-1) mod 3]` and prey is `species[(i+1) mod 3]`
   (Red eats Green, Green eats Blue, Blue eats Red).
-- Capture (`capture.ts`): a dot that shares a cell with an enemy dies. The enemies on that cell split
-  its HP equally, and each adds 1 to its `kills`. All species resolve from
-  the same positions, so a dot caught this step still catches.
+- Capture (`capture.ts`): a dot sharing a cell with an enemy dies; the enemies there split its HP
+  and each adds 1 to `kills`. All species resolve from the same positions. A hunter feeds
+  `feedSharePercent` (50%) of its catch to its young children in view (`fed`, `hpFed`).
 - HP per step: −`hpPenaltyFromCrowding` if the cell has another of your kind, −`decayAt` its age
   always: `baseDecayPerStep` while young, then times 1, 2, 3, 5, 8, … (Fibonacci), one stage per
   `decayStageSteps` (1,000). Dead at `hp <= 0`; no age limit, no HP cap, so an old dot lives only
-  while it eats enough. A dot is born with 30% of `primeHp` and grows to it at `matureAge`
-  (`grownHpAt`); smaller births die out more (`docs/hunting-research.md`).
+  while it eats enough. A dot is born with `birthHp` (3,000) and gains HP only by eating or being
+  fed; smaller births die out more (`docs/hunting-research.md`).
 - Disease (`disease.ts`): a view-sized circle crowded by one species for more than
   `diseaseAfterSteps` steps becomes a `DiseaseArea` that drains HP from every dot inside and grows
   or shrinks with its own species' dots. Overlaps never stack. Full rule: `docs/architecture.md`.
@@ -179,12 +179,9 @@ glow, the top-hunter swords and the disease labels: see `docs/ui.md`.
   breeds. A litter is cut to its species' open slots: its reserve room plus what is left of the
   pool. An agent breeds once per step. Breeding by kills is what stops dots from standing still;
   see `docs/hunting-research.md`. Reset splits the budget evenly.
-- A pair gets a litter sized by `litterOdds`: 2 children 90% of the time, 1 child 9%, 3 children 1%
-  (`litterSize`), cut to the slots still open. Children start at 30% HP. The first lands on the
-  cell halfway between the parents, the second one cell E, the third one cell S (`siblingMoves`),
-  so siblings don't pay the crowding penalty. Children of a pair out of each other's view land E, S
-  and W of the first parent (`besideMoves`). Twins get the two halves of one `crossover`; a third
-  child gets its own.
+- Litters (`litterOdds`: 2 children 90%, 1 child 9%, 3 children 1%) start with `birthHp`. Until
+  `carryUntilAge` (20) a child rides beside its parent (`moveAll`, `carrySlot`), and a carrier
+  doesn't breed. Placement, carrying and following: `docs/architecture.md`, "Children".
 - Speed depends on age (`moveCount`): agents younger than `matureAge` or at least `oldAge` (8,000)
   pick only from the one-cell moves 0–8 (`stepMoves`); adults in between can also knight-jump. The
   net still scores all 17 moves.

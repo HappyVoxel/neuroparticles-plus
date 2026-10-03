@@ -129,10 +129,12 @@ export const stayBias = 1;
 // pool any species can fill, so the species whose dots breed first grows and the others shrink.
 export const totalPopulation = 600;
 export const minPopulation = 30;
-// A dot is born with `birthHpPercent`% of `primeHp` and grows in a straight line to `primeHp` at
-// `matureAge`: its HP rises by that growth each step. Eating adds HP with no cap, at any age.
+// A grown dot's HP: dots are drawn at full brightness from here on. A dot is born with `birthHp`
+// and only gains HP by eating or being fed, with no cap: a hunter passes `feedSharePercent`% of
+// each catch to its own children younger than `matureAge` in its view.
 export const primeHp = 10000;
-export const birthHpPercent = 30;
+export const birthHp = 3000;
+export const feedSharePercent = 50;
 // Sharing a cell with your own kind costs this per step. Sharing one with a hunter is death: the
 // hunters on the cell split the dot's HP.
 export const hpPenaltyFromCrowding = 100;
@@ -179,6 +181,9 @@ export const diseaseOpacity = 0.2;
 // Genetic algorithm
 // Steps an agent has to survive before it can breed.
 export const matureAge = 100;
+// A child younger than this rides in its `carrySlot` beside its parent (the first one, then the
+// second if the first died) instead of moving itself; an orphan moves itself from birth.
+export const carryUntilAge = 20;
 // Young agents (below `matureAge`) and old ones (from `oldAge` on) only get the one-cell moves;
 // adults in between can also knight-jump.
 export const oldAge = 8000;

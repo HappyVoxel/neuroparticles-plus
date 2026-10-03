@@ -130,3 +130,33 @@ die of wall bumps and crowding before they mature, so a thinned species can't re
 4. The compact sensor alone steers a little: chase climbs from about 40% to 50–53% in 3 of 4 runs
    (random genomes score 42–46%).
 5. The arm still doesn't aim with the compact sensor, and kills by big groups thin species out.
+
+## Feeding and carrying, 2026-10-03
+
+Rules on top of the Fibonacci decay: no self-growth (born with 3,000 HP, gains HP only by eating or
+being fed), and a hunter passes half of each catch to its own children younger than `matureAge`.
+Harness: `.exp/feed.ts`, `.exp/carry.ts` on copies of `src/sim/`. 8 runs × 15,000 steps each,
+mutation 5% × 1 gene. Standing still is the share of "stay" moves over the last 2,000 steps.
+
+| Variant                            | Died out | Lowest count | Standing still | Fed before maturity |
+| ---------------------------------- | -------- | ------------ | -------------- | ------------------- |
+| Growth, no feeding (rules before)  | 1 of 8   | 0            | 2–42%          | —                   |
+| Feed children in view              | 3 of 8   | 0            | —              | 6–10%               |
+| Feed children anywhere             | 1 of 8   | 0            | —              | 25–40%              |
+| Feed in view, born at 5,000 HP     | 3 of 8   | 0            | —              | 6–13%               |
+| Carry 50, every litter             | stopped  | —            | —              | —                   |
+| Carry 50, one litter at a time     | 0 of 8   | 29           | 60–88%         | 16–20%              |
+| Carry 50, one litter, parent input | 0 of 8   | 28           | 60–88%         | 15–22%              |
+| Carry 50, newest litter rides      | 2 of 8   | 0            | 2–48%          | 6–11%               |
+| Carry 20, one litter at a time     | 0 of 8   | 24           | 10–86%         | 13–17%              |
+
+1. Feeding only in view reaches few children: parents walk away from a litter right after birth.
+2. Carrying every litter fails at once: top hunters breed nearly every step and carried up to 61
+   children on three cells, 93% of them crowded. One litter at a time caps it at a litter.
+3. One litter at a time is the most stable rule tested (no extinctions in 16 runs), but it slows
+   the top hunters' breeding, and standing still comes back: 60–88% at a 50-step carry. A 20-step
+   carry keeps half the runs at 9–48% and lets the other half drift to 69–88%.
+4. A "direction to parent" input (3 more inputs) changed nothing: children 50–99 steps old stayed
+   in view as often with it as with it zeroed (55–75% against 57–73%), so it was removed.
+
+We use the 20-step carry with one litter at a time.

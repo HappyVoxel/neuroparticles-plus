@@ -65,3 +65,22 @@ loses `diseaseHpAtCenter` HP per step on the center, falling linearly to `diseas
 area's own edge. Overlaps never stack: a cell costs its worst area. An area clears after more than
 `diseaseAfterSteps` steps with no dot inside. `draw` fills each area in its species' 300 shade at
 `diseaseOpacity`, one shape per species, under the dots.
+
+## Children
+
+A pair gets a litter sized by `litterOdds` (`litterSize`), cut to its species' open slots. Children
+start with `birthHp`. The first lands on the cell halfway between the parents, the second one cell
+E, the third one cell S (`siblingMoves`), so siblings don't pay the crowding penalty. Children of a
+pair out of each other's view land E, S and W of the first parent (`besideMoves`). Twins get the
+two halves of one `crossover`; a third child gets its own.
+
+Until `carryUntilAge` (20) a child is carried: `moveAll` moves everyone else first, then places it
+in its `carrySlot` (E, S, W by birth order) beside its parent's new cell. It runs no network, counts
+no move and pays no wall cost. Its parent is `parentOf`: the first parent while alive, else the
+second. An orphan moves itself from birth. A dot carrying a child doesn't breed (`carrying` in
+`breed`), so it has one litter at a time; without that, top hunters breed nearly every step and
+carry dozens of children on three cells.
+
+From `carryUntilAge` on, the child moves itself with its own network. A hunter feeds
+`feedSharePercent` of each catch to its children younger than `matureAge` in its view (`capture`),
+carried or not.

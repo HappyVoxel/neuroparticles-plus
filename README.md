@@ -68,11 +68,14 @@ output wins, with a small bonus for staying put.
 **Speed.** Young dots (under 100 steps) and old ones (8,000 steps and up) only step to a neighboring
 cell. Adults in between can also knight-jump, so they are the fastest.
 
-**Health.** A dot is born with 3,000 HP and grows to 10,000 by step 100; after that only eating
-adds HP, with no cap. HP drains faster with age: 1 HP per step until step 100, then 1, 2, 3, 5, 8,
+**Health.** A dot is born with 3,000 HP and gains HP only by eating, with no cap. While it's
+younger than 100 steps, its parents feed it: a parent that catches prey with the child in view
+passes it half of the catch. For its first 20 steps a child rides beside its parent; after that it
+moves itself. A parent with a child on board
+doesn't breed again until it lets go. HP drains faster with age: 1 HP per step until step 100, then 1, 2, 3, 5, 8,
 13, … per step, one step up every 1,000 steps. There's no age limit: a dot lives as long as it eats
 enough to keep up. Each step a dot loses 1 HP, and 100 HP more if it shares a cell with
-its own kind. Bumping into a wall costs 500 HP by default; the Bump cost slider changes it while the
+its own kind. Bumping into a wall costs 300 HP by default; the Bump cost slider changes it while the
 sim runs. At 0 HP it dies.
 
 **Hunting.** A dot that ends a step on the same cell as its predator dies. The predators on that cell
@@ -101,7 +104,7 @@ breeds first. Dots that die free slots, and the best hunters of any species refi
   default) replaced by random values in `[-2, 2)`.
 - **Placement:** the first child appears halfway between its parents, its siblings on the cells next
   to it. When the parents can't see each other, the children appear next to the first parent. All
-  start small, with 30% of a grown dot's HP.
+  start small, with 3,000 HP.
 
 **World.** The 200×200 grid has walls at the edges: a dot that steps into one bounces back, and
 dots see the walls inside their view. All dots move at the same time, each reacting to where

@@ -1,6 +1,7 @@
 import {
 	baseDecayPerStep,
-	birthHpPercent,
+	birthHp,
+	carryUntilAge,
 	crossoverRate,
 	decayStageSteps,
 	gridHeight,
@@ -10,7 +11,6 @@ import {
 	matureAge,
 	minPopulation,
 	speciesCount,
-	primeHp,
 	totalPopulation,
 	visionRadiusSquared,
 } from "./config";
@@ -31,14 +31,7 @@ interface Birth {
 	genome: Genome;
 	bornStep?: number;
 	parents?: Agent["parents"];
-}
-
-const birthHp = (primeHp * birthHpPercent) / 100;
-
-/** How far a dot has grown at an age: from `birthHp` up to `primeHp` at `matureAge`, in a straight line. */
-export function grownHpAt(lifetime: number): number {
-	if (lifetime >= matureAge) return primeHp;
-	return birthHp + ((primeHp - birthHp) * lifetime) / matureAge;
+	carrySlot?: Move;
 }
 
 /**
@@ -54,16 +47,16 @@ export function decayAt(lifetime: number): number {
 	return baseDecayPerStep * a;
 }
 
-/** A fresh agent with a newborn's HP and zeroed counters, at the given cell or a random one. */
+/** A fresh agent with `birthHp` and zeroed counters, at the given cell or a random one. */
 export function spawn(
-	{ id, genome, bornStep = 0, parents = null }: Birth,
+	{ id, genome, bornStep = 0, parents = null, carrySlot = besideMoves[0] }: Birth,
 	{ x, y }: Cell = randomCell(),
 ): Agent {
 	return {
 		id,
 		genome,
-		hp: grownHpAt(0),
-		peakHp: grownHpAt(0),
+		hp: birthHp,
+		peakHp: birthHp,
 		x,
 		y,
 		prevX: x,
@@ -72,20 +65,43 @@ export function spawn(
 		kills: 0,
 		bornStep,
 		parents,
+		carrySlot,
 		children: 0,
 		stays: 0,
 		steps: 0,
 		jumps: 0,
 		wallBumps: 0,
 		hpEaten: 0,
+		hpFed: 0,
 		hpLostCrowding: 0,
 		hpLostDisease: 0,
 		hpLostWall: 0,
 	};
 }
 
+/**
+ * The parent that carries or watches over a child: its first parent while alive, else its second;
+ * null for a dot without parents or an orphan. `byId` holds the living dots of its species.
+ */
+export function parentOf(child: Agent, byId: ReadonlyMap<number, Agent>): Agent | null {
+	if (child.parents === null) return null;
+	return byId.get(child.parents[0]) ?? byId.get(child.parents[1]) ?? null;
+}
+
+/** Ids of the dots carrying a child younger than `carryUntilAge`: one litter at a time. */
+function carrying(agents: readonly Agent[]): Set<number> {
+	const byId = new Map(agents.map((a) => [a.id, a]));
+	const carriers = new Set<number>();
+	for (const child of agents) {
+		if (child.lifetime >= carryUntilAge) continue;
+		const parent = parentOf(child, byId);
+		if (parent) carriers.add(parent.id);
+	}
+	return carriers;
+}
+
 /** True when each agent stands inside the other's view. */
-function isNear(a: Cell, b: Cell): boolean {
+export function isNear(a: Cell, b: Cell): boolean {
 	const dx = a.x - b.x;
 	const dy = a.y - b.y;
 	return dx * dx + dy * dy <= visionRadiusSquared;
@@ -93,14 +109,14 @@ function isNear(a: Cell, b: Cell): boolean {
 
 /**
  * Applies one step of HP change and splits the dots into survivors and the dead of step `now`:
- * dots that were caught and dots out of HP. A young dot's HP grows (`grownHpAt`), a hunter takes
- * its share of the prey's HP, and every dot loses `decayAt` its age. Crowding your own kind or
+ * dots that were caught and dots out of HP. A hunter takes its share of the prey's HP, a young dot
+ * what its parents fed it, and every dot loses `decayAt` its age. Crowding your own kind or
  * standing in disease costs HP.
  */
 export function ageAndCull(
 	self: Species,
 	diseaseCost: readonly Float32Array[],
-	{ caught, gain }: Capture,
+	{ caught, gain, fed }: Capture,
 	now: number,
 ): { survivors: Agent[]; dead: DeadAgent[] } {
 	const survivors: Agent[] = [];
@@ -116,16 +132,16 @@ export function ageAndCull(
 		const eaten = share ?? 0;
 		const crowding = self.field[x][y] > 1 ? hpPenaltyFromCrowding : 0;
 		const disease = diseaseCost[x][y];
-		const lifetime = agent.lifetime + 1;
-		const growth = grownHpAt(lifetime) - grownHpAt(agent.lifetime);
-		const hp = agent.hp + growth + eaten - crowding - disease - decayAt(agent.lifetime);
+		const fromParents = fed.get(agent) ?? 0;
+		const hp = agent.hp + eaten + fromParents - crowding - disease - decayAt(agent.lifetime);
 		const next: Agent = {
 			...agent,
 			hp,
 			peakHp: Math.max(agent.peakHp, hp),
 			kills: share === undefined ? agent.kills : agent.kills + 1,
-			lifetime,
+			lifetime: agent.lifetime + 1,
 			hpEaten: agent.hpEaten + eaten,
+			hpFed: agent.hpFed + fromParents,
 			hpLostCrowding: agent.hpLostCrowding + crowding,
 			hpLostDisease: agent.hpLostDisease + disease,
 		};
@@ -183,7 +199,10 @@ export function litterSize(roll: number = Math.random()): number {
  */
 export const siblingMoves: readonly Move[] = [stayMove, 5, 7];
 
-/** Where the children of a pair that can't see each other land, seen from the first parent: E, S, W. */
+/**
+ * Where the children of a pair that can't see each other land, seen from the first parent: E, S, W.
+ * Also the cell beside its parent each child of a litter rides in while carried.
+ */
 export const besideMoves: readonly Move[] = [5, 7, 3];
 
 /** Genomes for one litter. Twins get the two halves of one crossover. */
@@ -221,7 +240,7 @@ interface Candidate {
 /**
  * Breeds every species at once into one budget of `totalPopulation` dots: each species keeps
  * `minPopulation` slots of its own and shares the rest. Mature agents (`matureAge` steps lived)
- * of all species pair up, best catchers first (`killRate`, ties in random order): each takes the
+ * that carry no litter of all species pair up, best catchers first (`killRate`, ties in random order): each takes the
  * best free mature agent of its species in its view, or the best free one anywhere when none is
  * in view. Every pair gets a litter of `litterSize` children, cut to its species' open slots:
  * between parents that see each other, beside the first parent otherwise. A species breeds only
@@ -241,12 +260,14 @@ export function breed(
 	// A species with 1 open slot waits for the next death, as a pair usually gets twins.
 	const breeding = openSlots(counts).map((open) => open >= 2);
 
+	// A dot carrying a litter doesn't breed until it lets go of it.
 	const mature: Candidate[] = shuffled(
-		survivors.flatMap((agents, species) =>
-			agents
-				.filter((agent) => agent.lifetime >= matureAge)
-				.map((agent) => ({ agent, species, rate: killRate(agent) })),
-		),
+		survivors.flatMap((agents, species) => {
+			const busy = carrying(agents);
+			return agents
+				.filter((agent) => agent.lifetime >= matureAge && !busy.has(agent.id))
+				.map((agent) => ({ agent, species, rate: killRate(agent) }));
+		}),
 	).sort((a, b) => b.rate - a.rate);
 	const paired = new Set<Agent>();
 	const litters = new Map<Agent, number>();
@@ -272,6 +293,7 @@ export function breed(
 				genome: mutate(genome, mutation),
 				bornStep: now,
 				parents: [a.id, b.id] as const,
+				carrySlot: besideMoves[k],
 			};
 			children[species].push(spawn(birth, moveBy(from.x, from.y, moves[k])));
 			born++;

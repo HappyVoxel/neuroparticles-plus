@@ -141,6 +141,7 @@ export function DotRecord({ followed, topHunter, step, onClose, onCopyGenome }: 
 					<Rows
 						rows={[
 							["Eaten", formatCount(Math.round(agent.hpEaten))],
+							["Fed by parents", formatCount(Math.round(agent.hpFed))],
 							["Lost to crowding", formatCount(Math.round(agent.hpLostCrowding))],
 							["Lost to disease", formatCount(Math.round(agent.hpLostDisease))],
 							["Lost to walls", formatCount(Math.round(agent.hpLostWall))],

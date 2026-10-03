@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
 	baseDecayPerStep,
+	birthHp,
+	carryUntilAge,
 	diseaseHpAtCenter,
 	gridWidth,
 	hiddenSize,
@@ -13,7 +15,7 @@ import {
 	primeHp,
 } from "./config";
 import { diseaseBirthRadius } from "./disease";
-import { grownHpAt, spawn } from "./evolution";
+import { spawn } from "./evolution";
 import { buildField } from "./field";
 import { hiddenWeightsFrom } from "./network";
 import { createSim, extinctSpecies, moveAgent, recreate, step } from "./simulation";
@@ -37,15 +39,15 @@ describe("moveAgent", () => {
 			y: 10,
 			prevX: 10,
 			prevY: 10,
-			hp: grownHpAt(0),
+			hp: birthHp,
 		});
 	});
 
 	it("bounces off a wall and pays for the bump", () => {
 		const agent = at(gridWidth - 1, 10);
 		const moved = moveAgent(agent, 5, 250);
-		expect(moved).toMatchObject({ x: gridWidth - 2, y: 10, hp: grownHpAt(0) - 250 });
-		expect(agent.hp).toBe(grownHpAt(0));
+		expect(moved).toMatchObject({ x: gridWidth - 2, y: 10, hp: birthHp - 250 });
+		expect(agent.hp).toBe(birthHp);
 	});
 
 	it("counts stays, one-cell steps, jumps and wall bumps", () => {
@@ -58,8 +60,8 @@ describe("moveAgent", () => {
 	});
 
 	it("costs nothing to stand next to a wall or walk along it", () => {
-		expect(moveAgent(at(0, 10), 4, hpPenaltyFromWall).hp).toBe(grownHpAt(0));
-		expect(moveAgent(at(0, 10), 7, hpPenaltyFromWall).hp).toBe(grownHpAt(0));
+		expect(moveAgent(at(0, 10), 4, hpPenaltyFromWall).hp).toBe(birthHp);
+		expect(moveAgent(at(0, 10), 7, hpPenaltyFromWall).hp).toBe(birthHp);
 	});
 });
 
@@ -177,6 +179,61 @@ describe("simulation", () => {
 			{ x: 41, y: 52 },
 			{ x: 60, y: 50 },
 		]);
+	});
+
+	describe("carrying", () => {
+		/** A world of Red dots only: an adult that always steps W from (50, 50), plus `others`. */
+		const family = (...others: ((parent: Agent, goWest: number[]) => Agent)[]) => {
+			const sim = createSim(mutation);
+			const goWest = sim.species[0].agents[0].genome.map(() => 0);
+			for (let k = 0; k < hiddenSize; k++) goWest[hiddenWeightsFrom + 3 * hiddenSize + k] = 2;
+			const parent = { ...adult(sim), genome: goWest, x: 50, y: 50 };
+			const agents = [parent, ...others.map((make) => make(parent, goWest))];
+			const world = {
+				...sim,
+				species: sim.species.map((s, i) => {
+					const own = i === 0 ? agents : [];
+					return { ...s, agents: own, field: buildField(own) };
+				}),
+			};
+			return { agents, next: step(world).species[0].agents };
+		};
+		const child =
+			(lifetime: number, parents: (p: Agent) => readonly [number, number]) =>
+			(parent: Agent, goWest: number[]): Agent => ({
+				...spawn({ id: 900 + lifetime, genome: goWest, parents: parents(parent), carrySlot: 7 }),
+				x: 80,
+				y: 80,
+				lifetime,
+			});
+		const find = (agents: Agent[], id: number) => agents.find((a) => a.id === id) as Agent;
+
+		it("puts a young child in its slot beside its parent's new cell, without a move of its own", () => {
+			const { agents, next } = family(child(10, (p) => [p.id, -1]));
+			expect(find(next, agents[1].id)).toMatchObject({
+				x: 49,
+				y: 51,
+				prevX: 80,
+				prevY: 80,
+				stays: 0,
+				steps: 0,
+				wallBumps: 0,
+			});
+		});
+
+		it("follows the second parent when the first is gone", () => {
+			const { agents, next } = family(child(10, (p) => [-1, p.id]));
+			expect(find(next, agents[1].id)).toMatchObject({ x: 49, y: 51 });
+		});
+
+		it("lets a child move itself from carryUntilAge, and an orphan from birth", () => {
+			const { agents, next } = family(
+				child(carryUntilAge, (p) => [p.id, -1]),
+				child(10, () => [-1, -2]),
+			);
+			expect(find(next, agents[1].id)).toMatchObject({ x: 79, y: 80, steps: 1 });
+			expect(find(next, agents[2].id)).toMatchObject({ x: 79, y: 80, steps: 1 });
+		});
 	});
 
 	it("steps without mutating the previous state", () => {

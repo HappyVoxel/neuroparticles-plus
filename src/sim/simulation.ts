@@ -1,5 +1,6 @@
 import { capture } from "./capture";
 import {
+	carryUntilAge,
 	hpPenaltyFromWall,
 	inputSize,
 	outputSize,
@@ -8,9 +9,18 @@ import {
 	totalPopulation,
 } from "./config";
 import { emptyDisease, spreadDisease } from "./disease";
-import { ageAndCull, breed, spawn } from "./evolution";
+import { ageAndCull, breed, parentOf, spawn } from "./evolution";
 import { buildField, senseAt } from "./field";
-import { hitsWall, type Move, moveCount, moveX, moveY, stayMove, stepMoves } from "./movement";
+import {
+	hitsWall,
+	type Move,
+	moveBy,
+	moveCount,
+	moveX,
+	moveY,
+	stayMove,
+	stepMoves,
+} from "./movement";
 import { evaluate, pickMove, randomGenome } from "./network";
 import { addToHallOfFame, emptyHallOfFame } from "./records";
 import type { Agent, Field, MutationParams, Sim, SimView, Species } from "./types";
@@ -65,6 +75,28 @@ function think(
 }
 
 /**
+ * Moves one species' agents. Children younger than `carryUntilAge` with a living parent are carried:
+ * once everyone else has moved, each lands in its `carrySlot` beside its parent's new cell, pays no
+ * wall cost and counts no move.
+ */
+function moveAll(
+	agents: readonly Agent[],
+	fields: readonly Field[],
+	diseaseCost: readonly Float32Array[],
+	wallPenalty: number,
+): Agent[] {
+	const before = new Map(agents.map((a) => [a.id, a]));
+	const carried = (a: Agent) => a.lifetime < carryUntilAge && parentOf(a, before) !== null;
+	const moved = agents.map((a) => (carried(a) ? a : think(a, fields, diseaseCost, wallPenalty)));
+	const after = new Map(moved.map((a) => [a.id, a]));
+	return moved.map((a) => {
+		if (!carried(a)) return a;
+		const parent = parentOf(a, after) as Agent;
+		return { ...a, prevX: a.x, prevY: a.y, ...moveBy(parent.x, parent.y, a.carrySlot) };
+	});
+}
+
+/**
  * One tick: hunters catch the prey on their cell, every species ages and dies, all breed into the
  * shared budget, then every agent moves, then the fields and the disease are rebuilt. All of it reads the positions, fields
  * and disease from the previous tick, so moves don't see each other. The dead go to their
@@ -87,8 +119,11 @@ export function step(sim: Sim): Sim {
 	const born = bred.children.reduce((sum, c) => sum + c.length, 0);
 
 	const next = species.map((self, i): Species => {
-		const agents = [...bred.survivors[i], ...bred.children[i]].map((a) =>
-			think(a, fields, disease.cost, wallPenalty),
+		const agents = moveAll(
+			[...bred.survivors[i], ...bred.children[i]],
+			fields,
+			disease.cost,
+			wallPenalty,
 		);
 		const { dead } = culled[i];
 		const hallOfFame = addToHallOfFame(self.hallOfFame, dead);

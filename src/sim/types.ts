@@ -1,3 +1,5 @@
+import type { Move } from "./movement";
+
 /** Flat array of network weights and biases; layout lives in network.ts. */
 export type Genome = number[];
 
@@ -33,6 +35,8 @@ export interface Agent {
 	bornStep: number;
 	/** Ids of both parents; null for a dot of the first generation or a Randomize. */
 	parents: readonly [number, number] | null;
+	/** The cell beside its parent it rides in while carried, as a move from the parent's cell. */
+	carrySlot: Move;
 	children: number;
 	/** Moves it picked: stand still, one cell, knight jump. */
 	stays: number;
@@ -40,8 +44,10 @@ export interface Agent {
 	jumps: number;
 	/** Moves that ran into a wall. */
 	wallBumps: number;
-	/** HP taken from prey. */
+	/** HP taken from prey and kept. */
 	hpEaten: number;
+	/** HP its parents passed it from their catches while it was young. */
+	hpFed: number;
 	hpLostCrowding: number;
 	hpLostDisease: number;
 	hpLostWall: number;
