@@ -89,7 +89,7 @@ Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypa
 - Constants live in `sim/config.ts`; nothing else hardcodes a size or rate.
 - `tsconfig` is `strict` without `noUncheckedIndexedAccess`, so grid and genome indexing stays readable.
 - Browser checks use the Playwright MCP (Firefox) against `npm run build && npm run preview`.
-- Work and commit directly on `master`; this repo has no `sang-dev` branch.
+- Work and commit on `sang-dev`; `master` is the base for diffs and PRs, and every push to it deploys.
 - Findings we chose to skip, with why and when to revisit, live in `docs/backlog.md`; read it
   before proposing a cleanup.
 
