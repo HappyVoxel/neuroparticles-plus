@@ -1,4 +1,5 @@
 import { stepsAhead } from "./config";
+import { rankings } from "./records";
 import { createSim, recreate, step } from "./simulation";
 import type { Agent, Genome, MutationParams, Sim, SimView } from "./types";
 
@@ -39,6 +40,7 @@ export function simView({ species, step, disease }: Sim): SimView {
 			hallOfFame: {
 				kills: hallOfFame.kills.map(withoutGenome),
 				lifetime: hallOfFame.lifetime.map(withoutGenome),
+				peakHp: hallOfFame.peakHp.map(withoutGenome),
 			},
 		})),
 	};
@@ -48,7 +50,7 @@ export function simView({ species, step, disease }: Sim): SimView {
 function genomeOf(sims: readonly Sim[], id: number): Genome | null {
 	for (const sim of sims) {
 		for (const { agents, lastDeaths, hallOfFame } of sim.species) {
-			for (const dots of [agents, lastDeaths, hallOfFame.kills, hallOfFame.lifetime]) {
+			for (const dots of [agents, lastDeaths, ...rankings.map((r) => hallOfFame[r])]) {
 				const dot = dots.find((a) => a.id === id);
 				if (dot) return dot.genome;
 			}

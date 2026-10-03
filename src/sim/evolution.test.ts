@@ -150,6 +150,19 @@ describe("ageAndCull", () => {
 		expect(a.hp).toBe(primeHp + 4990 - baseDecayPerStep);
 	});
 
+	it("raises peakHp to a new high and keeps it when HP falls", () => {
+		const hunter = { ...adult(1, 1, 1000), peakHp: 2000 };
+		const [fed] = cull(
+			species([hunter]),
+			noDisease,
+			{ caught: new Map(), gain: new Map([[hunter, 5000]]) },
+			1,
+		);
+		expect(fed.peakHp).toBe(6000 - baseDecayPerStep);
+		const [hungry] = cull(species([fed]), noDisease, noCapture, 2);
+		expect(hungry.peakHp).toBe(6000 - baseDecayPerStep);
+	});
+
 	it("takes the decay of the agent's age", () => {
 		const old = agent(1, 1, 50000, matureAge + 4 * decayStageSteps);
 		const [a] = cull(species([old]), noDisease, noCapture, 1);

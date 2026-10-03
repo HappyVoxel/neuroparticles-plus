@@ -97,12 +97,12 @@ Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypa
 
 - **Agent:** `{ id, genome, hp, x, y, prevX, prevY, lifetime, kills, ... }`. The record of a dot lives
   on the agent itself: `id` (unique in a run, from `Sim.nextId`), `bornStep`, `parents`, `children`,
-  move counts (`stays`, `steps`, `jumps`, `wallBumps`) and an HP ledger (`hpEaten`,
+  move counts (`stays`, `steps`, `jumps`, `wallBumps`) and an HP ledger (`peakHp`, `hpEaten`,
   `hpLostCrowding`, `hpLostDisease`, `hpLostWall`). `prevX`/`prevY` is the cell before the last move,
   used only for drawing; `kills` counts the prey it caught and decides who breeds first.
 - **Dead dots:** `ageAndCull` returns the dead as `DeadAgent` (`diedStep`, `cause`: caught by which
   species and hunter ids, or out of HP). Each species keeps the last step's dead in `lastDeaths` and
-  the best `hallOfFameSize` dead per ranking (kills, lifetime) in `hallOfFame`, genome included.
+  the best `hallOfFameSize` dead per ranking (`rankings`: kills, lifetime, peakHp) in `hallOfFame`, genome included.
 - **Field:** `field[x][y]` is an `Int8Array` count of one species' agents per cell, rebuilt every step.
 - **Grid:** 200×200 with walls; every move goes through `bounce`, which reflects a step past a wall
   back inside (E at the east wall lands one cell W, a 2-cell jump lands two cells W; only the axis

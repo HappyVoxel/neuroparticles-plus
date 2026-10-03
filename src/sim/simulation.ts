@@ -126,6 +126,7 @@ export function recreate(sim: Sim): Sim {
 			prevX,
 			prevY,
 			hp,
+			peakHp: hp,
 			lifetime,
 		})),
 	}));

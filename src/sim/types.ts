@@ -18,6 +18,8 @@ export interface Agent {
 	id: number;
 	genome: Genome;
 	hp: number;
+	/** The highest HP it has had. */
+	peakHp: number;
 	x: number;
 	y: number;
 	/** Where the agent stood before its last move; the renderer slides from here. */
@@ -59,7 +61,7 @@ export interface DeadAgent extends Agent {
 }
 
 /** What a hall of fame ranks by. */
-export type Ranking = "kills" | "lifetime";
+export type Ranking = "kills" | "lifetime" | "peakHp";
 
 /** Which dots the top-dots board lists: the dead or not, and each species by its index. */
 export interface TopDotsFilter {

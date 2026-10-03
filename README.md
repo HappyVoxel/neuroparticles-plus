@@ -47,8 +47,9 @@ new one.
   "Copy genome". The record stays after the dot dies and says what killed it.
 - **Loupe:** Z shows a 4× magnifier under the pointer, for picking one dot out of a crowd. Esc
   turns it off.
-- **Top dots:** the three best dots by kills and by steps lived, the dead included. Click one to
-  follow it; the filter hides the dead or a species.
+- **Top dots:** the three best dots by kills, by steps lived and by the highest HP they reached,
+  the dead included, in short numbers (hover for the full one). Click one to follow it; the filter
+  hides the dead or a species.
 - **Area stats:** drag a box on the field to see dots, average age, average HP and top kills per
   species inside it, live while the sim runs.
 

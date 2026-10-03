@@ -63,6 +63,7 @@ export function spawn(
 		id,
 		genome,
 		hp: grownHpAt(0),
+		peakHp: grownHpAt(0),
 		x,
 		y,
 		prevX: x,
@@ -121,6 +122,7 @@ export function ageAndCull(
 		const next: Agent = {
 			...agent,
 			hp,
+			peakHp: Math.max(agent.peakHp, hp),
 			kills: share === undefined ? agent.kills : agent.kills + 1,
 			lifetime,
 			hpEaten: agent.hpEaten + eaten,

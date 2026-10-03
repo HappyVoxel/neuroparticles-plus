@@ -121,6 +121,7 @@ export function DotRecord({ followed, topHunter, step, onClose, onCopyGenome }: 
 						],
 						["Children", formatCount(agent.children)],
 						["HP", dead ? "–" : formatCount(Math.round(agent.hp))],
+						["Peak HP", formatCount(Math.round(agent.peakHp))],
 						["Kills", formatCount(agent.kills)],
 						[
 							"Kills per 1,000 steps",

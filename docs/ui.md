@@ -7,6 +7,10 @@ How the canvas and sidebar tools behave. `AGENTS.md` links here.
 - A click on the canvas without a drag follows the nearest living dot within `pickCells` (3); with the
   loupe on (Z, a `loupeZoom`× circle at the pointer) within `loupePickCells` (1). A click on empty
   ground stops following. The top-dots list in the sidebar follows a dot by id, dead ones included.
+- The board has one column per ranking (`rankings`: kills, steps lived, peak HP), each in short
+  numbers (`formatCompact`: 12, 4.5K, 7.3M) with the full number on hover, so three fit in the
+  320px sidebar. Rows show the id without "#"; an id too long for its column (6 digits, or 5 on a
+  dead dot) ends in "…", with the full id on hover. Kills get the narrowest column.
 - The top-dots filter (`top-dots-filter.tsx`) hides the dead or a species inside `topDots`, before
   the top `topDotsShown` are cut, so hidden dots never leave a slot empty. The hook keeps it in
   `topFilterRef`, like the area, and `sim-settings.ts` saves it (`top-dots-dead`, `top-dots-species`).

@@ -22,22 +22,32 @@ export function isDead<T extends AgentView | DeadAgentView>(
 	return "diedStep" in agent;
 }
 
+/** Every ranking, in the order the top-dots board shows them. */
+export const rankings: readonly Ranking[] = ["kills", "lifetime", "peakHp"];
+
 export function emptyHallOfFame(): HallOfFame {
-	return { kills: [], lifetime: [] };
+	return { kills: [], lifetime: [], peakHp: [] };
 }
 
-/** Higher first on the ranking, then on the other one. */
+/** What breaks a tie on each ranking. */
+const tieBreak: Record<Ranking, Ranking> = {
+	kills: "lifetime",
+	lifetime: "kills",
+	peakHp: "kills",
+};
+
+/** Higher first on the ranking, then on its tie-break. */
 function compare(ranking: Ranking): (a: AgentView, b: AgentView) => number {
-	const other: Ranking = ranking === "kills" ? "lifetime" : "kills";
+	const other = tieBreak[ranking];
 	return (a, b) => b[ranking] - a[ranking] || b[other] - a[other];
 }
 
-/** Adds the dead to both rankings and keeps the best `hallOfFameSize` of each. */
+/** Adds the dead to every ranking and keeps the best `hallOfFameSize` of each. */
 export function addToHallOfFame(hall: HallOfFame, dead: readonly DeadAgent[]): HallOfFame {
 	if (dead.length === 0) return hall;
 	const best = (ranking: Ranking) =>
 		[...hall[ranking], ...dead].sort(compare(ranking)).slice(0, hallOfFameSize);
-	return { kills: best("kills"), lifetime: best("lifetime") };
+	return { kills: best("kills"), lifetime: best("lifetime"), peakHp: best("peakHp") };
 }
 
 /** The dot with this id: living, died on the last step, or in a hall of fame; null otherwise. */
@@ -45,11 +55,8 @@ export function findDot(sim: SimView, id: number): DotRef | null {
 	const match = (a: AgentView) => a.id === id;
 	for (let species = 0; species < sim.species.length; species++) {
 		const { agents, lastDeaths, hallOfFame } = sim.species[species];
-		const agent =
-			agents.find(match) ??
-			lastDeaths.find(match) ??
-			hallOfFame.kills.find(match) ??
-			hallOfFame.lifetime.find(match);
+		let agent = agents.find(match) ?? lastDeaths.find(match);
+		for (const ranking of rankings) agent ??= hallOfFame[ranking].find(match);
 		if (agent) return { species, agent };
 	}
 	return null;

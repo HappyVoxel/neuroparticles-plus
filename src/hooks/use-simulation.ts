@@ -107,6 +107,7 @@ function snapshot(
 		top: {
 			kills: topDots(sim, "kills", topDotsShown, filter),
 			lifetime: topDots(sim, "lifetime", topDotsShown, filter),
+			peakHp: topDots(sim, "peakHp", topDotsShown, filter),
 		},
 		diseaseAreas: sim.disease.areas,
 		topHunterIds: leaderIds(sim, "kills"),

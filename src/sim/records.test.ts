@@ -40,6 +40,13 @@ describe("addToHallOfFame", () => {
 		expect(hall.lifetime).toEqual([c, b, a]);
 	});
 
+	it("ranks by peak HP, kills breaking ties", () => {
+		const a = dead({ peakHp: 50000, kills: 1 });
+		const b = dead({ peakHp: 50000, kills: 4 });
+		const c = dead({ peakHp: 90000 });
+		expect(addToHallOfFame(emptyHallOfFame(), [a, b, c]).peakHp).toEqual([c, b, a]);
+	});
+
 	it("keeps only the best hallOfFameSize of each ranking", () => {
 		const many = Array.from({ length: hallOfFameSize + 5 }, (_, k) => dead({ kills: k }));
 		const hall = addToHallOfFame(emptyHallOfFame(), many);
@@ -72,6 +79,18 @@ describe("findDot", () => {
 		expect(findDot(withDead, famous.id)).toEqual({ species: 2, agent: famous });
 		expect(findDot(withDead, -1)).toBeNull();
 	});
+
+	it("finds a dead dot kept only for its peak HP", () => {
+		const rich = dead({ peakHp: 90000 });
+		const sim = world();
+		const withRich = {
+			...sim,
+			species: sim.species.map((s, i) =>
+				i === 0 ? { ...s, hallOfFame: { ...emptyHallOfFame(), peakHp: [rich] } } : s,
+			),
+		};
+		expect(findDot(withRich, rich.id)).toEqual({ species: 0, agent: rich });
+	});
 });
 
 describe("topDots", () => {
@@ -90,6 +109,22 @@ describe("topDots", () => {
 			{ species: 1, agent: best },
 			{ species: 2, agent: second },
 			{ species: 0, agent: third },
+		]);
+	});
+
+	it("ranks living and dead dots by peak HP", () => {
+		const living = dot({ peakHp: 40000 });
+		const rich = dead({ peakHp: 90000 });
+		const sim = world([living]);
+		const withDead = {
+			...sim,
+			species: sim.species.map((s, i) =>
+				i === 1 ? { ...s, hallOfFame: addToHallOfFame(s.hallOfFame, [rich]) } : s,
+			),
+		};
+		expect(topDots(withDead, "peakHp", 2)).toEqual([
+			{ species: 1, agent: rich },
+			{ species: 0, agent: living },
 		]);
 	});
 

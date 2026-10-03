@@ -252,7 +252,7 @@ describe("simulation", () => {
 	it("recreate makes new dots in the old places", () => {
 		const sim = step(createSim(mutation));
 		const fresh = recreate(sim);
-		const a = { ...sim.species[1].agents[3], kills: 4, stays: 9 };
+		const a = { ...sim.species[1].agents[3], kills: 4, stays: 9, peakHp: 99999 };
 		const b = recreate({
 			...sim,
 			species: sim.species.map((s, i) =>
@@ -267,6 +267,7 @@ describe("simulation", () => {
 			prevX: a.prevX,
 			prevY: a.prevY,
 			hp: a.hp,
+			peakHp: a.hp,
 			lifetime: a.lifetime,
 			bornStep: a.bornStep,
 			parents: null,
