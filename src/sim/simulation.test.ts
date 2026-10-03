@@ -10,16 +10,23 @@ import {
 	speciesCount,
 	totalPopulation,
 	speciesDefs,
-	startHp,
+	primeHp,
 } from "./config";
 import { diseaseBirthRadius } from "./disease";
-import { spawn } from "./evolution";
+import { grownHpAt, spawn } from "./evolution";
 import { buildField } from "./field";
 import { hiddenWeightsFrom } from "./network";
 import { createSim, extinctSpecies, moveAgent, recreate, step } from "./simulation";
-import type { Agent } from "./types";
+import type { Agent, Sim } from "./types";
 
 const mutation = { percent: 5, genes: 1 };
+// The first dot of a species as an adult with HP under its cap, so a step changes HP only by what
+// the test sets up.
+const adult = (sim: Sim, species = 0): Agent => ({
+	...sim.species[species].agents[0],
+	lifetime: matureAge,
+	hp: 5000,
+});
 
 describe("moveAgent", () => {
 	const at = (x: number, y: number): Agent => spawn({ id: 0, genome: [] }, { x, y });
@@ -30,15 +37,15 @@ describe("moveAgent", () => {
 			y: 10,
 			prevX: 10,
 			prevY: 10,
-			hp: startHp,
+			hp: grownHpAt(0),
 		});
 	});
 
 	it("bounces off a wall and pays for the bump", () => {
 		const agent = at(gridWidth - 1, 10);
 		const moved = moveAgent(agent, 5, 250);
-		expect(moved).toMatchObject({ x: gridWidth - 2, y: 10, hp: startHp - 250 });
-		expect(agent.hp).toBe(startHp);
+		expect(moved).toMatchObject({ x: gridWidth - 2, y: 10, hp: grownHpAt(0) - 250 });
+		expect(agent.hp).toBe(grownHpAt(0));
 	});
 
 	it("counts stays, one-cell steps, jumps and wall bumps", () => {
@@ -51,8 +58,8 @@ describe("moveAgent", () => {
 	});
 
 	it("costs nothing to stand next to a wall or walk along it", () => {
-		expect(moveAgent(at(0, 10), 4, hpPenaltyFromWall).hp).toBe(startHp);
-		expect(moveAgent(at(0, 10), 7, hpPenaltyFromWall).hp).toBe(startHp);
+		expect(moveAgent(at(0, 10), 4, hpPenaltyFromWall).hp).toBe(grownHpAt(0));
+		expect(moveAgent(at(0, 10), 7, hpPenaltyFromWall).hp).toBe(grownHpAt(0));
 	});
 });
 
@@ -78,7 +85,7 @@ describe("simulation", () => {
 		// One agent alone in the world, at the west wall, with a brain that always picks W.
 		const goWest = sim.species[0].agents[0].genome.map(() => 0);
 		for (let k = 0; k < hiddenSize; k++) goWest[hiddenWeightsFrom + 3 * hiddenSize + k] = 2;
-		const loner = { ...sim.species[0].agents[0], genome: goWest, x: 0, y: 50, hp: startHp };
+		const loner = { ...adult(sim), genome: goWest, x: 0, y: 50 };
 		const world = {
 			...sim,
 			wallPenalty: 700,
@@ -88,13 +95,13 @@ describe("simulation", () => {
 			}),
 		};
 		const bumped = step(world).species[0].agents.find((a) => a.genome === goWest);
-		expect(bumped).toMatchObject({ x: 1, y: 50, hp: startHp - baseDecayPerStep - 700 });
+		expect(bumped).toMatchObject({ x: 1, y: 50, hp: 5000 - baseDecayPerStep - 700 });
 	});
 
 	it("kills the prey on a hunter's cell and hands the hunter its HP", () => {
 		const sim = createSim(mutation);
-		const hunter = { ...sim.species[0].agents[0], x: 50, y: 50, hp: 1000 };
-		const prey = { ...sim.species[1].agents[0], x: 50, y: 50, hp: 400 };
+		const hunter = { ...adult(sim), x: 50, y: 50, hp: 1000 };
+		const prey = { ...adult(sim, 1), x: 50, y: 50, hp: 400 };
 		const world = {
 			...sim,
 			species: sim.species.map((s, i) => {
@@ -110,7 +117,7 @@ describe("simulation", () => {
 
 	it("charges last step's disease and rebuilds it after the moves", () => {
 		const sim = createSim(mutation);
-		const loner = { ...sim.species[0].agents[0], x: 50, y: 50, hp: startHp };
+		const loner = { ...adult(sim), x: 50, y: 50 };
 		const area = {
 			id: 0,
 			x: 50,
@@ -134,7 +141,7 @@ describe("simulation", () => {
 		};
 		const next = step(world);
 		const survivor = next.species[0].agents.find((a) => a.genome === loner.genome);
-		expect(survivor?.hp).toBe(startHp - diseaseHpAtCenter - baseDecayPerStep);
+		expect(survivor?.hp).toBe(5000 - diseaseHpAtCenter - baseDecayPerStep);
 		// One dot of its own inside, so it shrinks by a cell.
 		expect(next.disease.areas).toEqual([{ ...area, radius: diseaseBirthRadius - 1 }]);
 		expect(sim.disease.areas).toEqual([]);
@@ -150,7 +157,7 @@ describe("simulation", () => {
 			genome: jumper,
 			x,
 			y: 50,
-			hp: startHp,
+			hp: primeHp,
 			lifetime,
 		});
 		const agents = [at(20, 0), at(40, matureAge), at(60, oldAge)];

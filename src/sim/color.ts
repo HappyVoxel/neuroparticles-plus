@@ -1,4 +1,4 @@
-import { startHp } from "./config";
+import { primeHp } from "./config";
 import { clamp } from "./math";
 import type { Oklch } from "./types";
 
@@ -16,7 +16,7 @@ export function shadeAt(shades: readonly Oklch[], t: number): Oklch {
 
 /** Full HP (or more) draws solid; a dot fades out as its HP runs down to 0. */
 export function hpOpacity(hp: number): number {
-	return clamp(hp / startHp, 0, 1);
+	return clamp(hp / primeHp, 0, 1);
 }
 
 export function oklchCss([l, c, h]: Oklch, alpha = 1): string {

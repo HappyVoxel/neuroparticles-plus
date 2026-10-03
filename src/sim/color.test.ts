@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hpOpacity, oklchCss, shadeAt } from "./color";
-import { speciesDefs, startHp } from "./config";
+import { speciesDefs, primeHp } from "./config";
 import type { Oklch } from "./types";
 
 describe("shadeAt", () => {
@@ -40,15 +40,15 @@ describe("shadeAt", () => {
 describe("hpOpacity", () => {
 	it("is 0 at 0 HP and 1 at full HP", () => {
 		expect(hpOpacity(0)).toBe(0);
-		expect(hpOpacity(startHp)).toBe(1);
+		expect(hpOpacity(primeHp)).toBe(1);
 	});
 
 	it("scales in between", () => {
-		expect(hpOpacity(startHp / 4)).toBeCloseTo(0.25);
+		expect(hpOpacity(primeHp / 4)).toBeCloseTo(0.25);
 	});
 
 	it("stays at 1 above full HP", () => {
-		expect(hpOpacity(startHp * 3)).toBe(1);
+		expect(hpOpacity(primeHp * 3)).toBe(1);
 	});
 });
 

@@ -38,7 +38,7 @@ export interface Agent {
 	jumps: number;
 	/** Moves that ran into a wall. */
 	wallBumps: number;
-	/** HP taken from prey, before the `startHp` cap. */
+	/** HP taken from prey. */
 	hpEaten: number;
 	hpLostCrowding: number;
 	hpLostDisease: number;

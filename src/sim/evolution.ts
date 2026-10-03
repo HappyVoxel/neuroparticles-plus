@@ -1,6 +1,8 @@
 import {
 	baseDecayPerStep,
+	birthHpPercent,
 	crossoverRate,
+	decayStageSteps,
 	gridHeight,
 	gridWidth,
 	hpPenaltyFromCrowding,
@@ -8,7 +10,7 @@ import {
 	matureAge,
 	minPopulation,
 	speciesCount,
-	startHp,
+	primeHp,
 	totalPopulation,
 	visionRadiusSquared,
 } from "./config";
@@ -31,7 +33,28 @@ interface Birth {
 	parents?: Agent["parents"];
 }
 
-/** A fresh agent with full HP and zeroed counters, at the given cell or a random one. */
+const birthHp = (primeHp * birthHpPercent) / 100;
+
+/** How far a dot has grown at an age: from `birthHp` up to `primeHp` at `matureAge`, in a straight line. */
+export function grownHpAt(lifetime: number): number {
+	if (lifetime >= matureAge) return primeHp;
+	return birthHp + ((primeHp - birthHp) * lifetime) / matureAge;
+}
+
+/**
+ * HP lost per step at an age: `baseDecayPerStep` while young, then times 1, 2, 3, 5, 8, … (the
+ * Fibonacci numbers), one more per `decayStageSteps` steps from `matureAge` on.
+ */
+export function decayAt(lifetime: number): number {
+	if (lifetime < matureAge) return baseDecayPerStep;
+	const stage = Math.floor((lifetime - matureAge) / decayStageSteps);
+	let a = 1;
+	let b = 2;
+	for (let k = 0; k < stage; k++) [a, b] = [b, a + b];
+	return baseDecayPerStep * a;
+}
+
+/** A fresh agent with a newborn's HP and zeroed counters, at the given cell or a random one. */
 export function spawn(
 	{ id, genome, bornStep = 0, parents = null }: Birth,
 	{ x, y }: Cell = randomCell(),
@@ -39,7 +62,7 @@ export function spawn(
 	return {
 		id,
 		genome,
-		hp: startHp,
+		hp: grownHpAt(0),
 		x,
 		y,
 		prevX: x,
@@ -69,8 +92,9 @@ function isNear(a: Cell, b: Cell): boolean {
 
 /**
  * Applies one step of HP change and splits the dots into survivors and the dead of step `now`:
- * dots that were caught and dots out of HP. A hunter takes its share of the prey's HP, up to
- * `startHp`. Crowding your own kind or standing in disease costs HP.
+ * dots that were caught and dots out of HP. A young dot's HP grows (`grownHpAt`), a hunter takes
+ * its share of the prey's HP, and every dot loses `decayAt` its age. Crowding your own kind or
+ * standing in disease costs HP.
  */
 export function ageAndCull(
 	self: Species,
@@ -91,12 +115,14 @@ export function ageAndCull(
 		const eaten = share ?? 0;
 		const crowding = self.field[x][y] > 1 ? hpPenaltyFromCrowding : 0;
 		const disease = diseaseCost[x][y];
-		const hp = Math.min(startHp, agent.hp + eaten) - crowding - disease - baseDecayPerStep;
+		const lifetime = agent.lifetime + 1;
+		const growth = grownHpAt(lifetime) - grownHpAt(agent.lifetime);
+		const hp = agent.hp + growth + eaten - crowding - disease - decayAt(agent.lifetime);
 		const next: Agent = {
 			...agent,
 			hp,
 			kills: share === undefined ? agent.kills : agent.kills + 1,
-			lifetime: agent.lifetime + 1,
+			lifetime,
 			hpEaten: agent.hpEaten + eaten,
 			hpLostCrowding: agent.hpLostCrowding + crowding,
 			hpLostDisease: agent.hpLostDisease + disease,
