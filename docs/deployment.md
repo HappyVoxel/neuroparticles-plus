@@ -5,8 +5,12 @@ The site is a static build served by nginx in one Docker container on Easypanel,
 service) builds the image and Easypanel runs it.
 
 ```
+pull request
+  └─ .woodpecker/test.yaml         check: pnpm lint, pnpm typecheck, pnpm test
+                                   e2e:   pnpm e2e (Playwright image, Chromium)
+
 push to master
-  └─ .woodpecker/test.yaml         pnpm lint, pnpm typecheck, pnpm test
+  └─ .woodpecker/test.yaml         the same checks
   └─ .woodpecker/production.yaml   docker build → ghcr.io/happyvoxel/neuroparticles-plus:latest + :sha-<commit>
                                    Easypanel API deployService → Easypanel pulls :latest
 ```

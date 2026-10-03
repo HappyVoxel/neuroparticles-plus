@@ -7,12 +7,14 @@
 		"build": "tsc --noEmit && vite build",
 		"preview": "vite preview",
 		"typecheck": "tsc --noEmit",
-		"lint": "biome lint src",
+		"lint": "biome lint src e2e",
 		"format": "prettier --write .",
-		"test": "vitest run"
+		"test": "vitest run",
+		"e2e": "playwright test"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.14",
+		"@playwright/test": "1.63.0",
 		"@tailwindcss/vite": "^4.3.3",
 		"@types/node": "^26.6.3",
 		"@types/react": "^19.3.0",

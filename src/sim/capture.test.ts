@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { capture } from "./capture";
-import { speciesDefs } from "./config";
+import { matureAge, speciesDefs, visionRadiusSquared } from "./config";
 import { spawn } from "./evolution";
 import { emptyHallOfFame } from "./records";
 import { buildField } from "./field";
@@ -82,5 +82,41 @@ describe("capture", () => {
 		expect(gain.get(red)).toBe(800);
 		expect(gain.get(green)).toBe(600);
 		expect(gain.get(blue)).toBe(1000);
+	});
+});
+
+describe("capture feeding", () => {
+	/** A young dot of the hunter's species whose parent is `parent`. */
+	const childOf = (parent: Agent, x: number, y: number, lifetime = 10): Agent => ({
+		...at(x, y),
+		parents: [parent.id, -1],
+		lifetime,
+	});
+
+	it("passes half of a catch to the hunter's young children in view, split equally", () => {
+		const red = at(5, 5);
+		const kids = [childOf(red, 6, 5), childOf(red, 5, 7)];
+		const { gain, fed } = capture(world([red, ...kids], [at(5, 5, 800)]));
+		expect(gain.get(red)).toBe(400);
+		expect(kids.map((k) => fed.get(k))).toEqual([200, 200]);
+	});
+
+	it("keeps the whole catch with no young child in view", () => {
+		const red = at(5, 5);
+		const far = childOf(red, 5 + Math.ceil(Math.sqrt(visionRadiusSquared)), 5);
+		const grown = childOf(red, 6, 5, matureAge);
+		const stranger = { ...at(6, 6), parents: [-2, -3] as const, lifetime: 10 };
+		const { gain, fed } = capture(world([red, far, grown, stranger], [at(5, 5, 800)]));
+		expect(gain.get(red)).toBe(800);
+		expect(fed.size).toBe(0);
+	});
+
+	it("feeds no child that is caught this step", () => {
+		const red = at(5, 5);
+		const kid = childOf(red, 6, 5);
+		const blue = at(6, 5);
+		const { gain, fed } = capture(world([red, kid], [at(5, 5, 800)], [blue]));
+		expect(gain.get(red)).toBe(800);
+		expect(fed.has(kid)).toBe(false);
 	});
 });

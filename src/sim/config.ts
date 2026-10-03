@@ -6,6 +6,10 @@ export const gridHeight = 200;
 export const cellPixels = 3;
 // Ages are rounded to this many colors per species, so `fillStyle` repeats the same few strings.
 export const ageColorSteps = 64;
+// A dot's side is `birthDotSize` of a cell at birth and grows in a straight line to a full cell at
+// `matureAge`. Its opacity runs from `minDotOpacity` at 0 HP to 1 at `primeHp` and up.
+export const birthDotSize = 0.4;
+export const minDotOpacity = 0.5;
 
 // Playback
 export const minStepsPerSecond = 5;
@@ -125,16 +129,24 @@ export const stayBias = 1;
 // pool any species can fill, so the species whose dots breed first grows and the others shrink.
 export const totalPopulation = 600;
 export const minPopulation = 30;
-export const startHp = 10000;
+// A grown dot's HP: dots are drawn at full brightness from here on. A dot is born with `birthHp`
+// and only gains HP by eating or being fed, with no cap: a hunter passes `feedSharePercent`% of
+// each catch to its own children younger than `matureAge` in its view.
+export const primeHp = 10000;
+export const birthHp = 3000;
+export const feedSharePercent = 50;
 // Sharing a cell with your own kind costs this per step. Sharing one with a hunter is death: the
-// hunters on the cell split the dot's HP, each up to `startHp`.
+// hunters on the cell split the dot's HP.
 export const hpPenaltyFromCrowding = 100;
 // Wall bump cost: the starting value and the range and step of its slider.
-export const hpPenaltyFromWall = 500;
+export const hpPenaltyFromWall = 300;
 export const minWallPenalty = 0;
 export const maxWallPenalty = 1000;
 export const wallPenaltyStep = 100;
+// HP lost per step: `baseDecayPerStep` until `matureAge`, then `baseDecayPerStep` times the
+// Fibonacci numbers 1, 2, 3, 5, 8, …, one per `decayStageSteps` steps, with no top.
 export const baseDecayPerStep = 1;
+export const decayStageSteps = 1000;
 
 // Disease: a circle the size of the view (dx² + dy² <= visionRadiusSquared) where more than
 // `diseaseCrowd` dots of one species stood for more than `diseaseAfterSteps` steps in a row turns
@@ -169,9 +181,12 @@ export const diseaseOpacity = 0.2;
 // Genetic algorithm
 // Steps an agent has to survive before it can breed.
 export const matureAge = 100;
+// A child younger than this rides in its `carrySlot` beside its parent (the first one, then the
+// second if the first died) instead of moving itself; an orphan moves itself from birth.
+export const carryUntilAge = 20;
 // Young agents (below `matureAge`) and old ones (from `oldAge` on) only get the one-cell moves;
-// adults in between can also knight-jump. Old is the last 20% of a life without food.
-export const oldAge = Math.round(0.8 * (startHp / baseDecayPerStep));
+// adults in between can also knight-jump.
+export const oldAge = 8000;
 export const crossoverRate = 0.5;
 // Children per breeding pair. The percents add up to 100.
 export const litterOdds: readonly { children: number; percent: number }[] = [

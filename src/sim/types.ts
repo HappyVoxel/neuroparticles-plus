@@ -1,3 +1,5 @@
+import type { Move } from "./movement";
+
 /** Flat array of network weights and biases; layout lives in network.ts. */
 export type Genome = number[];
 
@@ -18,6 +20,8 @@ export interface Agent {
 	id: number;
 	genome: Genome;
 	hp: number;
+	/** The highest HP it has had. */
+	peakHp: number;
 	x: number;
 	y: number;
 	/** Where the agent stood before its last move; the renderer slides from here. */
@@ -31,6 +35,8 @@ export interface Agent {
 	bornStep: number;
 	/** Ids of both parents; null for a dot of the first generation or a Randomize. */
 	parents: readonly [number, number] | null;
+	/** The cell beside its parent it rides in while carried, as a move from the parent's cell. */
+	carrySlot: Move;
 	children: number;
 	/** Moves it picked: stand still, one cell, knight jump. */
 	stays: number;
@@ -38,8 +44,10 @@ export interface Agent {
 	jumps: number;
 	/** Moves that ran into a wall. */
 	wallBumps: number;
-	/** HP taken from prey, before the `startHp` cap. */
+	/** HP taken from prey and kept. */
 	hpEaten: number;
+	/** HP its parents passed it from their catches while it was young. */
+	hpFed: number;
 	hpLostCrowding: number;
 	hpLostDisease: number;
 	hpLostWall: number;
@@ -59,7 +67,7 @@ export interface DeadAgent extends Agent {
 }
 
 /** What a hall of fame ranks by. */
-export type Ranking = "kills" | "lifetime";
+export type Ranking = "kills" | "lifetime" | "peakHp";
 
 /** Which dots the top-dots board lists: the dead or not, and each species by its index. */
 export interface TopDotsFilter {

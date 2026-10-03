@@ -1,4 +1,4 @@
-import { startHp } from "./config";
+import { birthDotSize, matureAge, minDotOpacity, primeHp } from "./config";
 import { clamp } from "./math";
 import type { Oklch } from "./types";
 
@@ -14,9 +14,14 @@ export function shadeAt(shades: readonly Oklch[], t: number): Oklch {
 	return [mix(l0, l1), mix(c0, c1), mix(h0, h1)];
 }
 
-/** Full HP (or more) draws solid; a dot fades out as its HP runs down to 0. */
+/** Full HP (or more) draws solid; a dot fades to `minDotOpacity` as its HP runs down to 0. */
 export function hpOpacity(hp: number): number {
-	return clamp(hp / startHp, 0, 1);
+	return minDotOpacity + (1 - minDotOpacity) * clamp(hp / primeHp, 0, 1);
+}
+
+/** A dot's side as a share of a cell: `birthDotSize` at birth, a full cell from `matureAge` on. */
+export function dotSizeAt(lifetime: number): number {
+	return birthDotSize + (1 - birthDotSize) * Math.min(1, lifetime / matureAge);
 }
 
 export function oklchCss([l, c, h]: Oklch, alpha = 1): string {

@@ -1,13 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	baseDecayPerStep,
+	birthHp,
+	carryUntilAge,
+	decayStageSteps,
 	gridHeight,
 	gridWidth,
 	hpPenaltyFromCrowding,
 	litterOdds,
 	matureAge,
 	minPopulation,
-	startHp,
+	primeHp,
 	totalPopulation,
 	visionRadiusSquared,
 } from "./config";
@@ -18,6 +21,7 @@ import {
 	besideMoves,
 	breed,
 	crossover,
+	decayAt,
 	litterSize,
 	mutate,
 	siblingMoves,
@@ -35,6 +39,9 @@ const agent = (x: number, y: number, hp = 1000, lifetime = 0): Agent => ({
 	lifetime,
 });
 
+// Adults: past growing, so a step changes HP only by what the test sets up.
+const adult = (x: number, y: number, hp = 1000) => agent(x, y, hp, matureAge);
+
 const species = (agents: Agent[]): Species => ({
 	id: "R",
 	name: "Red",
@@ -47,7 +54,7 @@ const species = (agents: Agent[]): Species => ({
 
 const noMutation = { percent: 0, genes: 1 };
 const noDisease = emptyDisease().cost;
-const noCapture: Capture = { caught: new Map(), gain: new Map() };
+const noCapture: Capture = { caught: new Map(), gain: new Map(), fed: new Map() };
 const cull = (...args: Parameters<typeof ageAndCull>) => ageAndCull(...args).survivors;
 /** Breeds one species alone; the other two are empty and keep their reserves. */
 const litter = (survivors: readonly Agent[], ...rest: [MutationParams, number?, number?]) =>
@@ -57,26 +64,61 @@ const litterAll = (survivors: readonly (readonly Agent[])[]) =>
 // A lone species fills its own reserve and the whole shared pool.
 const full = totalPopulation - 2 * minPopulation;
 
+describe("decayAt", () => {
+	it("costs the base decay while young", () => {
+		expect(decayAt(0)).toBe(baseDecayPerStep);
+		expect(decayAt(matureAge - 1)).toBe(baseDecayPerStep);
+	});
+
+	it("climbs through the Fibonacci numbers, one per stage, from matureAge on", () => {
+		const at = (stage: number) => decayAt(matureAge + stage * decayStageSteps);
+		expect([0, 1, 2, 3, 4, 5].map(at)).toEqual(
+			[1, 2, 3, 5, 8, 13].map((f) => f * baseDecayPerStep),
+		);
+		expect(decayAt(matureAge + decayStageSteps - 1)).toBe(baseDecayPerStep);
+		expect(at(20)).toBe(17711 * baseDecayPerStep);
+	});
+});
+
 describe("ageAndCull", () => {
 	it("only decays a lone agent and adds a step of lifetime", () => {
-		const [a] = cull(species([agent(1, 1)]), noDisease, noCapture, 1);
-		expect(a).toMatchObject({ hp: 1000 - baseDecayPerStep, lifetime: 1, kills: 0 });
+		const [a] = cull(species([adult(1, 1)]), noDisease, noCapture, 1);
+		expect(a).toMatchObject({ hp: 1000 - baseDecayPerStep, lifetime: matureAge + 1, kills: 0 });
+	});
+
+	it("starts a newborn at birthHp and doesn't grow it", () => {
+		const newborn = spawn({ id: ids++, genome: [] }, { x: 1, y: 1 });
+		expect(newborn.hp).toBe(birthHp);
+		const [a] = cull(species([newborn]), noDisease, noCapture, 1);
+		expect(a.hp).toBe(birthHp - baseDecayPerStep);
+	});
+
+	it("adds what the parents fed a young agent", () => {
+		const kid = agent(1, 1, 1000, 10);
+		const [a] = cull(
+			species([kid]),
+			noDisease,
+			{ caught: new Map(), gain: new Map(), fed: new Map([[kid, 250]]) },
+			1,
+		);
+		expect(a).toMatchObject({ hp: 1250 - baseDecayPerStep, hpFed: 250, kills: 0 });
 	});
 
 	it("charges for sharing a cell with your own kind", () => {
-		const [a] = cull(species([agent(1, 1), agent(1, 1)]), noDisease, noCapture, 1);
+		const [a] = cull(species([adult(1, 1), adult(1, 1)]), noDisease, noCapture, 1);
 		expect(a.hp).toBe(1000 - hpPenaltyFromCrowding - baseDecayPerStep);
 	});
 
 	it("drops a caught agent whatever its HP", () => {
-		const prey = agent(1, 1, startHp);
-		const other = agent(2, 2);
+		const prey = adult(1, 1, primeHp);
+		const other = adult(2, 2);
 		const survivors = cull(
 			species([prey, other]),
 			noDisease,
 			{
 				caught: new Map([[prey, { kind: "hp" as const }]]),
 				gain: new Map(),
+				fed: new Map(),
 			},
 			1,
 		);
@@ -85,42 +127,63 @@ describe("ageAndCull", () => {
 	});
 
 	it("gives a hunter its gain and counts the kill", () => {
-		const hunter = agent(1, 1, 1000);
+		const hunter = adult(1, 1, 1000);
 		const [a] = cull(
 			species([hunter]),
 			noDisease,
 			{
 				caught: new Map(),
 				gain: new Map([[hunter, 300]]),
+				fed: new Map(),
 			},
 			1,
 		);
 		expect(a).toMatchObject({ hp: 1300 - baseDecayPerStep, kills: 1 });
 	});
 
-	it("caps a hunter's HP at startHp", () => {
-		const hunter = agent(1, 1, startHp - 10);
+	it("lets a hunter's HP pass primeHp", () => {
+		const hunter = adult(1, 1, primeHp - 10);
 		const [a] = cull(
 			species([hunter]),
 			noDisease,
 			{
 				caught: new Map(),
 				gain: new Map([[hunter, 5000]]),
+				fed: new Map(),
 			},
 			1,
 		);
-		expect(a.hp).toBe(startHp - baseDecayPerStep);
+		expect(a.hp).toBe(primeHp + 4990 - baseDecayPerStep);
+	});
+
+	it("raises peakHp to a new high and keeps it when HP falls", () => {
+		const hunter = { ...adult(1, 1, 1000), peakHp: 2000 };
+		const [fed] = cull(
+			species([hunter]),
+			noDisease,
+			{ caught: new Map(), gain: new Map([[hunter, 5000]]), fed: new Map() },
+			1,
+		);
+		expect(fed.peakHp).toBe(6000 - baseDecayPerStep);
+		const [hungry] = cull(species([fed]), noDisease, noCapture, 2);
+		expect(hungry.peakHp).toBe(6000 - baseDecayPerStep);
+	});
+
+	it("takes the decay of the agent's age", () => {
+		const old = agent(1, 1, 50000, matureAge + 4 * decayStageSteps);
+		const [a] = cull(species([old]), noDisease, noCapture, 1);
+		expect(a.hp).toBe(50000 - 8 * baseDecayPerStep);
 	});
 
 	it("charges the disease cost of the agent's cell", () => {
 		const cost = emptyDisease().cost;
 		cost[1][1] = 750;
-		const [a] = cull(species([agent(1, 1)]), cost, noCapture, 1);
+		const [a] = cull(species([adult(1, 1)]), cost, noCapture, 1);
 		expect(a.hp).toBe(1000 - 750 - baseDecayPerStep);
 	});
 
 	it("drops agents whose HP hits zero and leaves the input alone", () => {
-		const self = species([agent(1, 1, baseDecayPerStep), agent(2, 2)]);
+		const self = species([adult(1, 1, baseDecayPerStep), adult(2, 2)]);
 		const survivors = cull(self, noDisease, noCapture, 1);
 		expect(survivors).toHaveLength(1);
 		expect(self.agents[1].hp).toBe(1000);
@@ -137,6 +200,7 @@ describe("ageAndCull records", () => {
 			{
 				caught: new Map([[prey, cause]]),
 				gain: new Map(),
+				fed: new Map(),
 			},
 			42,
 		);
@@ -145,12 +209,12 @@ describe("ageAndCull records", () => {
 	});
 
 	it("returns a dot out of HP as dead, with this step's costs counted", () => {
-		const { dead } = ageAndCull(species([agent(1, 1, 50), agent(1, 1)]), noDisease, noCapture, 9);
+		const { dead } = ageAndCull(species([adult(1, 1, 50), adult(1, 1)]), noDisease, noCapture, 9);
 		expect(dead).toHaveLength(1);
 		expect(dead[0]).toMatchObject({
 			diedStep: 9,
 			cause: { kind: "hp" },
-			lifetime: 1,
+			lifetime: matureAge + 1,
 			hpLostCrowding: hpPenaltyFromCrowding,
 		});
 	});
@@ -165,6 +229,7 @@ describe("ageAndCull records", () => {
 			{
 				caught: new Map(),
 				gain: new Map([[hunter, 300]]),
+				fed: new Map(),
 			},
 			1,
 		);
@@ -203,7 +268,7 @@ describe("mutate", () => {
 });
 
 describe("spawn", () => {
-	it("puts the agent on the given cell with full HP", () => {
+	it("puts the agent on the given cell with a newborn's HP", () => {
 		expect(spawn({ id: 5, genome: [] }, { x: 3, y: 7 })).toMatchObject({
 			id: 5,
 			parents: null,
@@ -212,7 +277,7 @@ describe("spawn", () => {
 			y: 7,
 			prevX: 3,
 			prevY: 7,
-			hp: startHp,
+			hp: birthHp,
 			lifetime: 0,
 		});
 	});
@@ -248,6 +313,30 @@ describe("breed", () => {
 	const single = 0.95;
 	const triplets = 0.995;
 	const cells = (children: readonly Agent[]) => children.map(({ x, y }) => ({ x, y }));
+
+	it("skips a dot carrying a litter until the litter reaches carryUntilAge", () => {
+		roll(twins);
+		const a = parent(10, 10);
+		const b = parent(12, 10);
+		const kid = (lifetime: number) => ({
+			...agent(11, 11, 1000, lifetime),
+			parents: [a.id, -1] as const,
+		});
+		expect(litter([a, b, kid(carryUntilAge - 1)], noMutation)).toHaveLength(0);
+		expect(litter([a, b, kid(carryUntilAge)], noMutation)).toHaveLength(2);
+	});
+
+	it("lets the parent that doesn't carry breed", () => {
+		roll(twins);
+		const a = parent(10, 10);
+		const b = parent(12, 10);
+		const c = parent(14, 10);
+		const kid = { ...agent(11, 11, 1000, 10), parents: [a.id, b.id] as const };
+		const children = litter([a, b, c, kid], noMutation);
+		expect(children).toHaveLength(2);
+		for (const child of children)
+			expect([...(child.parents ?? [])].sort()).toEqual([b.id, c.id].sort());
+	});
 	// How far a dot sees straight out and along a diagonal, in cells.
 	const reach = Math.floor(Math.sqrt(visionRadiusSquared));
 	const diagonalReach = Math.floor(Math.sqrt(visionRadiusSquared / 2));
@@ -322,7 +411,7 @@ describe("breed", () => {
 		expect(children[0]).toMatchObject({
 			x: Math.floor((10 + 10 + diagonalReach) / 2),
 			y: Math.floor((20 + 20 - diagonalReach) / 2),
-			hp: startHp,
+			hp: birthHp,
 			lifetime: 0,
 		});
 		expect(children[0].genome.every((g) => g === 1)).toBe(true);
@@ -343,7 +432,7 @@ describe("breed", () => {
 		expect(children.map((c) => c.genome[0]).sort()).toEqual([1, 2]);
 		for (const child of children) {
 			expect(child.genome.every((g) => g === child.genome[0])).toBe(true);
-			expect(child).toMatchObject({ hp: startHp, lifetime: 0 });
+			expect(child).toMatchObject({ hp: birthHp, lifetime: 0 });
 		}
 	});
 

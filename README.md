@@ -36,8 +36,9 @@ new one.
 
 ## Watching a run
 
-- **Colors:** a dot goes from its species' lightest shade at birth to the darkest for the species'
-  oldest living dot, and fades as it loses HP. Overlapping dots blend brighter.
+- **Colors and size:** a dot goes from its species' lightest shade at birth to the darkest for the
+  species' oldest living dot. It's born at 40% of a cell and grows to a full cell by step 100. It
+  fades to half brightness as it loses HP. Overlapping dots blend brighter.
 - **Oldest dot:** each species' oldest living dot wears a pulsing star.
 - **Top hunter:** each species' living dot with the most kills wears crossed swords.
 - **Disease! / Pandemic!:** a label pops up over a new disease area, and again when one turns into a
@@ -47,8 +48,9 @@ new one.
   "Copy genome". The record stays after the dot dies and says what killed it.
 - **Loupe:** Z shows a 4× magnifier under the pointer, for picking one dot out of a crowd. Esc
   turns it off.
-- **Top dots:** the three best dots by kills and by steps lived, the dead included. Click one to
-  follow it; the filter hides the dead or a species.
+- **Top dots:** the three best dots by kills, by steps lived and by the highest HP they reached,
+  the dead included, in short numbers (hover for the full one). Click one to follow it; the filter
+  hides the dead or a species.
 - **Area stats:** drag a box on the field to see dots, average age, average HP and top kills per
   species inside it, live while the sim runs.
 
@@ -63,16 +65,21 @@ per move (16 directions or stay). The 8 main directions step to a neighboring ce
 ones (NNE, ENE, …) are knight jumps, one cell along one axis and two along the other. The highest
 output wins, with a small bonus for staying put.
 
-**Speed.** Young dots (under 100 steps) and old ones (the last 20% of a life without food: 8,000
-steps and up) only step to a neighboring cell. Adults in between can also knight-jump, so they are
-the fastest.
+**Speed.** Young dots (under 100 steps) and old ones (8,000 steps and up) only step to a neighboring
+cell. Adults in between can also knight-jump, so they are the fastest.
 
-**Health.** Every dot starts with 10,000 HP. Each step it loses 1 HP, and 100 HP more if it shares a
-cell with its own kind. Bumping into a wall costs 500 HP by default; the Bump cost slider changes it
-while the sim runs. At 0 HP it dies.
+**Health.** A dot is born with 3,000 HP and gains HP only by eating, with no cap. While it's
+younger than 100 steps, its parents feed it: a parent that catches prey with the child in view
+passes it half of the catch. For its first 20 steps a child rides beside its parent; after that it
+moves itself. A parent with a child on board
+doesn't breed again until it lets go. HP drains faster with age: 1 HP per step until step 100, then 1, 2, 3, 5, 8,
+13, … per step, one step up every 1,000 steps. There's no age limit: a dot lives as long as it eats
+enough to keep up. Each step a dot loses 1 HP, and 100 HP more if it shares a cell with
+its own kind. Bumping into a wall costs 300 HP by default; the Bump cost slider changes it while the
+sim runs. At 0 HP it dies.
 
 **Hunting.** A dot that ends a step on the same cell as its predator dies. The predators on that cell
-split its HP equally, each up to the 10,000 HP a dot starts with, and each counts a kill.
+split its HP equally, and each counts a kill.
 
 **Disease.** When more than 13 dots of one species stay in the same view-sized circle for more than
 20 steps in a row, a disease area starts on the middle of that crowd, tinted in that species' color.
@@ -97,7 +104,7 @@ breeds first. Dots that die free slots, and the best hunters of any species refi
   default) replaced by random values in `[-2, 2)`.
 - **Placement:** the first child appears halfway between its parents, its siblings on the cells next
   to it. When the parents can't see each other, the children appear next to the first parent. All
-  start with full HP.
+  start small, with 3,000 HP.
 
 **World.** The 200×200 grid has walls at the edges: a dot that steps into one bounces back, and
 dots see the walls inside their view. All dots move at the same time, each reacting to where

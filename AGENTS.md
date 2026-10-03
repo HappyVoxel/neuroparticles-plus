@@ -17,13 +17,15 @@ TypeScript + Vite + React 19 + shadcn/ui (Radix) + Tailwind CSS v4.
 | `npm run dev`       | Vite dev server with live reload             |
 | `npm run build`     | `tsc --noEmit`, then static build to `dist/` |
 | `npm run preview`   | Serve `dist/` locally                        |
-| `npm test`          | Vitest, once                                 |
+| `npm test`          | Vitest unit tests (`src/**/*.test.ts`), once |
+| `npm run e2e`       | Playwright e2e (`e2e/*.e2e.ts`), own build   |
 | `npm run typecheck` | `tsc --noEmit`                               |
-| `npm run lint`      | Biome lint on `src/`                         |
+| `npm run lint`      | Biome lint on `src/` and `e2e/`              |
 | `npm run format`    | Prettier (tabs, width 100) on the whole repo |
 
 The build uses relative asset paths (`base: "./"`); ES modules don't load from `file://`, so go through `dev` or `preview`.
-Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypanel): see `docs/deployment.md`.
+Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypanel), and every PR runs lint,
+typecheck, unit and e2e (`.woodpecker/test.yaml`): see `docs/deployment.md`.
 
 ## Layout
 
@@ -89,7 +91,7 @@ Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypa
 - Constants live in `sim/config.ts`; nothing else hardcodes a size or rate.
 - `tsconfig` is `strict` without `noUncheckedIndexedAccess`, so grid and genome indexing stays readable.
 - Browser checks use the Playwright MCP (Firefox) against `npm run build && npm run preview`.
-- Work and commit directly on `master`; this repo has no `sang-dev` branch.
+- Work and commit on `sang-dev`; `master` is the base for diffs and PRs, and every push to it deploys.
 - Findings we chose to skip, with why and when to revisit, live in `docs/backlog.md`; read it
   before proposing a cleanup.
 
@@ -97,12 +99,12 @@ Every push to `master` deploys to npp.happyvoxel.com (Docker, Woodpecker, Easypa
 
 - **Agent:** `{ id, genome, hp, x, y, prevX, prevY, lifetime, kills, ... }`. The record of a dot lives
   on the agent itself: `id` (unique in a run, from `Sim.nextId`), `bornStep`, `parents`, `children`,
-  move counts (`stays`, `steps`, `jumps`, `wallBumps`) and an HP ledger (`hpEaten`,
+  move counts (`stays`, `steps`, `jumps`, `wallBumps`) and an HP ledger (`peakHp`, `hpEaten`,
   `hpLostCrowding`, `hpLostDisease`, `hpLostWall`). `prevX`/`prevY` is the cell before the last move,
   used only for drawing; `kills` counts the prey it caught and decides who breeds first.
 - **Dead dots:** `ageAndCull` returns the dead as `DeadAgent` (`diedStep`, `cause`: caught by which
   species and hunter ids, or out of HP). Each species keeps the last step's dead in `lastDeaths` and
-  the best `hallOfFameSize` dead per ranking (kills, lifetime) in `hallOfFame`, genome included.
+  the best `hallOfFameSize` dead per ranking (`rankings`: kills, lifetime, peakHp) in `hallOfFame`, genome included.
 - **Field:** `field[x][y]` is an `Int8Array` count of one species' agents per cell, rebuilt every step.
 - **Grid:** 200×200 with walls; every move goes through `bounce`, which reflects a step past a wall
   back inside (E at the east wall lands one cell W, a 2-cell jump lands two cells W; only the axis
@@ -140,9 +142,9 @@ moves within a step don't see each other.
   Randomize and Reset bump an `epoch` that drops older frames; pause rewinds the worker to the canvas.
 - Up to `maxSlidingStepsPerSecond`, `draw` slides each dot from its previous cell to its current one
   (`slide` in `movement.ts`); above it, dots are drawn at their cell.
-- `draw` paints each dot in its species' Tailwind shades 300 → 700 by age (lightest at birth,
-  darkest for the species' oldest living dot) and at HP ÷ `startHp` opacity (capped at 100%),
-  blending additively: overlapping dots show brighter and whiter. The sidebar uses shade 500.
+- `draw` paints each dot in its species' shades 300 → 700 by age (darkest: the species' oldest),
+  sized by `dotSizeAt` (40% of a cell at birth to 1 at `matureAge`), at `hpOpacity` (50–100%),
+  blending additively. The sidebar uses shade 500.
 - The canvas has one pixel per screen pixel (CSS size × `devicePixelRatio`, kept by a
   `ResizeObserver` in the hook); `draw` works in `cellPixels` per cell and `paint` scales it.
 
@@ -155,11 +157,14 @@ glow, the top-hunter swords and the disease labels: see `docs/ui.md`.
 
 - For species `i`, enemies are `species[(i-1) mod 3]` and prey is `species[(i+1) mod 3]`
   (Red eats Green, Green eats Blue, Blue eats Red).
-- Capture (`capture.ts`): a dot that shares a cell with an enemy dies. The enemies on that cell split
-  its HP equally, each capped at `startHp`, and each adds 1 to its `kills`. All species resolve from
-  the same positions, so a dot caught this step still catches.
-- HP per step: −`hpPenaltyFromCrowding` if the cell has another of your kind, −`baseDecayPerStep`
-  always. Dead at `hp <= 0`.
+- Capture (`capture.ts`): a dot sharing a cell with an enemy dies; the enemies there split its HP
+  and each adds 1 to `kills`. All species resolve from the same positions. A hunter feeds
+  `feedSharePercent` (50%) of its catch to its young children in view (`fed`, `hpFed`).
+- HP per step: −`hpPenaltyFromCrowding` if the cell has another of your kind, −`decayAt` its age
+  always: `baseDecayPerStep` while young, then times 1, 2, 3, 5, 8, … (Fibonacci), one stage per
+  `decayStageSteps` (1,000). Dead at `hp <= 0`; no age limit, no HP cap, so an old dot lives only
+  while it eats enough. A dot is born with `birthHp` (3,000) and gains HP only by eating or being
+  fed; smaller births die out more (`docs/hunting-research.md`).
 - Disease (`disease.ts`): a view-sized circle crowded by one species for more than
   `diseaseAfterSteps` steps becomes a `DiseaseArea` that drains HP from every dot inside and grows
   or shrinks with its own species' dots. Overlaps never stack. Full rule: `docs/architecture.md`.
@@ -176,16 +181,12 @@ glow, the top-hunter swords and the disease labels: see `docs/ui.md`.
   breeds. A litter is cut to its species' open slots: its reserve room plus what is left of the
   pool. An agent breeds once per step. Breeding by kills is what stops dots from standing still;
   see `docs/hunting-research.md`. Reset splits the budget evenly.
-- A pair gets a litter sized by `litterOdds`: 2 children 90% of the time, 1 child 9%, 3 children 1%
-  (`litterSize`), cut to the slots still open. Children start with full HP. The first lands on the
-  cell halfway between the parents, the second one cell E, the third one cell S (`siblingMoves`),
-  so siblings don't pay the crowding penalty. Children of a pair out of each other's view land E, S
-  and W of the first parent (`besideMoves`). Twins get the two halves of one `crossover`; a third
-  child gets its own.
-- Speed depends on age (`moveCount`): agents younger than `matureAge` or at least `oldAge`
-  (0.8 × `startHp` ÷ `baseDecayPerStep`, the last 20% of a life without food) pick only from the
-  one-cell moves 0–8 (`stepMoves`); adults in between can also knight-jump. The net still scores
-  all 17 moves.
+- Litters (`litterOdds`: 2 children 90%, 1 child 9%, 3 children 1%) start with `birthHp`. Until
+  `carryUntilAge` (20) a child rides beside its parent (`moveAll`, `carrySlot`), and a carrier
+  doesn't breed. Placement, carrying and following: `docs/architecture.md`, "Children".
+- Speed depends on age (`moveCount`): agents younger than `matureAge` or at least `oldAge` (8,000)
+  pick only from the one-cell moves 0–8 (`stepMoves`); adults in between can also knight-jump. The
+  net still scores all 17 moves.
 - Mutation: with `percent`% odds a child gets exactly `genes` random genes replaced by values in
   `[-2, 2)`. Both values come live from the Mutation controls.
 - Recreate gives every living agent a new random genome, a new id and zeroed counters, and keeps
