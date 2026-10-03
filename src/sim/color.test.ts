@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { hpOpacity, oklchCss, shadeAt } from "./color";
-import { speciesDefs, primeHp } from "./config";
+import { dotSizeAt, hpOpacity, oklchCss, shadeAt } from "./color";
+import { birthDotSize, matureAge, minDotOpacity, primeHp, speciesDefs } from "./config";
 import type { Oklch } from "./types";
 
 describe("shadeAt", () => {
@@ -38,17 +38,27 @@ describe("shadeAt", () => {
 });
 
 describe("hpOpacity", () => {
-	it("is 0 at 0 HP and 1 at full HP", () => {
-		expect(hpOpacity(0)).toBe(0);
+	it("is minDotOpacity at 0 HP and 1 at full HP", () => {
+		expect(hpOpacity(0)).toBe(minDotOpacity);
+		expect(hpOpacity(-500)).toBe(minDotOpacity);
 		expect(hpOpacity(primeHp)).toBe(1);
 	});
 
 	it("scales in between", () => {
-		expect(hpOpacity(primeHp / 4)).toBeCloseTo(0.25);
+		expect(hpOpacity(primeHp / 2)).toBeCloseTo(minDotOpacity + (1 - minDotOpacity) / 2);
 	});
 
 	it("stays at 1 above full HP", () => {
 		expect(hpOpacity(primeHp * 3)).toBe(1);
+	});
+});
+
+describe("dotSizeAt", () => {
+	it("grows from birthDotSize to a full cell at matureAge and stays there", () => {
+		expect(dotSizeAt(0)).toBe(birthDotSize);
+		expect(dotSizeAt(matureAge / 2)).toBeCloseTo((birthDotSize + 1) / 2);
+		expect(dotSizeAt(matureAge)).toBe(1);
+		expect(dotSizeAt(matureAge * 50)).toBe(1);
 	});
 });
 

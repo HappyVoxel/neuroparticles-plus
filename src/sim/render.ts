@@ -1,4 +1,4 @@
-import { hpOpacity, oklchCss, shadeAt } from "./color";
+import { dotSizeAt, hpOpacity, oklchCss, shadeAt } from "./color";
 import {
 	ageColorSteps,
 	cellPixels,
@@ -88,7 +88,10 @@ export function draw(
 			const py = slide(prevY, y, t) * cellPixels;
 			ctx.fillStyle = colors[Math.round(age * (ageColorSteps - 1))];
 			ctx.globalAlpha = hpOpacity(hp);
-			ctx.fillRect(px, py, cellPixels, cellPixels);
+			// Centered on its cell, so the ring, glow and swords stay put as it grows.
+			const size = dotSizeAt(lifetime) * cellPixels;
+			const inset = (cellPixels - size) / 2;
+			ctx.fillRect(px + inset, py + inset, size, size);
 			if (id === followId) followed = { x: px, y: py };
 			if (id === glowIds[s]) glows.push({ x: px, y: py, color: shades[0] });
 			if (id === swordsIds[s]) swordsAt.push({ x: px, y: py, shades });

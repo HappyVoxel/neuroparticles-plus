@@ -36,8 +36,9 @@ new one.
 
 ## Watching a run
 
-- **Colors:** a dot goes from its species' lightest shade at birth to the darkest for the species'
-  oldest living dot, and fades as it loses HP. Overlapping dots blend brighter.
+- **Colors and size:** a dot goes from its species' lightest shade at birth to the darkest for the
+  species' oldest living dot. It's born at 40% of a cell and grows to a full cell by step 100. It
+  fades to half brightness as it loses HP. Overlapping dots blend brighter.
 - **Oldest dot:** each species' oldest living dot wears a pulsing star.
 - **Top hunter:** each species' living dot with the most kills wears crossed swords.
 - **Disease! / Pandemic!:** a label pops up over a new disease area, and again when one turns into a

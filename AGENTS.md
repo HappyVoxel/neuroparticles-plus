@@ -140,9 +140,9 @@ moves within a step don't see each other.
   Randomize and Reset bump an `epoch` that drops older frames; pause rewinds the worker to the canvas.
 - Up to `maxSlidingStepsPerSecond`, `draw` slides each dot from its previous cell to its current one
   (`slide` in `movement.ts`); above it, dots are drawn at their cell.
-- `draw` paints each dot in its species' Tailwind shades 300 → 700 by age (lightest at birth,
-  darkest for the species' oldest living dot) and at HP ÷ `primeHp` opacity (capped at 100%),
-  blending additively: overlapping dots show brighter and whiter. The sidebar uses shade 500.
+- `draw` paints each dot in its species' shades 300 → 700 by age (darkest: the species' oldest),
+  sized by `dotSizeAt` (40% of a cell at birth to 1 at `matureAge`), at `hpOpacity` (50–100%),
+  blending additively. The sidebar uses shade 500.
 - The canvas has one pixel per screen pixel (CSS size × `devicePixelRatio`, kept by a
   `ResizeObserver` in the hook); `draw` works in `cellPixels` per cell and `paint` scales it.
 

@@ -6,6 +6,10 @@ export const gridHeight = 200;
 export const cellPixels = 3;
 // Ages are rounded to this many colors per species, so `fillStyle` repeats the same few strings.
 export const ageColorSteps = 64;
+// A dot's side is `birthDotSize` of a cell at birth and grows in a straight line to a full cell at
+// `matureAge`. Its opacity runs from `minDotOpacity` at 0 HP to 1 at `primeHp` and up.
+export const birthDotSize = 0.4;
+export const minDotOpacity = 0.5;
 
 // Playback
 export const minStepsPerSecond = 5;
