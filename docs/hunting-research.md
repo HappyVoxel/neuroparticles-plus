@@ -94,3 +94,39 @@ jump + killers first + mate anywhere + HP cap: `src/sim/capture.ts`, and `ageAnd
    before they mature, so it needs young safe as well.
 4. No variant with the 121-cell view learned to steer toward prey in 30,000 steps. With the compact
    sensor, fleeing reached 82–83% and one of two surviving runs reached 56% Toward.
+
+## Arm and holds, 2026-10-03
+
+Harness: `python3 .exp/arm-patch.py` builds `.exp/arm/` from today's `src/sim/` plus the rules of
+`docs/arm-plan.md` behind `OPT='{"arm":true}'` and the compact sensor behind `"sense":"nearest"`.
+Run: `.exp/arm-batch.sh 'name={"arm":true}' ...`. The first table ran with HP growing from 10% at
+birth, the second with the Fibonacci decay rules of today. 30,000 steps × 4 runs,
+mutation 5% × 1 gene. Aim: of the dots not holding anything with prey on a neighbor cell, the share
+whose arm reaches into prey; random is the share of neighbor cells holding prey.
+
+| Variant              | Died out | Lowest count | Kills per 1,000 dot-steps | Hunters per kill | Aim / random |
+| -------------------- | -------- | ------------ | ------------------------- | ---------------- | ------------ |
+| Same-cell capture    | 3 of 4   | 0            | 1.0–3.8                   | 1.2–1.5          | —            |
+| Arm, roll and boost  | 1 of 4   | 27–29        | 0.5–1.7                   | 2.6–3.1          | 13.4 / 13.0% |
+| Arm without the roll | 3 of 4   | 0            | 1.8–3.7                   | 1.4–2.1          | 13.4 / 12.8% |
+
+1. No variant learned to aim: aim stays at random in every 2,500-step window up to step 30,000.
+2. With the roll, kills come from groups (about 3 hunters each, from 1 at the start). Solo holds
+   win 20%, so this may be the roll filtering which holds end in a kill, not dots seeking each
+   other out.
+3. The roll halves kills and keeps species above their reserve in 3 of 4 runs.
+
+Born at 10% HP, 15,000 steps: 4 of 8 runs died out, against 1 of 8 with full HP at birth. Newborns
+die of wall bumps and crowding before they mature, so a thinned species can't refill. Born at 30%:
+1 of 4. Damage scaled to max HP: 2 of 4.
+
+### Arm with the compact sensor, 30,000 steps × 4 runs
+
+| Variant              | Died out | Chase at end | Aim / random           | Hunters per kill |
+| -------------------- | -------- | ------------ | ---------------------- | ---------------- |
+| Compact sensor       | 1 of 4   | 44–53%       | —                      | 1.4–1.7          |
+| Arm + compact sensor | 3 of 4   | 35–46%       | 10.7–20.9 / 12.5–16.1% | 3.2–5.7          |
+
+4. The compact sensor alone steers a little: chase climbs from about 40% to 50–53% in 3 of 4 runs
+   (random genomes score 42–46%).
+5. The arm still doesn't aim with the compact sensor, and kills by big groups thin species out.
